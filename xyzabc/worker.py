@@ -1,9 +1,14 @@
 import asyncio
 import random
 import string
+import typing
 import logging
 
+
+from . import q
+from . import hooks
 from . import logger
+from . import ratelimiter
 
 
 class Worker:
@@ -13,7 +18,10 @@ class Worker:
     def __init__(
         self,
         async_loop: asyncio.events.AbstractEventLoop,
-        client_id=None,
+        queue: q.BaseQueue,
+        rateLimiter=None,
+        hook=None,
+        Worker_id=None,
         log_handler=None,
         loglevel: str = "DEBUG",
         log_metadata=None,
@@ -35,21 +43,30 @@ class Worker:
 
         self.async_loop = async_loop
         self.loglevel = loglevel.upper()
+        self.queue = queue
 
-        self.client_id = client_id
-        if not self.client_id:
-            self.client_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
+        self.Worker_id = Worker_id
+        if not self.Worker_id:
+            self.Worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
-        self.log_metadata.update({"client_id": self.client_id})
+        self.log_metadata.update({"Worker_id": self.Worker_id})
 
         self.logger = log_handler
         if not self.logger:
-            self.logger = logger.SimpleBaseLogger("naz.client")
+            self.logger = logger.SimpleBaseLogger("xyzabc.Worker")
         self.logger.bind(loglevel=self.loglevel, log_metadata=self.log_metadata)
         self._sanity_check_logger()
+
+        self.rateLimiter = rateLimiter
+        if not self.rateLimiter:
+            self.rateLimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
+
+        self.hook = hook
+        if not self.hook:
+            self.hook = hooks.SimpleHook(logger=self.logger)
 
     def _sanity_check_logger(self):
         """
@@ -68,6 +85,104 @@ class Worker:
         except Exception:
             pass
 
+    @staticmethod
+    def _retry_after(current_retries):
+        """
+        retries will happen in this sequence;
+        1min, 2min, 4min, 8min, 16min, 32min, 16min, 16min, 16min ...
+        """
+        # TODO:
+        # 1. give users ability to bring their own retry algorithms.
+        # 2. add jitter
+        if current_retries < 0:
+            current_retries = 0
+        if current_retries >= 6:
+            return 60 * 16  # 16 minutes
+        else:
+            return 60 * (1 * (2 ** current_retries))
+
     async def run(self):
         # this is where people put their code.
         pass
+
+    async def send_forever(
+        self, TESTING: bool = False
+    ) -> typing.Union[str, typing.Dict[typing.Any, typing.Any]]:
+        """
+        In loop; dequeues items from the :attr:`queue <Worker.queue>` and calls :func:`run <Worker.run>`.
+
+        Parameters:
+            TESTING: indicates whether this method is been called while running tests.
+        """
+        retry_count = 0
+        while True:
+            self._log(logging.INFO, {"event": "xyzabc.Worker.send_forever", "stage": "start"})
+
+            try:
+                # rate limit ourselves
+                await self.rateLimiter.limit()
+            except Exception as e:
+                self._log(
+                    logging.ERROR,
+                    {
+                        "event": "xyzabc.Worker.send_forever",
+                        "stage": "end",
+                        "state": "send_forever error",
+                        "error": str(e),
+                    },
+                )
+                continue
+
+            try:
+                item_to_dequeue = await self.queue.dequeue()
+            except Exception as e:
+                retry_count += 1
+                poll_queue_interval = self._retry_after(retry_count)
+                self._log(
+                    logging.ERROR,
+                    {
+                        "event": "xyzabc.Worker.send_forever",
+                        "stage": "end",
+                        "state": "send_forever error. sleeping for {0}minutes".format(
+                            poll_queue_interval / 60
+                        ),
+                        "retry_count": retry_count,
+                        "error": str(e),
+                    },
+                )
+                await asyncio.sleep(poll_queue_interval)
+                continue
+
+            # dequeue succeded
+            retry_count = 0
+            try:
+                log_id = item_to_dequeue["log_id"]
+                item_to_dequeue["version"]  # version is a required field
+                smpp_command = item_to_dequeue["smpp_command"]
+                hook_metadata = item_to_dequeue.get("hook_metadata", "")
+            except KeyError as e:
+                e = KeyError("enqueued message/object is missing required field:{}".format(str(e)))
+                self._log(
+                    logging.ERROR,
+                    {
+                        "event": "xyzabc.Worker.send_forever",
+                        "stage": "end",
+                        "state": "send_forever error",
+                        "error": str(e),
+                    },
+                )
+                continue
+
+            await self.run(*args, **kwargs)
+            self._log(
+                logging.INFO,
+                {
+                    "event": "xyzabc.Worker.send_forever",
+                    "stage": "end",
+                    "log_id": log_id,
+                    "smpp_command": smpp_command,
+                },
+            )
+            if TESTING:
+                # offer escape hatch for tests to come out of endless loop
+                return item_to_dequeue

@@ -101,8 +101,12 @@ class Worker:
         else:
             return 60 * (1 * (2 ** current_retries))
 
-    async def run(self):
+    async def run(self, pickled_obj):
         # this is where people put their code.
+        import pickle
+
+        unpickled_obj = pickle.loads(pickled_obj)
+        unpickled_obj()
         pass
 
     async def send_forever(
@@ -173,7 +177,16 @@ class Worker:
                 )
                 continue
 
-            await self.run(*args, **kwargs)
+            ###################### example ##########
+            import pickle
+
+            def hello_func():
+                print("\n hello_func called \n")
+
+            pickled_obj = pickle.dumps(hello_func, pickle.HIGHEST_PROTOCOL)
+            #########################################
+
+            await self.run(pickled_obj)
             self._log(
                 logging.INFO,
                 {

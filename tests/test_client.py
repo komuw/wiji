@@ -60,4 +60,3 @@ class TestWorker(TestCase):
         with self.assertRaises(ValueError) as raised_exception:
             mock_create_worker()
         self.assertIn("log_metadata should be of type", str(raised_exception.exception))
-

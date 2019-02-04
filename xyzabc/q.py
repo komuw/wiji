@@ -13,17 +13,18 @@ class BaseQueue(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def enqueue(self, item: dict) -> None:
+    async def enqueue(self, item: str, queue_name: str) -> None:
         """
         enqueue/save an item.
 
         Parameters:
             item: The item to be enqueued/saved
+            queue_name: name of queue to enqueue in
         """
         raise NotImplementedError("enqueue method must be implemented.")
 
     @abc.abstractmethod
-    async def dequeue(self) -> typing.Dict[typing.Any, typing.Any]:
+    async def dequeue(self, queue_name: str) -> str:
         """
         dequeue an item.
 
@@ -35,21 +36,29 @@ class BaseQueue(abc.ABC):
 
 class SimpleOutboundQueue(BaseQueue):
     """
-    This is an in-memory implementation of BaseQueue.
-
-    Note: It should only be used for tests and demo purposes.
+    {
+        "queue1": ["item1", "item2", "item3"],
+        "queue2": ["item1", "item2", "item3"]
+        ...
+    }
     """
 
-    def __init__(self, maxsize: int, loop: asyncio.events.AbstractEventLoop) -> None:
+    def __init__(self) -> None:
         """
-        Parameters:
-            maxsize: the maximum number of items(not size) that can be put in the queue.
-            loop: an event loop
         """
-        self.queue: asyncio.queues.Queue = asyncio.Queue(maxsize=maxsize, loop=loop)
+        self.store: dict = {}
 
-    async def enqueue(self, item: dict) -> None:
-        self.queue.put_nowait(item)
+    async def enqueue(self, item: str, queue_name: str) -> None:
+        if self.store.get(queue_name):
+            self.store[queue_name].append(item)
+        else:
+            self.store[queue_name] = [item]
 
-    async def dequeue(self) -> typing.Dict[typing.Any, typing.Any]:
-        return await self.queue.get()
+    async def dequeue(self, queue_name: str) -> str:
+        if self.store.get(queue_name):
+            try:
+                return await asyncio.sleep(delay=-1, result=self.store[queue_name].pop(0))
+            except IndexError:
+                return await asyncio.sleep(delay=-1, result=None)
+        else:
+            return await asyncio.sleep(delay=-1, result=None)

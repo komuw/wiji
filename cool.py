@@ -49,7 +49,7 @@ def load_class(dotted_path):
         raise
 
 
-class SimpleOutboundQueue:
+class SimpleQueue:
     """
     {
         "queue1": ["item1", "item2", "item3"],
@@ -157,7 +157,7 @@ class Task:
         protocol_json = json.dumps(protocol)
 
         loop = asyncio.get_event_loop()
-        queue = SimpleOutboundQueue()
+        queue = SimpleQueue()
         loop.run_until_complete(queue.enqueue(item=protocol_json, queue_name=task_options.queue))
 
         item = loop.run_until_complete(queue.dequeue(queue_name=task_options.queue))

@@ -64,3 +64,37 @@ def main():
 
 if __name__ == "__main__":
     main()
+    """
+    run as:
+        python cli/cli.py 
+    """
+    # import pdb
+
+    # pdb.set_trace()
+    MY_QUEUE = xyzabc.q.SimpleQueue()
+    queue_name = "myQueue"
+
+    # 1. publish task
+    opt = xyzabc.task.TaskOptions(
+        eta=60,
+        retries=3,
+        queue_name=queue_name,
+        file_name=__file__,
+        class_path=os.path.realpath(__file__),
+        log_id="myLogID",
+        hook_metadata='{"email": "example@example.com"}',
+    )
+    task = xyzabc.task.Task(queue=MY_QUEUE)
+    task.blocking_delay(33, "hello", name="komu", task_options=opt)
+    import pdb
+
+    pdb.set_trace()
+
+    # 2.consume task
+    loop = asyncio.get_event_loop()
+    worker = xyzabc.Worker(async_loop=loop, queue=MY_QUEUE, queue_name=queue_name)
+
+    tasks = asyncio.gather(
+        worker.consume_forever(), task.delay(77, "hello22", name="KOMU2", task_options=opt)
+    )
+    loop.run_until_complete(tasks)

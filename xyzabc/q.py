@@ -34,7 +34,7 @@ class BaseQueue(abc.ABC):
         raise NotImplementedError("dequeue method must be implemented.")
 
 
-class SimpleOutboundQueue(BaseQueue):
+class SimpleQueue(BaseQueue):
     """
     {
         "queue1": ["item1", "item2", "item3"],
@@ -55,10 +55,12 @@ class SimpleOutboundQueue(BaseQueue):
             self.store[queue_name] = [item]
 
     async def dequeue(self, queue_name: str) -> str:
-        if self.store.get(queue_name):
-            try:
-                return await asyncio.sleep(delay=-1, result=self.store[queue_name].pop(0))
-            except IndexError:
-                return await asyncio.sleep(delay=-1, result=None)
-        else:
-            return await asyncio.sleep(delay=-1, result=None)
+        while True:
+            if self.store.get(queue_name):
+                try:
+                    return await asyncio.sleep(delay=-1, result=self.store[queue_name].pop(0))
+                except IndexError:
+                    # queue is empty
+                    await asyncio.sleep(5)
+            else:
+                raise ValueError("queue with name: {0} does not exist.".format(queue_name))

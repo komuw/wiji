@@ -9,6 +9,7 @@ import asyncio
 import datetime
 
 from . import q
+from . import task
 from . import hooks
 from . import logger
 from . import ratelimiter
@@ -22,6 +23,7 @@ class Worker:
         self,
         async_loop: asyncio.events.AbstractEventLoop,
         queue: q.BaseQueue,
+        queue_name: str,
         rateLimiter=None,
         hook=None,
         Worker_id=None,
@@ -47,6 +49,7 @@ class Worker:
         self.async_loop = async_loop
         self.loglevel = loglevel.upper()
         self.queue = queue
+        self.queue_name = queue_name
 
         self.Worker_id = Worker_id
         if not self.Worker_id:
@@ -104,15 +107,15 @@ class Worker:
         else:
             return 60 * (1 * (2 ** current_retries))
 
-    async def run(self, pickled_obj):
-        # this is where people put their code.
-        import pickle
+    # async def run(self, pickled_obj):
+    #     # this is where people put their code.
+    #     import pickle
 
-        unpickled_obj = pickle.loads(pickled_obj)
-        unpickled_obj()
-        pass
+    #     unpickled_obj = pickle.loads(pickled_obj)
+    #     unpickled_obj()
+    #     pass
 
-    async def send_forever(
+    async def consume_forever(
         self, TESTING: bool = False
     ) -> typing.Union[str, typing.Dict[typing.Any, typing.Any]]:
         """
@@ -123,7 +126,7 @@ class Worker:
         """
         retry_count = 0
         while True:
-            self._log(logging.INFO, {"event": "xyzabc.Worker.send_forever", "stage": "start"})
+            self._log(logging.INFO, {"event": "xyzabc.Worker.consume_forever", "stage": "start"})
 
             try:
                 # rate limit ourselves
@@ -132,25 +135,26 @@ class Worker:
                 self._log(
                     logging.ERROR,
                     {
-                        "event": "xyzabc.Worker.send_forever",
+                        "event": "xyzabc.Worker.consume_forever",
                         "stage": "end",
-                        "state": "send_forever error",
+                        "state": "consume_forever error",
                         "error": str(e),
                     },
                 )
                 continue
 
             try:
-                item_to_dequeue = await self.queue.dequeue()
+                item_to_dequeue = await self.queue.dequeue(queue_name=self.queue_name)
+                item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 retry_count += 1
                 poll_queue_interval = self._retry_after(retry_count)
                 self._log(
                     logging.ERROR,
                     {
-                        "event": "xyzabc.Worker.send_forever",
+                        "event": "xyzabc.Worker.consume_forever",
                         "stage": "end",
-                        "state": "send_forever error. sleeping for {0}minutes".format(
+                        "state": "consume_forever error. sleeping for {0}minutes".format(
                             poll_queue_interval / 60
                         ),
                         "retry_count": retry_count,
@@ -163,18 +167,31 @@ class Worker:
             # dequeue succeded
             retry_count = 0
             try:
+                version = item_to_dequeue["version"]
+                task_id = item_to_dequeue["task_id"]
+                eta = item_to_dequeue["eta"]
+                retries = item_to_dequeue["retries"]
+                queue_name = item_to_dequeue["queue_name"]
+                file_name = item_to_dequeue["file_name"]
+                class_path = item_to_dequeue["class_path"]
                 log_id = item_to_dequeue["log_id"]
-                item_to_dequeue["version"]  # version is a required field
-                smpp_command = item_to_dequeue["smpp_command"]
-                hook_metadata = item_to_dequeue.get("hook_metadata", "")
+                hook_metadata = item_to_dequeue["hook_metadata"]
+                timelimit = item_to_dequeue["timelimit"]
+                args = item_to_dequeue["args"]
+                kwargs = item_to_dequeue["kwargs"]
+                import pdb
+
+                pdb.set_trace()
+                # load_class(class_path)
+                # load_class(file_name)
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field:{}".format(str(e)))
                 self._log(
                     logging.ERROR,
                     {
-                        "event": "xyzabc.Worker.send_forever",
+                        "event": "xyzabc.Worker.consume_forever",
                         "stage": "end",
-                        "state": "send_forever error",
+                        "state": "consume_forever error",
                         "error": str(e),
                     },
                 )
@@ -193,7 +210,7 @@ class Worker:
             self._log(
                 logging.INFO,
                 {
-                    "event": "xyzabc.Worker.send_forever",
+                    "event": "xyzabc.Worker.consume_forever",
                     "stage": "end",
                     "log_id": log_id,
                     "smpp_command": smpp_command,
@@ -203,91 +220,3 @@ class Worker:
                 # offer escape hatch for tests to come out of endless loop
                 return item_to_dequeue
 
-
-class TaskOptions:
-    def __init__(self, eta, retries, queue, file_name, class_path):
-        """
-        Parameters:
-            eta: Number of seconds into the future that the task should execute.  Defaults to immediate execution.
-            retries:
-            queue: The queue to route the task to.
-        """
-        self.eta = eta
-        self.retries = retries
-        self.queue = queue
-        self.file_name = file_name
-        self.class_path = class_path
-
-
-class Task:
-    """
-    call it as:
-        Task()(33,"hello", name="komu")
-
-    usage:
-        opt = TaskOptions(eta=60,
-                          retries=3,
-                          queue="myQueue",
-                          file_name=__file__,
-                          class_path=os.path.realpath(__file__)
-                        )
-        task = Task()
-        task.delay(33, "hello", name="komu", task_options=opt)
-    """
-
-    def __call__(self, *args, **kwargs):
-        self.run(*args, **kwargs)
-
-    def run(self, *args, **kwargs):
-        print(args)
-        print(kwargs)
-        print("ssdsd")
-
-    def delay(self, *args, **kwargs):
-        """
-        Parameters:
-            args: The positional arguments to pass on to the task.
-            kwargs: The keyword arguments to pass on to the task.
-        """
-        # Queue this to queue
-
-        class_name: str = self.__class__.__name__
-
-        task_options = kwargs.pop("task_options", None)
-        task_options.class_path = task_options.class_path.replace(".py", "")
-        task_options.class_path = (
-            os.path.join(task_options.class_path, class_name).replace("/", ".").lstrip(".")
-        )
-
-        task_options.file_name = task_options.file_name.replace(".py", "")
-        task_options.file_name = (
-            os.path.join(task_options.file_name, class_name).replace("/", ".").lstrip(".")
-        )
-
-        eta = datetime.datetime.utcnow() + datetime.timedelta(seconds=task_options.eta)
-        protocol = {
-            "version": 1,
-            "task_id": str(uuid.uuid4()),
-            "eta": eta.isoformat(),
-            "retries": task_options.retries,
-            "queue": task_options.queue,
-            "file_name": task_options.file_name,
-            "class_path": task_options.class_path,
-            "timelimit": 1800,
-            "args": args,
-            "kwargs": kwargs,
-        }
-
-        protocol_json = json.dumps(protocol)
-
-        loop = asyncio.get_event_loop()
-        queue = q.SimpleOutboundQueue()
-        loop.run_until_complete(queue.enqueue(item=protocol_json, queue_name=task_options.queue))
-
-        print(protocol)
-        print()
-        print(json.dumps(protocol, indent=2))
-
-
-if __name__ == "__main__":
-    main()

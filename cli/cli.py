@@ -84,7 +84,15 @@ if __name__ == "__main__":
         log_id="myLogID",
         hook_metadata='{"email": "example@example.com"}',
     )
-    task = xyzabc.task.Task(queue=MY_QUEUE)
+
+    class MyTask(xyzabc.task.Task):
+        def run(self, *args, **kwargs):
+            print("args: ", args)
+            print("kwargs: ", kwargs)
+            print("executing MyTask")
+
+    # task = xyzabc.task.Task(queue=MY_QUEUE)
+    task = MyTask(queue=MY_QUEUE)
     task.blocking_delay(33, "hello", name="komu", task_options=opt)
     import pdb
 

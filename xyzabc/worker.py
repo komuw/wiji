@@ -219,4 +219,3 @@ class Worker:
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop
                 return item_to_dequeue
-

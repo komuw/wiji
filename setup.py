@@ -97,6 +97,7 @@ setup(
             "redis==2.10.6",
             "pika==0.12.0",
             "boto3==1.9.87",
+            "celery==4.2.1",
         ],
         "test": ["flake8", "mock", "pylint", "black", "bandit", "mypy"],
     },

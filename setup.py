@@ -96,6 +96,7 @@ setup(
             "sphinx-autodoc-typehints==1.6.0",
             "redis==2.10.6",
             "pika==0.12.0",
+            "boto3==1.9.87",
         ],
         "test": ["flake8", "mock", "pylint", "black", "bandit", "mypy"],
     },

@@ -287,3 +287,7 @@ class Task:
         print(protocol)
         print()
         print(json.dumps(protocol, indent=2))
+
+
+if __name__ == "__main__":
+    main()

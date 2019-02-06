@@ -91,6 +91,8 @@ if __name__ == "__main__":
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as resp:
                     print("resp statsus: ", resp.status)
+                    res_text = await resp.text()
+                    print(res_text[:100])
 
     task = MyTask(queue=MY_QUEUE)
     task.blocking_delay(url="http://httpbin.org/get", task_options=opt)

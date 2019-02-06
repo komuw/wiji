@@ -43,11 +43,15 @@ class Task:
     def __init__(self, queue: q.BaseQueue):
         self.queue = queue
 
-    def __call__(self, *args, **kwargs):
-        self.run(*args, **kwargs)
+    async def __call__(self, *args, **kwargs):
+        await self.async_run(*args, **kwargs)
 
-    def run(self, *args, **kwargs):
+    async def async_run(self, *args, **kwargs):
         raise NotImplementedError("run method must be implemented.")
+
+    def blocking_run(self, *args, **kwargs):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.async_run(*args, **kwargs))
 
     async def async_delay(self, *args, **kwargs):
         """

@@ -98,6 +98,7 @@ setup(
             "pika==0.12.0",
             "boto3==1.9.87",
             "celery==4.2.1",
+            "aiohttp==3.5.4",
         ],
         "test": ["flake8", "mock", "pylint", "black", "bandit", "mypy"],
     },

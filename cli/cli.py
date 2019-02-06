@@ -84,27 +84,25 @@ if __name__ == "__main__":
     )
 
     class MyTask(xyzabc.task.Task):
-        def run(self, *args, **kwargs):
-            print("args: ", args)
-            print("kwargs: ", kwargs)
-            print("executing MyTask")
+        async def async_run(self, *args, **kwargs):
+            import aiohttp
+
+            url = kwargs["url"]
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    print("resp statsus: ", resp.status)
 
     task = MyTask(queue=MY_QUEUE)
-    task.blocking_delay(33, "hello", name="komu", task_options=opt)
+    task.blocking_delay(url="http://httpbin.org/get", task_options=opt)
 
     # 2.consume task
     loop = asyncio.get_event_loop()
     worker = xyzabc.Worker(async_loop=loop, queue=MY_QUEUE, queue_name=queue_name, task=task)
 
     async def produce_tasks_slowly(task):
-        import random
-        import string
-
         while True:
-            x = random.randint(3, 40)
-            y = "".join(random.choices(string.ascii_uppercase + string.digits, k=11))
-            print("\n producing task. x:{0} y:{1}".format(x, y))
-            await task.async_delay(x, name=y, task_options=opt)
+            url = "http://httpbin.org/get"
+            await task.async_delay(url=url, task_options=opt)
             await asyncio.sleep(7)
 
     tasks = asyncio.gather(worker.consume_forever(), produce_tasks_slowly(task))

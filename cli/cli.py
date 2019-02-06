@@ -4,9 +4,11 @@ import json
 import random
 import string
 import asyncio
+import typing
 import logging
 import inspect
 import argparse
+
 
 import xyzabc
 
@@ -62,26 +64,16 @@ def main():
     pass
 
 
-if __name__ == "__main__":
-    main()
-    """
-    run as:
-        python cli/cli.py
-    """
+async def produce_tasks_continously(task, task_options, *args, **kwargs):
+    import random
 
-    MY_BROKER = xyzabc.broker.SimpleBroker()
-    queue_name = "myQueue"
+    while True:
+        await task.async_delay(task_options=task_options, *args, **kwargs)
+        await asyncio.sleep(random.randint(7, 14))
 
-    # 1. publish task
-    opt = xyzabc.task.TaskOptions(
-        eta=60,
-        retries=3,
-        queue_name=queue_name,
-        file_name=__file__,
-        class_path=os.path.realpath(__file__),
-        log_id="myLogID",
-        hook_metadata='{"email": "example@example.com"}',
-    )
+
+def http_task(broker) -> typing.Tuple[str, xyzabc.task.Task]:
+    queue_name = "HttpQueue"
 
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
@@ -92,20 +84,81 @@ if __name__ == "__main__":
                 async with session.get(url) as resp:
                     print("resp statsus: ", resp.status)
                     res_text = await resp.text()
-                    print(res_text[:100])
+                    print(res_text[:50])
 
-    task = MyTask(broker=MY_BROKER)
-    task.blocking_delay(url="http://httpbin.org/get", task_options=opt)
+    task = MyTask(broker=broker)
+    return queue_name, task
+
+
+def print_task(broker) -> typing.Tuple[str, xyzabc.task.Task]:
+    queue_name = "PrintQueue"
+
+    class MyTask(xyzabc.task.Task):
+        async def async_run(self, *args, **kwargs):
+            print()
+            print("args:", args)
+            print("kwargs:", kwargs)
+            print()
+
+    task = MyTask(broker=broker)
+    return queue_name, task
+
+
+if __name__ == "__main__":
+    main()
+    """
+    run as:
+        python cli/cli.py
+    """
+    MY_BROKER = xyzabc.broker.SimpleBroker()
+    # 1. publish task
+    queue_name_and_task: typing.Dict[str, xyzabc.task.Task] = {}
+
+    ##### publish 1 ###############
+    http_task_queue_name, http_task_task = http_task(broker=MY_BROKER)
+    queue_name_and_task.update({http_task_queue_name: http_task_task})
+
+    http_task_opt = xyzabc.task.TaskOptions(
+        eta=60,
+        retries=3,
+        queue_name=http_task_queue_name,
+        file_name=__file__,
+        class_path=os.path.realpath(__file__),
+        log_id="myLogID",
+        hook_metadata='{"email": "example@example.com"}',
+    )
+    http_task_task.blocking_delay(url="http://httpbin.org/get", task_options=http_task_opt)
+    #############################################
+
+    #### publish 2 #######################
+    print_task_queue_name, print_task_task = print_task(broker=MY_BROKER)
+    queue_name_and_task.update({print_task_queue_name: print_task_task})
+    # 1. publish task
+    print_task_opt = xyzabc.task.TaskOptions(
+        eta=60,
+        retries=3,
+        queue_name=print_task_queue_name,
+        file_name=__file__,
+        class_path=os.path.realpath(__file__),
+        log_id="myLogID",
+        hook_metadata='{"email": "example@example.com"}',
+    )
+    print_task_task.blocking_delay("myarg", my_kwarg="my_kwarg", task_options=print_task_opt)
+    #####################################
 
     # 2.consume task
     loop = asyncio.get_event_loop()
-    worker = xyzabc.Worker(async_loop=loop, broker=MY_BROKER, queue_name=queue_name, task=task)
-
-    async def produce_tasks_slowly(task):
-        while True:
-            url = "http://httpbin.org/get"
-            await task.async_delay(url=url, task_options=opt)
-            await asyncio.sleep(7)
-
-    tasks = asyncio.gather(worker.consume_forever(), produce_tasks_slowly(task))
+    worker = xyzabc.Worker(
+        async_loop=loop, broker=MY_BROKER, queue_name_and_task=queue_name_and_task
+    )
+    tasks = asyncio.gather(
+        worker.cooler(),
+        produce_tasks_continously(
+            task=http_task_task, task_options=http_task_opt, url="http://httpbin.org/get"
+        ),
+        produce_tasks_continously(
+            task=print_task_task, task_options=print_task_opt, my_kwarg="my_kwarg2"
+        ),
+    )
     loop.run_until_complete(tasks)
+

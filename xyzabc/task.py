@@ -4,7 +4,7 @@ import json
 import asyncio
 import datetime
 
-from . import q
+from . import broker
 
 
 class TaskOptions:
@@ -40,8 +40,8 @@ class Task:
         task.delay(33, "hello", name="komu", task_options=opt)
     """
 
-    def __init__(self, queue: q.BaseQueue):
-        self.queue = queue
+    def __init__(self, broker: broker.BaseBroker):
+        self.broker = broker
 
     async def __call__(self, *args, **kwargs):
         await self.async_run(*args, **kwargs)
@@ -91,7 +91,7 @@ class Task:
         }
 
         protocol_json = json.dumps(protocol)
-        await self.queue.enqueue(item=protocol_json, queue_name=task_options.queue_name)
+        await self.broker.enqueue(item=protocol_json, queue_name=task_options.queue_name)
 
     def blocking_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()

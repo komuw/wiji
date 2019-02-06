@@ -8,7 +8,7 @@ import logging
 import asyncio
 import datetime
 
-from . import q
+from . import broker
 from . import task
 from . import hooks
 from . import logger
@@ -22,7 +22,7 @@ class Worker:
     def __init__(
         self,
         async_loop: asyncio.events.AbstractEventLoop,
-        queue: q.BaseQueue,
+        broker: broker.BaseBroker,
         queue_name: str,
         task,
         rateLimiter=None,
@@ -49,7 +49,7 @@ class Worker:
 
         self.async_loop = async_loop
         self.loglevel = loglevel.upper()
-        self.queue = queue
+        self.broker = broker
         self.queue_name = queue_name
         self.task = task
 
@@ -142,7 +142,7 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.queue.dequeue(queue_name=self.queue_name)
+                item_to_dequeue = await self.broker.dequeue(queue_name=self.queue_name)
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 retry_count += 1

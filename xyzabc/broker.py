@@ -3,11 +3,11 @@ import asyncio
 import typing
 
 
-class BaseQueue(abc.ABC):
+class BaseBroker(abc.ABC):
     """
-    This is the interface that must be implemented to satisfy xyzabc's outbound queue.
+    This is the interface that must be implemented to satisfy xyzabc's broker.
     User implementations should inherit this class and
-    implement the :func:`enqueue <BaseQueue.enqueue>` and :func:`dequeue <BaseQueue.dequeue>` methods with the type signatures shown.
+    implement the :func:`enqueue <BaseBroker.enqueue>` and :func:`dequeue <BaseBroker.dequeue>` methods with the type signatures shown.
 
     xyzabc calls an implementation of this class to enqueue and/or dequeue an item.
     """
@@ -34,7 +34,7 @@ class BaseQueue(abc.ABC):
         raise NotImplementedError("dequeue method must be implemented.")
 
 
-class SimpleQueue(BaseQueue):
+class SimpleBroker(BaseBroker):
     """
     {
         "queue1": ["item1", "item2", "item3"],

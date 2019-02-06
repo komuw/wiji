@@ -69,7 +69,7 @@ if __name__ == "__main__":
         python cli/cli.py
     """
 
-    MY_QUEUE = xyzabc.q.SimpleQueue()
+    MY_BROKER = xyzabc.broker.SimpleBroker()
     queue_name = "myQueue"
 
     # 1. publish task
@@ -94,12 +94,12 @@ if __name__ == "__main__":
                     res_text = await resp.text()
                     print(res_text[:100])
 
-    task = MyTask(queue=MY_QUEUE)
+    task = MyTask(broker=MY_BROKER)
     task.blocking_delay(url="http://httpbin.org/get", task_options=opt)
 
     # 2.consume task
     loop = asyncio.get_event_loop()
-    worker = xyzabc.Worker(async_loop=loop, queue=MY_QUEUE, queue_name=queue_name, task=task)
+    worker = xyzabc.Worker(async_loop=loop, broker=MY_BROKER, queue_name=queue_name, task=task)
 
     async def produce_tasks_slowly(task):
         while True:

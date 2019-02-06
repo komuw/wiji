@@ -56,7 +56,7 @@ class SimpleQueue(BaseQueue):
 
     async def dequeue(self, queue_name: str) -> str:
         while True:
-            if self.store.get(queue_name):
+            if queue_name in self.store:
                 try:
                     return await asyncio.sleep(delay=-1, result=self.store[queue_name].pop(0))
                 except IndexError:

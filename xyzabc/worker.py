@@ -24,6 +24,7 @@ class Worker:
         async_loop: asyncio.events.AbstractEventLoop,
         queue: q.BaseQueue,
         queue_name: str,
+        task,
         rateLimiter=None,
         hook=None,
         Worker_id=None,
@@ -50,6 +51,7 @@ class Worker:
         self.loglevel = loglevel.upper()
         self.queue = queue
         self.queue_name = queue_name
+        self.task = task
 
         self.Worker_id = Worker_id
         if not self.Worker_id:
@@ -107,13 +109,9 @@ class Worker:
         else:
             return 60 * (1 * (2 ** current_retries))
 
-    # async def run(self, pickled_obj):
-    #     # this is where people put their code.
-    #     import pickle
-
-    #     unpickled_obj = pickle.loads(pickled_obj)
-    #     unpickled_obj()
-    #     pass
+    async def run(self, *task_args, **task_kwargs):
+        # run the actual queued task
+        self.task(*task_args, **task_kwargs)
 
     async def consume_forever(
         self, TESTING: bool = False
@@ -167,23 +165,18 @@ class Worker:
             # dequeue succeded
             retry_count = 0
             try:
-                version = item_to_dequeue["version"]
+                task_version = item_to_dequeue["version"]
                 task_id = item_to_dequeue["task_id"]
-                eta = item_to_dequeue["eta"]
-                retries = item_to_dequeue["retries"]
-                queue_name = item_to_dequeue["queue_name"]
-                file_name = item_to_dequeue["file_name"]
-                class_path = item_to_dequeue["class_path"]
-                log_id = item_to_dequeue["log_id"]
-                hook_metadata = item_to_dequeue["hook_metadata"]
-                timelimit = item_to_dequeue["timelimit"]
-                args = item_to_dequeue["args"]
-                kwargs = item_to_dequeue["kwargs"]
-                import pdb
-
-                pdb.set_trace()
-                # load_class(class_path)
-                # load_class(file_name)
+                task_eta = item_to_dequeue["eta"]
+                task_retries = item_to_dequeue["retries"]
+                task_queue_name = item_to_dequeue["queue_name"]
+                task_file_name = item_to_dequeue["file_name"]
+                task_class_path = item_to_dequeue["class_path"]
+                task_log_id = item_to_dequeue["log_id"]
+                task_hook_metadata = item_to_dequeue["hook_metadata"]
+                task_timelimit = item_to_dequeue["timelimit"]
+                task_args = item_to_dequeue["args"]
+                task_kwargs = item_to_dequeue["kwargs"]
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field:{}".format(str(e)))
                 self._log(
@@ -197,23 +190,14 @@ class Worker:
                 )
                 continue
 
-            ###################### example ##########
-            import pickle
-
-            def hello_func():
-                print("\n hello_func called \n")
-
-            pickled_obj = pickle.dumps(hello_func, pickle.HIGHEST_PROTOCOL)
-            #########################################
-
-            await self.run(pickled_obj)
+            await self.run(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,
                 {
                     "event": "xyzabc.Worker.consume_forever",
                     "stage": "end",
-                    "log_id": log_id,
-                    "smpp_command": smpp_command,
+                    "log_id": task_log_id,
+                    "task_id": task_id,
                 },
             )
             if TESTING:

@@ -47,11 +47,9 @@ class Task:
         self.run(*args, **kwargs)
 
     def run(self, *args, **kwargs):
-        print(args)
-        print(kwargs)
-        print("ssdsd")
+        raise NotImplementedError("run method must be implemented.")
 
-    async def delay(self, *args, **kwargs):
+    async def async_delay(self, *args, **kwargs):
         """
         Parameters:
             args: The positional arguments to pass on to the task.
@@ -90,10 +88,7 @@ class Task:
 
         protocol_json = json.dumps(protocol)
         await self.queue.enqueue(item=protocol_json, queue_name=task_options.queue_name)
-        print(protocol)
-        print()
-        print(json.dumps(protocol, indent=2))
 
     def blocking_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.delay(*args, **kwargs))
+        loop.run_until_complete(self.async_delay(*args, **kwargs))

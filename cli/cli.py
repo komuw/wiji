@@ -65,11 +65,8 @@ def main():
 
 
 async def produce_tasks_continously(task, *args, **kwargs):
-    # import random
-
     while True:
         await task.async_delay(*args, **kwargs)
-        # await asyncio.sleep(random.randint(1, 2))
 
 
 def http_task(broker) -> xyzabc.task.Task:
@@ -107,6 +104,7 @@ def print_task(broker) -> xyzabc.task.Task:
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
+            await asyncio.sleep(2)
 
     task = MyTask(
         broker=broker,
@@ -146,7 +144,13 @@ if __name__ == "__main__":
         worker2 = xyzabc.Worker(task=task2)
         gather_tasks = asyncio.gather(
             worker1.consume_forever(),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/3"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+            produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
             produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
             worker2.consume_forever(),
         )

@@ -55,7 +55,9 @@ class Worker:
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
-        self.log_metadata.update({"Worker_id": self.Worker_id})
+        self.log_metadata.update(
+            {"Worker_id": self.Worker_id, "queue_name": self.task.task_options.queue_name}
+        )
 
         self.logger = log_handler
         if not self.logger:

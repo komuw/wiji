@@ -98,10 +98,15 @@ def http_task(broker) -> xyzabc.task.Task:
 def print_task(broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
+            import hashlib
+
             print()
             print("args:", args)
             print("kwargs:", kwargs)
             print()
+            h = hashlib.blake2b()
+            h.update(b"Hello world")
+            h.hexdigest()
 
     task = MyTask(
         broker=broker,
@@ -145,7 +150,7 @@ if __name__ == "__main__":
 
     tasks = asyncio.gather(
         worker1.consume_forever(),
-        produce_tasks_continously(task=task1, url="http://httpbin.org/get"),
+        produce_tasks_continously(task=task1, url="http://httpbin.org/delay/30"),
         produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
         worker2.consume_forever(),
     )

@@ -84,17 +84,14 @@ def http_task(broker) -> xyzabc.task.Task:
                     res_text = await resp.text()
                     print(res_text[:50])
 
-    opt = xyzabc.task.TaskOptions(
+    task = MyTask(
         broker=broker,
         queue_name="HttpQueue",
         eta=60,
         retries=3,
-        file_name=__file__,
-        class_path=os.path.realpath(__file__),
         log_id="myLogID",
         hook_metadata='{"email": "example@example.com"}',
     )
-    task = MyTask(task_options=opt)
     return task
 
 
@@ -106,17 +103,14 @@ def print_task(broker) -> xyzabc.task.Task:
             print("kwargs:", kwargs)
             print()
 
-    opt = xyzabc.task.TaskOptions(
+    task = MyTask(
         broker=broker,
         queue_name="PrintQueue",
         eta=60,
         retries=3,
-        file_name=__file__,
-        class_path=os.path.realpath(__file__),
         log_id="myLogID",
         hook_metadata='{"email": "example@example.com"}',
     )
-    task = MyTask(task_options=opt)
     return task
 
 

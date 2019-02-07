@@ -55,9 +55,7 @@ class Worker:
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
-        self.log_metadata.update(
-            {"Worker_id": self.Worker_id, "queue_name": self.task.task_options.queue_name}
-        )
+        self.log_metadata.update({"Worker_id": self.Worker_id, "queue_name": self.task.queue_name})
 
         self.logger = log_handler
         if not self.logger:
@@ -139,9 +137,7 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.task.task_options.broker.dequeue(
-                    queue_name=self.task.task_options.queue_name
-                )
+                item_to_dequeue = await self.task.broker.dequeue(queue_name=self.task.queue_name)
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 retry_count += 1
@@ -169,8 +165,6 @@ class Worker:
                 task_eta = item_to_dequeue["eta"]
                 task_retries = item_to_dequeue["retries"]
                 task_queue_name = item_to_dequeue["queue_name"]
-                task_file_name = item_to_dequeue["file_name"]
-                task_class_path = item_to_dequeue["class_path"]
                 task_log_id = item_to_dequeue["log_id"]
                 task_hook_metadata = item_to_dequeue["hook_metadata"]
                 task_timelimit = item_to_dequeue["timelimit"]

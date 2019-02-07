@@ -9,8 +9,6 @@ protocol = {
     "eta": eta.isoformat(),
     "retries": 0,
     "queue_name": "my_queue",
-    "file_name": "cool.Task",
-    "class_path": "Users.komuw.mystuff.xyzabc.cool.Task",
     "log_id": "log_id",
     "hook_metadata": "hook_metadata",
     "timelimit": 1800,

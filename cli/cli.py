@@ -69,7 +69,7 @@ async def produce_tasks_continously(task, *args, **kwargs):
 
     while True:
         await task.async_delay(*args, **kwargs)
-        await asyncio.sleep(random.randint(7, 14))
+        # await asyncio.sleep(random.randint(1, 2))
 
 
 def http_task(broker) -> xyzabc.task.Task:
@@ -127,7 +127,6 @@ if __name__ == "__main__":
     """
 
     MY_BROKER = xyzabc.broker.SimpleBroker()
-    TASKS: typing.List[xyzabc.task.Task] = []
 
     # 1. publish task
 
@@ -143,10 +142,8 @@ if __name__ == "__main__":
 
     # 2.consume task
     loop = asyncio.get_event_loop()
-    TASKS.append(task1)
-    TASKS.append(task2)
-    worker1 = xyzabc.Worker(async_loop=loop, task=task1)
-    worker2 = xyzabc.Worker(async_loop=loop, task=task2)
+    worker1 = xyzabc.Worker(task=task1)
+    worker2 = xyzabc.Worker(task=task2)
 
     tasks = asyncio.gather(
         worker1.consume_forever(),

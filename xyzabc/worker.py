@@ -20,7 +20,6 @@ class Worker:
 
     def __init__(
         self,
-        async_loop: asyncio.events.AbstractEventLoop,
         task: task.Task,
         rateLimiter=None,
         hook=None,
@@ -44,7 +43,6 @@ class Worker:
                 )
             )
 
-        self.async_loop = async_loop
         self.loglevel = loglevel.upper()
         self.task = task
 

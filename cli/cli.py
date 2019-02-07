@@ -69,7 +69,7 @@ async def produce_tasks_continously(task, *args, **kwargs):
 
     while True:
         await task.async_delay(*args, **kwargs)
-        await asyncio.sleep(random.randint(1, 2))
+        # await asyncio.sleep(random.randint(1, 2))
 
 
 def http_task(broker) -> xyzabc.task.Task:
@@ -144,7 +144,6 @@ if __name__ == "__main__":
     async def async_main():
         worker1 = xyzabc.Worker(task=task1)
         worker2 = xyzabc.Worker(task=task2)
-
         gather_tasks = asyncio.gather(
             worker1.consume_forever(),
             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/30"),

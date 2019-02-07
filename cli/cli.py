@@ -156,4 +156,7 @@ if __name__ == "__main__":
         )
         await gather_tasks
 
-    asyncio.run(async_main())
+    debug = False
+    if os.environ.get("PYTHONASYNCIODEBUG", None):
+        debug = True
+    asyncio.run(async_main(), debug=debug)

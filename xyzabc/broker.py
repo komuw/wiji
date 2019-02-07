@@ -51,8 +51,10 @@ class SimpleBroker(BaseBroker):
     async def enqueue(self, item: str, queue_name: str) -> None:
         if self.store.get(queue_name):
             self.store[queue_name].append(item)
+            await asyncio.sleep(delay=-1)
         else:
             self.store[queue_name] = [item]
+            await asyncio.sleep(delay=-1)
 
     async def dequeue(self, queue_name: str) -> str:
         while True:

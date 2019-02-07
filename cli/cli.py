@@ -65,7 +65,7 @@ def main():
 
 
 async def produce_tasks_continously(task, *args, **kwargs):
-    import random
+    # import random
 
     while True:
         await task.async_delay(*args, **kwargs)
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         worker2 = xyzabc.Worker(task=task2)
         gather_tasks = asyncio.gather(
             worker1.consume_forever(),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/30"),
+            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/3"),
             produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
             worker2.consume_forever(),
         )

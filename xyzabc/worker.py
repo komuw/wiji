@@ -104,7 +104,7 @@ class Worker:
 
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
-        await self.task(*task_args, **task_kwargs)
+        await self.task.async_run(*task_args, **task_kwargs)
 
     async def consume_forever(
         self, TESTING: bool = False

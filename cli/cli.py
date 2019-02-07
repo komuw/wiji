@@ -64,17 +64,15 @@ def main():
     pass
 
 
-async def produce_tasks_continously(task, task_options, *args, **kwargs):
+async def produce_tasks_continously(task, *args, **kwargs):
     import random
 
     while True:
-        await task.async_delay(task_options=task_options, *args, **kwargs)
+        await task.async_delay(*args, **kwargs)
         await asyncio.sleep(random.randint(7, 14))
 
 
-def http_task(broker) -> typing.Tuple[str, xyzabc.task.Task]:
-    queue_name = "HttpQueue"
-
+def http_task(broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
             import aiohttp
@@ -86,13 +84,21 @@ def http_task(broker) -> typing.Tuple[str, xyzabc.task.Task]:
                     res_text = await resp.text()
                     print(res_text[:50])
 
-    task = MyTask(broker=broker)
-    return queue_name, task
+    opt = xyzabc.task.TaskOptions(
+        broker=broker,
+        queue_name="HttpQueue",
+        eta=60,
+        retries=3,
+        file_name=__file__,
+        class_path=os.path.realpath(__file__),
+        log_id="myLogID",
+        hook_metadata='{"email": "example@example.com"}',
+    )
+    task = MyTask(task_options=opt)
+    return task
 
 
-def print_task(broker) -> typing.Tuple[str, xyzabc.task.Task]:
-    queue_name = "PrintQueue"
-
+def print_task(broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
             print()
@@ -100,8 +106,18 @@ def print_task(broker) -> typing.Tuple[str, xyzabc.task.Task]:
             print("kwargs:", kwargs)
             print()
 
-    task = MyTask(broker=broker)
-    return queue_name, task
+    opt = xyzabc.task.TaskOptions(
+        broker=broker,
+        queue_name="PrintQueue",
+        eta=60,
+        retries=3,
+        file_name=__file__,
+        class_path=os.path.realpath(__file__),
+        log_id="myLogID",
+        hook_metadata='{"email": "example@example.com"}',
+    )
+    task = MyTask(task_options=opt)
+    return task
 
 
 if __name__ == "__main__":
@@ -110,55 +126,33 @@ if __name__ == "__main__":
     run as:
         python cli/cli.py
     """
+
     MY_BROKER = xyzabc.broker.SimpleBroker()
+    TASKS: typing.List[xyzabc.task.Task] = []
+
     # 1. publish task
-    queue_name_and_task: typing.Dict[str, xyzabc.task.Task] = {}
 
     ##### publish 1 ###############
-    http_task_queue_name, http_task_task = http_task(broker=MY_BROKER)
-    queue_name_and_task.update({http_task_queue_name: http_task_task})
-
-    http_task_opt = xyzabc.task.TaskOptions(
-        eta=60,
-        retries=3,
-        queue_name=http_task_queue_name,
-        file_name=__file__,
-        class_path=os.path.realpath(__file__),
-        log_id="myLogID",
-        hook_metadata='{"email": "example@example.com"}',
-    )
-    http_task_task.blocking_delay(url="http://httpbin.org/get", task_options=http_task_opt)
+    task1 = http_task(broker=MY_BROKER)
+    task1.blocking_delay(url="http://httpbin.org/get")
     #############################################
 
     #### publish 2 #######################
-    print_task_queue_name, print_task_task = print_task(broker=MY_BROKER)
-    queue_name_and_task.update({print_task_queue_name: print_task_task})
-    # 1. publish task
-    print_task_opt = xyzabc.task.TaskOptions(
-        eta=60,
-        retries=3,
-        queue_name=print_task_queue_name,
-        file_name=__file__,
-        class_path=os.path.realpath(__file__),
-        log_id="myLogID",
-        hook_metadata='{"email": "example@example.com"}',
-    )
-    print_task_task.blocking_delay("myarg", my_kwarg="my_kwarg", task_options=print_task_opt)
+    task2 = print_task(broker=MY_BROKER)
+    task2.blocking_delay("myarg", my_kwarg="my_kwarg")
     #####################################
 
     # 2.consume task
     loop = asyncio.get_event_loop()
-    worker = xyzabc.Worker(
-        async_loop=loop, broker=MY_BROKER, queue_name_and_task=queue_name_and_task
-    )
+    TASKS.append(task1)
+    TASKS.append(task2)
+    worker1 = xyzabc.Worker(async_loop=loop, task=task1)
+    worker2 = xyzabc.Worker(async_loop=loop, task=task2)
+
     tasks = asyncio.gather(
-        worker.cooler(),
-        produce_tasks_continously(
-            task=http_task_task, task_options=http_task_opt, url="http://httpbin.org/get"
-        ),
-        produce_tasks_continously(
-            task=print_task_task, task_options=print_task_opt, my_kwarg="my_kwarg2"
-        ),
+        worker1.consume_forever(),
+        produce_tasks_continously(task=task1, url="http://httpbin.org/get"),
+        produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
+        worker2.consume_forever(),
     )
     loop.run_until_complete(tasks)
-

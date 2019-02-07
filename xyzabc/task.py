@@ -8,16 +8,27 @@ from . import broker
 
 
 class TaskOptions:
-    def __init__(self, eta, retries, queue_name, file_name, class_path, log_id, hook_metadata):
+    def __init__(
+        self,
+        broker: broker.BaseBroker,
+        queue_name,
+        eta,
+        retries,
+        file_name,
+        class_path,
+        log_id,
+        hook_metadata,
+    ):
         """
         Parameters:
             eta: Number of seconds into the future that the task should execute.  Defaults to immediate execution.
             retries:
             queue_name: The queue to route the task to.
         """
+        self.broker = broker
+        self.queue_name = queue_name
         self.eta = eta
         self.retries = retries
-        self.queue_name = queue_name
         self.file_name = file_name
         self.class_path = class_path
         self.log_id = log_id
@@ -36,12 +47,12 @@ class Task:
                           file_name=__file__,
                           class_path=os.path.realpath(__file__)
                         )
-        task = Task()
-        task.delay(33, "hello", name="komu", task_options=opt)
+        task = Task(task_options==opt)
+        task.delay(33, "hello", name="komu")
     """
 
-    def __init__(self, broker: broker.BaseBroker):
-        self.broker = broker
+    def __init__(self, task_options: TaskOptions) -> None:
+        self.task_options = task_options
 
     async def __call__(self, *args, **kwargs):
         await self.async_run(*args, **kwargs)
@@ -63,35 +74,36 @@ class Task:
 
         class_name: str = self.__class__.__name__
 
-        task_options = kwargs.pop("task_options", None)
-        task_options.class_path = task_options.class_path.replace(".py", "")
-        task_options.class_path = (
-            os.path.join(task_options.class_path, class_name).replace("/", ".").lstrip(".")
+        self.task_options.class_path = self.task_options.class_path.replace(".py", "")
+        self.task_options.class_path = (
+            os.path.join(self.task_options.class_path, class_name).replace("/", ".").lstrip(".")
         )
 
-        task_options.file_name = task_options.file_name.replace(".py", "")
-        task_options.file_name = (
-            os.path.join(task_options.file_name, class_name).replace("/", ".").lstrip(".")
+        self.task_options.file_name = self.task_options.file_name.replace(".py", "")
+        self.task_options.file_name = (
+            os.path.join(self.task_options.file_name, class_name).replace("/", ".").lstrip(".")
         )
 
-        eta = datetime.datetime.utcnow() + datetime.timedelta(seconds=task_options.eta)
+        eta = datetime.datetime.utcnow() + datetime.timedelta(seconds=self.task_options.eta)
         protocol = {
             "version": 1,
             "task_id": str(uuid.uuid4()),
             "eta": eta.isoformat(),
-            "retries": task_options.retries,
-            "queue_name": task_options.queue_name,
-            "file_name": task_options.file_name,
-            "class_path": task_options.class_path,
-            "log_id": task_options.log_id,
-            "hook_metadata": task_options.hook_metadata,
+            "retries": self.task_options.retries,
+            "queue_name": self.task_options.queue_name,
+            "file_name": self.task_options.file_name,
+            "class_path": self.task_options.class_path,
+            "log_id": self.task_options.log_id,
+            "hook_metadata": self.task_options.hook_metadata,
             "timelimit": 1800,
             "args": args,
             "kwargs": kwargs,
         }
 
         protocol_json = json.dumps(protocol)
-        await self.broker.enqueue(item=protocol_json, queue_name=task_options.queue_name)
+        await self.task_options.broker.enqueue(
+            item=protocol_json, queue_name=self.task_options.queue_name
+        )
 
     def blocking_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()

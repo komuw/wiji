@@ -8,7 +8,6 @@ import logging
 import asyncio
 import datetime
 
-from . import broker
 from . import task
 from . import hooks
 from . import logger
@@ -22,8 +21,7 @@ class Worker:
     def __init__(
         self,
         async_loop: asyncio.events.AbstractEventLoop,
-        broker: broker.BaseBroker,
-        queue_name_and_task: typing.Dict[str, task.Task],
+        task: task.Task,
         rateLimiter=None,
         hook=None,
         Worker_id=None,
@@ -48,8 +46,7 @@ class Worker:
 
         self.async_loop = async_loop
         self.loglevel = loglevel.upper()
-        self.broker = broker
-        self.queue_name_and_task = queue_name_and_task
+        self.task = task
 
         self.Worker_id = Worker_id
         if not self.Worker_id:
@@ -109,17 +106,10 @@ class Worker:
 
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
-        xyzabc_task_Unique_name = task_kwargs.pop("xyzabc_task_Unique_name")
-        await xyzabc_task_Unique_name(*task_args, **task_kwargs)
-
-    async def cooler(self):
-        import pdb;pdb.set_trace()
-        for queue_name in self.queue_name_and_task:
-            print("queue_name::", queue_name)
-            await self.consume_forever(queue_name)
+        await self.task(*task_args, **task_kwargs)
 
     async def consume_forever(
-        self, queue_name: str, TESTING: bool = False
+        self, TESTING: bool = False
     ) -> typing.Union[str, typing.Dict[typing.Any, typing.Any]]:
         """
         In loop; dequeues items from the :attr:`queue <Worker.queue>` and calls :func:`run <Worker.run>`.
@@ -147,7 +137,9 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.broker.dequeue(queue_name=queue_name)
+                item_to_dequeue = await self.task.task_options.broker.dequeue(
+                    queue_name=self.task.task_options.queue_name
+                )
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 retry_count += 1
@@ -195,8 +187,6 @@ class Worker:
                 )
                 continue
 
-            task = self.queue_name_and_task[queue_name]
-            task_kwargs.update({"xyzabc_task_Unique_name": task})
             await self.run(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,

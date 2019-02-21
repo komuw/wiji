@@ -34,6 +34,12 @@ class Task:
         self.retries = retries
         self.log_id = log_id
         self.hook_metadata = hook_metadata
+        if not isinstance(chain, (type(None), Task)):
+            raise ValueError(
+                """chain should be of type:: None or xyzabc.task.Task You entered {0}""".format(
+                    type(chain)
+                )
+            )
         self.chain = chain
 
     async def __call__(self, *args, **kwargs):

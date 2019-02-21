@@ -23,6 +23,11 @@ class Task:
                 hook_metadata='{"email": "example@example.com"}',
             )
         task.delay(33, "hello", name="komu")
+    
+    You can also chain things as:
+        task1 = xyzabc.task.Task()
+        task2 = xyzabc.task.Task(chain=task1)
+        task3 = xyzabc.task.Task(chain=task2)
     """
 
     def __init__(
@@ -41,6 +46,21 @@ class Task:
                 )
             )
         self.chain = chain
+
+    def __or__(self, other):
+        """
+        Operator Overloading is bad.
+        It should die a swift death.
+
+        This allows someone to do:
+            task1 = xyzabc.task.Task()
+            task2 = xyzabc.task.Task()
+            task3 = xyzabc.task.Task()
+
+            task1 | task2 | task3
+        """
+        self.chain = other
+        return other
 
     async def __call__(self, *args, **kwargs):
         await self.async_run(*args, **kwargs)

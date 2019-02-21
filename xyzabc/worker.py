@@ -118,7 +118,7 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
-        retry_count = -1
+        retry_count = 0
         while True:
             self._log(logging.INFO, {"event": "xyzabc.Worker.consume_forever", "stage": "start"})
 
@@ -141,8 +141,8 @@ class Worker:
                 item_to_dequeue = await self.task.broker.dequeue(queue_name=self.task.queue_name)
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
-                retry_count += 1
                 poll_queue_interval = self._retry_after(retry_count)
+                retry_count += 1
                 self._log(
                     logging.ERROR,
                     {

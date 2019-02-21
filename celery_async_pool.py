@@ -73,4 +73,3 @@ class MyTaskPool(concurrency.base.BasePool):
 
 
 Ala = MyTaskPool()
-

@@ -104,7 +104,10 @@ class Worker:
 
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
-        await self.task.async_run(*task_args, **task_kwargs)
+        return_value = await self.task.async_run(*task_args, **task_kwargs)
+        if self.task.chain:
+            # enqueue the chained task using the return_value
+            await self.task.chain.async_delay(return_value)
 
     async def consume_forever(
         self, TESTING: bool = False
@@ -115,7 +118,7 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
-        retry_count = 0
+        retry_count = -1
         while True:
             self._log(logging.INFO, {"event": "xyzabc.Worker.consume_forever", "stage": "start"})
 

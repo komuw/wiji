@@ -26,7 +26,7 @@ class Task:
     """
 
     def __init__(
-        self, broker: broker.BaseBroker, queue_name, eta, retries, log_id, hook_metadata
+        self, broker: broker.BaseBroker, queue_name, eta, retries, log_id, hook_metadata, chain=None
     ) -> None:
         self.broker = broker
         self.queue_name = queue_name
@@ -34,6 +34,7 @@ class Task:
         self.retries = retries
         self.log_id = log_id
         self.hook_metadata = hook_metadata
+        self.chain = chain
 
     async def __call__(self, *args, **kwargs):
         await self.async_run(*args, **kwargs)
@@ -52,7 +53,6 @@ class Task:
             kwargs: The keyword arguments to pass on to the task.
         """
         # Queue this to queue
-
         class_name: str = self.__class__.__name__
 
         eta = datetime.datetime.utcnow() + datetime.timedelta(seconds=self.eta)

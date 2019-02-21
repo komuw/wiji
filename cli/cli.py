@@ -117,6 +117,50 @@ def print_task(broker) -> xyzabc.task.Task:
     return task
 
 
+################## CHAIN ##################
+def adder_task(broker, chain=None) -> xyzabc.task.Task:
+    class AdderTask(xyzabc.task.Task):
+        async def async_run(self, a, b):
+            res = a + b
+            print()
+            print("adder: ", res)
+            print()
+            return res
+
+    task = AdderTask(
+        broker=broker,
+        queue_name="AdderTaskQueue",
+        eta=60,
+        retries=3,
+        log_id="adder_task_myLogID",
+        hook_metadata='{"email": "adder_task"}',
+        chain=chain,
+    )
+    return task
+
+
+def divider_task(broker) -> xyzabc.task.Task:
+    class DividerTask(xyzabc.task.Task):
+        async def async_run(self, a):
+            res = a / 3
+            print()
+            print("divider: ", res)
+            print()
+            return res
+
+    task = DividerTask(
+        broker=broker,
+        queue_name="DividerTaskQueue",
+        eta=60,
+        retries=3,
+        log_id="divider_task_myLogID",
+        hook_metadata='{"email": "divider_task"}',
+    )
+    return task
+
+
+################## CHAIN ##################
+
 if __name__ == "__main__":
     main()
     """
@@ -129,34 +173,62 @@ if __name__ == "__main__":
     # 1. publish task
 
     ##### publish 1 ###############
-    task1 = http_task(broker=MY_BROKER)
-    task1.blocking_delay(url="http://httpbin.org/get")
-    #############################################
+    divider = divider_task(broker=MY_BROKER)
 
-    #### publish 2 #######################
-    task2 = print_task(broker=MY_BROKER)
-    task2.blocking_delay("myarg", my_kwarg="my_kwarg")
-    #####################################
+    adder = adder_task(broker=MY_BROKER, chain=divider)
+    adder.blocking_delay(3, 7)
+    #############################################
 
     # 2.consume task
     async def async_main():
-        worker1 = xyzabc.Worker(task=task1)
-        worker2 = xyzabc.Worker(task=task2)
-        gather_tasks = asyncio.gather(
-            worker1.consume_forever(),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
-            produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
-            produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
-            produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
-            worker2.consume_forever(),
-        )
+        worker1 = xyzabc.Worker(task=adder)
+        worker2 = xyzabc.Worker(task=divider)
+        gather_tasks = asyncio.gather(worker1.consume_forever(), worker2.consume_forever())
         await gather_tasks
 
-    debug = False
-    if os.environ.get("PYTHONASYNCIODEBUG", None):
-        debug = True
-    asyncio.run(async_main(), debug=debug)
+    asyncio.run(async_main(), debug=True)
+
+
+# if __name__ == "__main__":
+#     main()
+#     """
+#     run as:
+#         python cli/cli.py
+#     """
+
+#     MY_BROKER = xyzabc.broker.SimpleBroker()
+
+#     # 1. publish task
+
+#     ##### publish 1 ###############
+#     task1 = http_task(broker=MY_BROKER)
+#     task1.blocking_delay(url="http://httpbin.org/get")
+#     #############################################
+
+#     #### publish 2 #######################
+#     task2 = print_task(broker=MY_BROKER)
+#     task2.blocking_delay("myarg", my_kwarg="my_kwarg")
+#     #####################################
+
+#     # 2.consume task
+#     async def async_main():
+#         worker1 = xyzabc.Worker(task=task1)
+#         worker2 = xyzabc.Worker(task=task2)
+#         gather_tasks = asyncio.gather(
+#             worker1.consume_forever(),
+#             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+#             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+#             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+#             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+#             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+#             produce_tasks_continously(task=task1, url="https://httpbin.org/delay/15"),
+#             produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
+#             produce_tasks_continously(task=task2, my_kwarg="my_kwarg2"),
+#             worker2.consume_forever(),
+#         )
+#         await gather_tasks
+
+#     debug = False
+#     if os.environ.get("PYTHONASYNCIODEBUG", None):
+#         debug = True
+#     asyncio.run(async_main(), debug=debug)

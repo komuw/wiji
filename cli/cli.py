@@ -104,7 +104,7 @@ def print_task(broker) -> xyzabc.task.Task:
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
-            await asyncio.sleep(2)
+            await asyncio.sleep(0.35)
 
     task = MyTask(
         broker=broker,
@@ -217,15 +217,18 @@ if __name__ == "__main__":
 
     # 2.consume task
     async def async_main():
-        adder_worker = xyzabc.Worker(tasks=[http_task1, print_task2])
+        worker = xyzabc.Worker(tasks=[http_task1, print_task2])
 
         gather_tasks = asyncio.gather(
-            adder_worker.cooler(),
+            worker.cooler(),
             # divider_worker.consume_forever(),
             # multiplier_worker.consume_forever(),
             # http_task_worker.consume_forever(),
             # print_task_worker.consume_forever(),
-            # produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
+            produce_tasks_continously(
+                task=http_task1, url="https://httpbin.org/get"
+            ),  # https://httpbin.org/delay/7
+            produce_tasks_continously(task=print_task2, myKwarg="ThisIsKWARGS"),
         )
         await gather_tasks
 

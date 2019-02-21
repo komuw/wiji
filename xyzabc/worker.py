@@ -14,27 +14,6 @@ from . import logger
 from . import ratelimiter
 
 
-class AsyncIteratorExecutor:
-    """
-    Converts a regular iterator into an asynchronous
-    iterator, by executing the iterator in a thread.
-    """
-
-    def __init__(self, iterator, loop=None, executor=None):
-        self.__iterator = iterator
-        self.__loop = loop or asyncio.get_event_loop()
-        self.__executor = executor
-
-    def __aiter__(self):
-        return self
-
-    async def __anext__(self):
-        value = await self.__loop.run_in_executor(self.__executor, next, self.__iterator, self)
-        if value is self:
-            raise StopAsyncIteration
-        return value
-
-
 class Worker:
     """
     """
@@ -77,6 +56,10 @@ class Worker:
         self.log_metadata.update(
             {"Worker_id": self.Worker_id, "queue_name": "self.task.queue_name"}
         )
+
+        self.task_kwargs_key = "".join(random.choices(string.ascii_uppercase + string.digits, k=46))
+        if self.loglevel == "DEBUG":
+            self.log_metadata.update({"task_kwargs_key": self.task_kwargs_key})
 
         self.logger = log_handler
         if not self.logger:
@@ -125,10 +108,8 @@ class Worker:
         else:
             return 60 * (1 * (2 ** current_retries))
 
-    async def run(self, task, *task_args, **task_kwargs):
-        import pdb
-
-        pdb.set_trace()
+    async def run(self, *task_args, **task_kwargs):
+        task = task_kwargs.pop(self.task_kwargs_key)
         # run the actual queued task
         return_value = await task.async_run(*task_args, **task_kwargs)
         if task.chain:
@@ -216,10 +197,10 @@ class Worker:
                     },
                 )
                 continue
-            # import pdb
 
-            # pdb.set_trace()
-            await self.run(*task_args, **task_kwargs, task=task)
+            # todo: autogenerate this key when we client a new Worker class
+            task_kwargs.update({self.task_kwargs_key: task})
+            await self.run(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,
                 {

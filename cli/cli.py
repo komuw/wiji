@@ -194,20 +194,20 @@ if __name__ == "__main__":
 
     # 1. publish task
 
-    ##### publish 1 ###############
-    multiplier = multiplier_task(broker=MY_BROKER)
-    divider = divider_task(broker=MY_BROKER, chain=multiplier)
+    # ##### publish 1 ###############
+    # multiplier = multiplier_task(broker=MY_BROKER)
+    # divider = divider_task(broker=MY_BROKER, chain=multiplier)
 
-    adder = adder_task(broker=MY_BROKER, chain=divider)
-    adder.blocking_delay(3, 7)
-    #############################################
+    # adder = adder_task(broker=MY_BROKER, chain=divider)
+    # adder.blocking_delay(3, 7)
+    # #############################################
 
-    # ALTERNATIVE way of chaining
-    adder = adder_task(broker=MY_BROKER)
-    adder.blocking_delay(8, 15)
-    adder | divider_task(broker=MY_BROKER) | multiplier_task(broker=MY_BROKER)
+    # # ALTERNATIVE way of chaining
+    # adder = adder_task(broker=MY_BROKER)
+    # adder.blocking_delay(8, 15)
+    # adder | divider_task(broker=MY_BROKER) | multiplier_task(broker=MY_BROKER)
 
-    #####################################
+    # #####################################
     http_task1 = http_task(broker=MY_BROKER)
     http_task1.blocking_delay(url="http://httpbin.org/get")
 
@@ -217,19 +217,15 @@ if __name__ == "__main__":
 
     # 2.consume task
     async def async_main():
-        adder_worker = xyzabc.Worker(task=adder)
-        divider_worker = xyzabc.Worker(task=divider)
-        multiplier_worker = xyzabc.Worker(task=multiplier)
-        http_task_worker = xyzabc.Worker(task=http_task1)
-        print_task_worker = xyzabc.Worker(task=print_task2)
+        adder_worker = xyzabc.Worker(tasks=[http_task1, print_task2])
 
         gather_tasks = asyncio.gather(
-            adder_worker.consume_forever(),
-            divider_worker.consume_forever(),
-            multiplier_worker.consume_forever(),
-            http_task_worker.consume_forever(),
-            print_task_worker.consume_forever(),
-            produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
+            adder_worker.cooler(),
+            # divider_worker.consume_forever(),
+            # multiplier_worker.consume_forever(),
+            # http_task_worker.consume_forever(),
+            # print_task_worker.consume_forever(),
+            # produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
         )
         await gather_tasks
 

@@ -14,13 +14,34 @@ from . import logger
 from . import ratelimiter
 
 
+class AsyncIteratorExecutor:
+    """
+    Converts a regular iterator into an asynchronous
+    iterator, by executing the iterator in a thread.
+    """
+
+    def __init__(self, iterator, loop=None, executor=None):
+        self.__iterator = iterator
+        self.__loop = loop or asyncio.get_event_loop()
+        self.__executor = executor
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        value = await self.__loop.run_in_executor(self.__executor, next, self.__iterator, self)
+        if value is self:
+            raise StopAsyncIteration
+        return value
+
+
 class Worker:
     """
     """
 
     def __init__(
         self,
-        task: task.Task,
+        tasks: typing.List[task.Task],
         rateLimiter=None,
         hook=None,
         Worker_id=None,
@@ -44,7 +65,7 @@ class Worker:
             )
 
         self.loglevel = loglevel.upper()
-        self.task = task
+        self.tasks = tasks
 
         self.Worker_id = Worker_id
         if not self.Worker_id:
@@ -53,7 +74,9 @@ class Worker:
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
-        self.log_metadata.update({"Worker_id": self.Worker_id, "queue_name": self.task.queue_name})
+        self.log_metadata.update(
+            {"Worker_id": self.Worker_id, "queue_name": "self.task.queue_name"}
+        )
 
         self.logger = log_handler
         if not self.logger:
@@ -102,15 +125,22 @@ class Worker:
         else:
             return 60 * (1 * (2 ** current_retries))
 
-    async def run(self, *task_args, **task_kwargs):
+    async def run(self, task, *task_args, **task_kwargs):
+        import pdb
+
+        pdb.set_trace()
         # run the actual queued task
-        return_value = await self.task.async_run(*task_args, **task_kwargs)
-        if self.task.chain:
+        return_value = await task.async_run(*task_args, **task_kwargs)
+        if task.chain:
             # enqueue the chained task using the return_value
-            await self.task.chain.async_delay(return_value)
+            await task.chain.async_delay(return_value)
+
+    async def cooler(self):
+        for future in asyncio.as_completed(map(self.consume_forever, self.tasks)):
+            result = await future
 
     async def consume_forever(
-        self, TESTING: bool = False
+        self, task, TESTING: bool = False
     ) -> typing.Union[str, typing.Dict[typing.Any, typing.Any]]:
         """
         In loop; dequeues items from the :attr:`queue <Worker.queue>` and calls :func:`run <Worker.run>`.
@@ -118,6 +148,9 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
+        print()
+        print("task:: ", task)
+        print()
         retry_count = 0
         while True:
             self._log(logging.INFO, {"event": "xyzabc.Worker.consume_forever", "stage": "start"})
@@ -138,7 +171,7 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.task.broker.dequeue(queue_name=self.task.queue_name)
+                item_to_dequeue = await task.broker.dequeue(queue_name=task.queue_name)
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 poll_queue_interval = self._retry_after(retry_count)
@@ -183,8 +216,10 @@ class Worker:
                     },
                 )
                 continue
+            # import pdb
 
-            await self.run(*task_args, **task_kwargs)
+            # pdb.set_trace()
+            await self.run(*task_args, **task_kwargs, task=task)
             self._log(
                 logging.INFO,
                 {
@@ -192,6 +227,7 @@ class Worker:
                     "stage": "end",
                     "log_id": task_log_id,
                     "task_id": task_id,
+                    "item_to_dequeue": item_to_dequeue,
                 },
             )
             if TESTING:

@@ -203,15 +203,9 @@ if __name__ == "__main__":
     #############################################
 
     # ALTERNATIVE way of chaining
-    """
-    multiplier = multiplier_task(broker=MY_BROKER)
-    divider = divider_task(broker=MY_BROKER)
-
     adder = adder_task(broker=MY_BROKER)
-    adder.blocking_delay(3, 7)
-
-    xxxx = adder | divider | multiplier
-    """
+    adder.blocking_delay(8, 15)
+    adder | divider_task(broker=MY_BROKER) | multiplier_task(broker=MY_BROKER)
 
     #####################################
     http_task1 = http_task(broker=MY_BROKER)

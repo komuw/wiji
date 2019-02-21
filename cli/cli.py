@@ -104,7 +104,7 @@ def print_task(broker) -> xyzabc.task.Task:
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
-            await asyncio.sleep(0.35)
+            await asyncio.sleep(5)
 
     task = MyTask(
         broker=broker,
@@ -125,6 +125,7 @@ def adder_task(broker, chain=None) -> xyzabc.task.Task:
             print()
             print("adder: ", res)
             print()
+            await asyncio.sleep(5)
             return res
 
     task = AdderTask(
@@ -203,9 +204,12 @@ if __name__ == "__main__":
     # #############################################
 
     # # ALTERNATIVE way of chaining
-    # adder = adder_task(broker=MY_BROKER)
-    # adder.blocking_delay(8, 15)
-    # adder | divider_task(broker=MY_BROKER) | multiplier_task(broker=MY_BROKER)
+    adder = adder_task(broker=MY_BROKER)
+    divider = divider_task(broker=MY_BROKER)
+    multiplier = multiplier_task(broker=MY_BROKER)
+    adder | divider | multiplier
+
+    adder.blocking_delay(8, 15)
 
     # #####################################
     http_task1 = http_task(broker=MY_BROKER)
@@ -217,7 +221,7 @@ if __name__ == "__main__":
 
     # 2.consume task
     async def async_main():
-        worker = xyzabc.Worker(tasks=[http_task1, print_task2])
+        worker = xyzabc.Worker(tasks=[http_task1, print_task2, adder, divider, multiplier])
 
         gather_tasks = asyncio.gather(
             worker.cooler(),
@@ -226,9 +230,10 @@ if __name__ == "__main__":
             # http_task_worker.consume_forever(),
             # print_task_worker.consume_forever(),
             produce_tasks_continously(
-                task=http_task1, url="https://httpbin.org/get"
+                task=http_task1, url="https://httpbin.org/delay/7"
             ),  # https://httpbin.org/delay/7
             produce_tasks_continously(task=print_task2, myKwarg="ThisIsKWARGS"),
+            produce_tasks_continously(task=adder, a=43, b=89),
         )
         await gather_tasks
 

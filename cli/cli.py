@@ -217,19 +217,18 @@ if __name__ == "__main__":
 
     # 2.consume task
     async def async_main():
-        worker1 = xyzabc.Worker(task=adder)
-        worker2 = xyzabc.Worker(task=divider)
-        worker3 = xyzabc.Worker(task=multiplier)
-
-        http_task1_worker = xyzabc.Worker(task=http_task1)
-        print_task2_worker = xyzabc.Worker(task=print_task2)
+        adder_worker = xyzabc.Worker(task=adder)
+        divider_worker = xyzabc.Worker(task=divider)
+        multiplier_worker = xyzabc.Worker(task=multiplier)
+        http_task_worker = xyzabc.Worker(task=http_task1)
+        print_task_worker = xyzabc.Worker(task=print_task2)
 
         gather_tasks = asyncio.gather(
-            worker1.consume_forever(),
-            worker2.consume_forever(),
-            worker3.consume_forever(),
-            http_task1_worker.consume_forever(),
-            print_task2_worker.consume_forever(),
+            adder_worker.consume_forever(),
+            divider_worker.consume_forever(),
+            multiplier_worker.consume_forever(),
+            http_task_worker.consume_forever(),
+            print_task_worker.consume_forever(),
             produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
         )
         await gather_tasks

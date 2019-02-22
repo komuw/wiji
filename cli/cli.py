@@ -72,6 +72,8 @@ async def produce_tasks_continously(task, *args, **kwargs):
 def http_task(broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
+            print()
+            print("RUNNING http_task:")
             import aiohttp
 
             url = kwargs["url"]
@@ -98,13 +100,14 @@ def print_task(broker) -> xyzabc.task.Task:
             import hashlib
 
             print()
+            print("RUNNING print_task:")
             print("args:", args)
             print("kwargs:", kwargs)
             print()
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
     task = MyTask(
         broker=broker,
@@ -123,8 +126,10 @@ def adder_task(broker, chain=None) -> xyzabc.task.Task:
         async def async_run(self, a, b):
             res = a + b
             print()
+            print("RUNNING adder_task:")
             print("adder: ", res)
             print()
+            await asyncio.sleep(2)
             return res
 
     task = AdderTask(
@@ -144,6 +149,7 @@ def divider_task(broker, chain=None) -> xyzabc.task.Task:
         async def async_run(self, a):
             res = a / 3
             print()
+            print("RUNNING divider_task:")
             print("divider: ", res)
             print()
             return res
@@ -165,6 +171,7 @@ def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
         async def async_run(self, bbb, a=5.5):
             res = bbb * a
             print()
+            print("RUNNING multiplier_task:")
             print("multiplier: ", res)
             print()
             return res
@@ -176,6 +183,27 @@ def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
         retries=3,
         log_id="multiplier_task_myLogID",
         hook_metadata='{"email": "multiplier_task"}',
+        chain=chain,
+    )
+    return task
+
+
+def exception_task(broker, chain=None) -> xyzabc.task.Task:
+    class ExceptionTask(xyzabc.task.Task):
+        async def async_run(self):
+            print()
+            print("RUNNING exception_task:")
+            print()
+            await asyncio.sleep(0.5)
+            raise ValueError("\n Houston We got 99 problems. \n")
+
+    task = ExceptionTask(
+        broker=broker,
+        queue_name="ExceptionTaskQueue",
+        eta=60,
+        retries=3,
+        log_id="exception_task_myLogID",
+        hook_metadata='{"email": "exception_task"}',
         chain=chain,
     )
     return task
@@ -214,21 +242,30 @@ if __name__ == "__main__":
 
     print_task2 = print_task(broker=MY_BROKER)
     print_task2.blocking_delay("myarg", my_kwarg="my_kwarg")
+
+    exception_task22 = exception_task(broker=MY_BROKER)
     #####################################
 
-    all_tasks = [adder, divider, multiplier, http_task1, print_task2]
+    all_tasks = [adder, divider, multiplier, http_task1, print_task2, exception_task22]
     workers = []
     for task in all_tasks:
-        worker = xyzabc.Worker(task=task)
-        workers.append(worker)
+        _worker = xyzabc.Worker(task=task)
+        workers.append(_worker)
 
     consumers = []
     for i in workers:
         consumers.append(i.consume_forever())
 
+    producers = [
+        produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
+        produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
+        produce_tasks_continously(task=adder, a=23, b=67),
+        produce_tasks_continously(task=exception_task22),
+    ]
+
     # 2.consume tasks
     async def async_main():
-        gather_tasks = asyncio.gather(*consumers)
+        gather_tasks = asyncio.gather(*consumers, *producers)
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)

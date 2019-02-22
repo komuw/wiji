@@ -53,8 +53,8 @@ def load_class(dotted_path):
         if cur_dir not in sys.path:
             sys.path.insert(0, cur_dir)
             return load_class(dotted_path)
-        err_mesage = "Error importing {0}".format(dotted_path)
-        sys.stderr.write("\033[91m{0}\033[0m\n".format(err_mesage))
+        err_message = "Error importing {0}".format(dotted_path)
+        sys.stderr.write("\033[91m{0}\033[0m\n".format(err_message))
         raise
 
 

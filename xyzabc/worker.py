@@ -23,23 +23,51 @@ class Worker:
         the_task: task.Task,
         rateLimiter=None,
         hook=None,
-        Worker_id=None,
+        worker_id=None,
         log_handler=None,
         loglevel: str = "DEBUG",
         log_metadata=None,
     ) -> None:
         """
         """
-        if loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-            raise ValueError(
-                """loglevel should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. not {0}""".format(
-                    loglevel
-                )
-            )
         if not isinstance(the_task, (type(None), task.Task)):
             raise ValueError(
                 """the_task should be of type:: None or xyzabc.task.Task You entered {0}""".format(
                     type(the_task)
+                )
+            )
+
+        if not isinstance(rateLimiter, (type(None), ratelimiter.BaseRateLimiter)):
+            raise ValueError(
+                """rateLimiter should be of type:: None or xyzabc.ratelimiter.BaseRateLimiter You entered {0}""".format(
+                    type(rateLimiter)
+                )
+            )
+
+        if not isinstance(hook, (type(None), hooks.BaseHook)):
+            raise ValueError(
+                """hook should be of type:: None or xyzabc.hooks.BaseHook You entered {0}""".format(
+                    type(hook)
+                )
+            )
+        if not isinstance(worker_id, (type(None), str)):
+            raise ValueError(
+                """worker_id should be of type:: None or string You entered {0}""".format(
+                    type(worker_id)
+                )
+            )
+
+        if not isinstance(log_handler, (type(None), logger.BaseLogger)):
+            raise ValueError(
+                """log_handler should be of type:: None or xyzabc.logger.BaseLogger You entered {0}""".format(
+                    type(log_handler)
+                )
+            )
+
+        if loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+            raise ValueError(
+                """loglevel should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. not {0}""".format(
+                    loglevel
                 )
             )
         if not isinstance(log_metadata, (type(None), dict)):
@@ -52,15 +80,15 @@ class Worker:
         self.loglevel = loglevel.upper()
         self.the_task = the_task
 
-        self.Worker_id = Worker_id
-        if not self.Worker_id:
-            self.Worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
+        self.worker_id = worker_id
+        if not self.worker_id:
+            self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
         self.log_metadata.update(
-            {"Worker_id": self.Worker_id, "queue_name": self.the_task.queue_name}
+            {"worker_id": self.worker_id, "queue_name": self.the_task.queue_name}
         )
 
         self.logger = log_handler

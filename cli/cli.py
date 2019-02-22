@@ -167,7 +167,6 @@ def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
             print()
             print("multiplier: ", res)
             print()
-            raise ValueError("sddsrwrHHH")
             return res
 
     task = MultiplierTask(

@@ -10,14 +10,14 @@ class BaseRateLimiter(abc.ABC):
     User implementations should inherit this class and
     implement the :func:`limit <BaseRateLimiter.limit>` methods with the type signatures shown.
 
-    It may be important to control the rate at which the worker(xyzabc) sends requests to an SMSC/server.
+    It may be important to control the rate at which the worker(xyzabc) consumes/executes tasks.
     xyzabc lets you do this, by allowing you to specify a custom rate limiter.
     """
 
     @abc.abstractmethod
     async def limit(self) -> None:
         """
-        rate limit sending of messages to SMSC.
+        rate limit consumation/execution of tasks.
         """
         raise NotImplementedError("limit method must be implemented.")
 
@@ -46,7 +46,7 @@ class SimpleRateLimiter(BaseRateLimiter):
     ) -> None:
         """
         Parameters:
-            send_rate: the maximum rate, in messages/second, at which xyzabc can send messages to SMSC.
+            send_rate: the maximum rate, in tasks/second, at which xyzabc can consume/execute tasks.
             max_tokens: the total number of mesages xyzabc can send before rate limiting kicks in.
             delay_for_tokens: the duration in seconds which to wait for before checking for token availability after they had finished.
 
@@ -59,7 +59,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         self.updated_at: float = time.monotonic()
 
         self.logger = logger
-        self.messages_delivered: int = 0
+        self.tasks_executed: int = 0
         self.effective_send_rate: float = 0
 
     async def limit(self) -> None:
@@ -80,15 +80,15 @@ class SimpleRateLimiter(BaseRateLimiter):
                 },
             )
 
-        self.messages_delivered += 1
+        self.tasks_executed += 1
         self.tokens -= 1
 
     def _add_new_tokens(self) -> None:
         now = time.monotonic()
         time_since_update = now - self.updated_at
-        self.effective_send_rate = self.messages_delivered / time_since_update
+        self.effective_send_rate = self.tasks_executed / time_since_update
         new_tokens = time_since_update * self.send_rate
         if new_tokens > 1:
             self.tokens = min(self.tokens + new_tokens, self.max_tokens)
             self.updated_at = now
-            self.messages_delivered = 0
+            self.tasks_executed = 0

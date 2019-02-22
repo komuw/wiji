@@ -67,43 +67,43 @@ class Worker:
     ):
         if not isinstance(the_task, task.Task):
             raise ValueError(
-                """the_task should be of type:: xyzabc.task.Task You entered: {0}""".format(
+                """`the_task` should be of type:: `xyzabc.task.Task` You entered: {0}""".format(
                     type(the_task)
                 )
             )
         if not isinstance(rateLimiter, (type(None), ratelimiter.BaseRateLimiter)):
             raise ValueError(
-                """rateLimiter should be of type:: None or xyzabc.ratelimiter.BaseRateLimiter You entered: {0}""".format(
+                """`rateLimiter` should be of type:: `None` or `xyzabc.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
                     type(rateLimiter)
                 )
             )
         if not isinstance(hook, (type(None), hooks.BaseHook)):
             raise ValueError(
-                """hook should be of type:: None or xyzabc.hooks.BaseHook You entered: {0}""".format(
+                """`hook` should be of type:: `None` or `xyzabc.hooks.BaseHook` You entered: {0}""".format(
                     type(hook)
                 )
             )
         if not isinstance(worker_id, (type(None), str)):
             raise ValueError(
-                """worker_id should be of type:: None or string You entered: {0}""".format(
+                """`worker_id` should be of type:: `None` or `string` You entered: {0}""".format(
                     type(worker_id)
                 )
             )
         if not isinstance(log_handler, (type(None), logger.BaseLogger)):
             raise ValueError(
-                """log_handler should be of type:: None or xyzabc.logger.BaseLogger You entered: {0}""".format(
+                """`log_handler` should be of type:: `None` or `xyzabc.logger.BaseLogger` You entered: {0}""".format(
                     type(log_handler)
                 )
             )
         if loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
             raise ValueError(
-                """loglevel should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {0}""".format(
+                """`loglevel` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {0}""".format(
                     loglevel
                 )
             )
         if not isinstance(log_metadata, (type(None), dict)):
             raise ValueError(
-                """log_metadata should be of type:: None or dict You entered: {0}""".format(
+                """`log_metadata` should be of type:: `None` or `dict` You entered: {0}""".format(
                     type(log_metadata)
                 )
             )

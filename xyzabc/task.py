@@ -2,6 +2,7 @@ import os
 import uuid
 import json
 import asyncio
+import inspect
 import datetime
 
 from . import broker
@@ -33,18 +34,29 @@ class Task:
     def __init__(
         self, broker: broker.BaseBroker, queue_name, eta, retries, log_id, hook_metadata, chain=None
     ) -> None:
+        if not isinstance(chain, (type(None), Task)):
+            raise ValueError(
+                """chain should be of type:: None or xyzabc.task.Task You entered: {0}""".format(
+                    type(chain)
+                )
+            )
+        if not asyncio.iscoroutinefunction(self.async_run):
+            raise ValueError(
+                "The method: `async_run` of a class derived from: `xyzabc.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not inspect.iscoroutinefunction(self.async_run):
+            raise ValueError(
+                "The method: `async_run` of a class derived from: `xyzabc.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+
         self.broker = broker
         self.queue_name = queue_name
         self.eta = eta
         self.retries = retries
         self.log_id = log_id
         self.hook_metadata = hook_metadata
-        if not isinstance(chain, (type(None), Task)):
-            raise ValueError(
-                """chain should be of type:: None or xyzabc.task.Task You entered {0}""".format(
-                    type(chain)
-                )
-            )
         self.chain = chain
 
     def __or__(self, other):

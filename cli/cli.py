@@ -167,6 +167,7 @@ def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
             print()
             print("multiplier: ", res)
             print()
+            raise ValueError("sddsrwrHHH")
             return res
 
     task = MultiplierTask(
@@ -216,22 +217,19 @@ if __name__ == "__main__":
     print_task2.blocking_delay("myarg", my_kwarg="my_kwarg")
     #####################################
 
-    # 2.consume task
-    async def async_main():
-        adder_worker = xyzabc.Worker(task=adder)
-        divider_worker = xyzabc.Worker(task=divider)
-        multiplier_worker = xyzabc.Worker(task=multiplier)
-        http_task_worker = xyzabc.Worker(task=http_task1)
-        print_task_worker = xyzabc.Worker(task=print_task2)
+    all_tasks = [adder, divider, multiplier, http_task1, print_task2]
+    workers = []
+    for task in all_tasks:
+        worker = xyzabc.Worker(task=task)
+        workers.append(worker)
 
-        gather_tasks = asyncio.gather(
-            adder_worker.consume_forever(),
-            divider_worker.consume_forever(),
-            multiplier_worker.consume_forever(),
-            http_task_worker.consume_forever(),
-            print_task_worker.consume_forever(),
-            produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
-        )
+    consumers = []
+    for i in workers:
+        consumers.append(i.consume_forever())
+
+    # 2.consume tasks
+    async def async_main():
+        gather_tasks = asyncio.gather(*consumers)
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)

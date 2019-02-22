@@ -89,25 +89,42 @@ class Worker:
     @staticmethod
     def _retry_after(current_retries):
         """
+        returns the number of seconds to retry after.
         retries will happen in this sequence;
-        1min, 2min, 4min, 8min, 16min, 32min, 16min, 16min, 16min ...
+        0.5min, 1min, 2min, 4min, 8min, 16min, 32min, 16min, 16min, 16min ...
         """
         # TODO:
         # 1. give users ability to bring their own retry algorithms.
-        # 2. add jitter
         if current_retries < 0:
             current_retries = 0
-        if current_retries >= 6:
-            return 60 * 16  # 16 minutes
+
+        jitter = random.randint(60, 180)  # 1min-3min
+        if current_retries in [0, 1]:
+            return 0.5 * 60  # 0.5min
+        elif current_retries == 2:
+            return 1 * 60
+        elif current_retries >= 6:
+            return (16 * 60) + jitter  # 16 minutes + jitter
         else:
-            return 60 * (1 * (2 ** current_retries))
+            return (60 * (2 ** current_retries)) + jitter
 
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
-        return_value = await self.task.async_run(*task_args, **task_kwargs)
-        if self.task.chain:
-            # enqueue the chained task using the return_value
-            await self.task.chain.async_delay(return_value)
+        try:
+            return_value = await self.task.async_run(*task_args, **task_kwargs)
+            if self.task.chain:
+                # enqueue the chained task using the return_value
+                await self.task.chain.async_delay(return_value)
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "xyzabc.Worker.run",
+                    "stage": "end",
+                    "state": "task execution error",
+                    "error": str(e),
+                },
+            )
 
     async def consume_forever(
         self, TESTING: bool = False

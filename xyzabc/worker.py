@@ -20,7 +20,7 @@ class Worker:
 
     def __init__(
         self,
-        task: task.Task,
+        the_task: task.Task,
         rateLimiter=None,
         hook=None,
         Worker_id=None,
@@ -36,6 +36,12 @@ class Worker:
                     loglevel
                 )
             )
+        if not isinstance(the_task, (type(None), task.Task)):
+            raise ValueError(
+                """the_task should be of type:: None or xyzabc.task.Task You entered {0}""".format(
+                    type(the_task)
+                )
+            )
         if not isinstance(log_metadata, (type(None), dict)):
             raise ValueError(
                 """log_metadata should be of type:: None or dict. You entered {0}""".format(
@@ -44,7 +50,7 @@ class Worker:
             )
 
         self.loglevel = loglevel.upper()
-        self.task = task
+        self.the_task = the_task
 
         self.Worker_id = Worker_id
         if not self.Worker_id:
@@ -53,7 +59,9 @@ class Worker:
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
-        self.log_metadata.update({"Worker_id": self.Worker_id, "queue_name": self.task.queue_name})
+        self.log_metadata.update(
+            {"Worker_id": self.Worker_id, "queue_name": self.the_task.queue_name}
+        )
 
         self.logger = log_handler
         if not self.logger:
@@ -111,10 +119,10 @@ class Worker:
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
         try:
-            return_value = await self.task.async_run(*task_args, **task_kwargs)
-            if self.task.chain:
+            return_value = await self.the_task.async_run(*task_args, **task_kwargs)
+            if self.the_task.chain:
                 # enqueue the chained task using the return_value
-                await self.task.chain.async_delay(return_value)
+                await self.the_task.chain.async_delay(return_value)
         except Exception as e:
             self._log(
                 logging.ERROR,
@@ -155,7 +163,9 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.task.broker.dequeue(queue_name=self.task.queue_name)
+                item_to_dequeue = await self.the_task.broker.dequeue(
+                    queue_name=self.the_task.queue_name
+                )
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 poll_queue_interval = self._retry_after(retry_count)

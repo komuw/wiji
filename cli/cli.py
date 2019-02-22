@@ -249,7 +249,7 @@ if __name__ == "__main__":
     all_tasks = [adder, divider, multiplier, http_task1, print_task2, exception_task22]
     workers = []
     for task in all_tasks:
-        _worker = xyzabc.Worker(task=task)
+        _worker = xyzabc.Worker(the_task=task)
         workers.append(_worker)
 
     consumers = []

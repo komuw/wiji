@@ -72,8 +72,9 @@ class _BlocingWatchdog:
 
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
                     error_msg = (
-                        "ERROR: blocked tasks Watchdog has not received any notifications in {timeout} seconds. Main thread is blocked!"
-                        "\nHint: are you running any blocking calls? using python-requests? etc?".format(
+                        "ERROR: blocked tasks Watchdog has not received any notifications in {timeout} seconds. This means the Main thread is blocked! "
+                        "\nHint: are you running any blocking calls? using python-requests? etc? "
+                        "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(
                             timeout=self._timeout
                         )
                     )

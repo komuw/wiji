@@ -71,23 +71,26 @@ class _BlocingWatchdog:
                     return
 
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
-                    error_msg = (
-                        "ERROR: blocked tasks Watchdog has not received any notifications in {timeout} seconds. This means the Main thread is blocked! "
-                        "\nHint: are you running any blocking calls? using python-requests? etc? "
-                        "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(
-                            timeout=self._timeout
+                    try:
+                        error_msg = (
+                            "ERROR: blocked tasks Watchdog has not received any notifications in {timeout} seconds. This means the Main thread is blocked! "
+                            "\nHint: are you running any blocking calls? using python-requests? etc? "
+                            "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(
+                                timeout=self._timeout
+                            )
                         )
-                    )
-                    all_threads_stack_trace = self._save_stack_trace()
-                    self.logger.log(
-                        logging.ERROR,
-                        {
-                            "event": "xyzabc._BlocingWatchdog.blocked",
-                            "stage": "end",
-                            "error": error_msg,
-                            "stack_trace": all_threads_stack_trace,
-                        },
-                    )
+                        raise BlockingIOError(error_msg)
+                    except Exception as e:
+                        all_threads_stack_trace = self._save_stack_trace()
+                        self.logger.log(
+                            logging.ERROR,
+                            {
+                                "event": "xyzabc._BlocingWatchdog.blocked",
+                                "stage": "end",
+                                "error": str(e),
+                                "stack_trace": all_threads_stack_trace,
+                            },
+                        )
 
     def _save_stack_trace(self):
         # we could also use: faulthandler.dump_traceback(all_threads=True)

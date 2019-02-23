@@ -9,105 +9,90 @@ import asyncio
 import datetime
 
 from . import task
-from . import hooks
+from . import hook
 from . import logger
-from . import ratelimiter
 
 
 class Worker:
     """
     """
 
-    def __init__(
-        self,
-        task: task.Task,
-        rateLimiter=None,
-        hook=None,
-        Worker_id=None,
-        log_handler=None,
-        loglevel: str = "DEBUG",
-        log_metadata=None,
-    ) -> None:
+    def __init__(self, the_task: task.Task, worker_id=None) -> None:
         """
         """
-        if loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+        self._validate_worker_args(the_task, worker_id)
+
+        self.the_task = the_task
+        self.worker_id = worker_id
+        if not self.worker_id:
+            self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
+
+        self.the_task.log_metadata.update({"worker_id": self.worker_id})
+        self.the_task.logger.bind(
+            loglevel=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
+        )
+        self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
+
+    def _validate_worker_args(self, the_task, worker_id):
+        if not isinstance(the_task, task.Task):
             raise ValueError(
-                """loglevel should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. not {0}""".format(
-                    loglevel
+                """`the_task` should be of type:: `xyzabc.task.Task` You entered: {0}""".format(
+                    type(the_task)
                 )
             )
-        if not isinstance(log_metadata, (type(None), dict)):
+        if not isinstance(worker_id, (type(None), str)):
             raise ValueError(
-                """log_metadata should be of type:: None or dict. You entered {0}""".format(
-                    type(log_metadata)
+                """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
+                    type(worker_id)
                 )
             )
-
-        self.loglevel = loglevel.upper()
-        self.task = task
-
-        self.Worker_id = Worker_id
-        if not self.Worker_id:
-            self.Worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
-
-        self.log_metadata = log_metadata
-        if not self.log_metadata:
-            self.log_metadata = {}
-        self.log_metadata.update({"Worker_id": self.Worker_id, "queue_name": self.task.queue_name})
-
-        self.logger = log_handler
-        if not self.logger:
-            self.logger = logger.SimpleBaseLogger("xyzabc.Worker")
-        self.logger.bind(loglevel=self.loglevel, log_metadata=self.log_metadata)
-        self._sanity_check_logger()
-
-        self.rateLimiter = rateLimiter
-        if not self.rateLimiter:
-            self.rateLimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
-
-        self.hook = hook
-        if not self.hook:
-            self.hook = hooks.SimpleHook(logger=self.logger)
-
-    def _sanity_check_logger(self):
-        """
-        called when instantiating the Worker just to make sure the supplied
-        logger can log.
-        """
-        try:
-            self.logger.log(logging.DEBUG, {"event": "sanity_check_logger"})
-        except Exception as e:
-            raise e
 
     def _log(self, level, log_data):
         # if the supplied logger is unable to log; we move on
         try:
-            self.logger.log(level, log_data)
+            self.the_task.logger.log(level, log_data)
         except Exception:
             pass
 
     @staticmethod
     def _retry_after(current_retries):
         """
+        returns the number of seconds to retry after.
         retries will happen in this sequence;
-        1min, 2min, 4min, 8min, 16min, 32min, 16min, 16min, 16min ...
+        0.5min, 1min, 2min, 4min, 8min, 16min, 32min, 16min, 16min, 16min ...
         """
         # TODO:
         # 1. give users ability to bring their own retry algorithms.
-        # 2. add jitter
         if current_retries < 0:
             current_retries = 0
-        if current_retries >= 6:
-            return 60 * 16  # 16 minutes
+
+        jitter = random.randint(60, 180)  # 1min-3min
+        if current_retries in [0, 1]:
+            return 0.5 * 60  # 0.5min
+        elif current_retries == 2:
+            return 1 * 60
+        elif current_retries >= 6:
+            return (16 * 60) + jitter  # 16 minutes + jitter
         else:
-            return 60 * (1 * (2 ** current_retries))
+            return (60 * (2 ** current_retries)) + jitter
 
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
-        return_value = await self.task.async_run(*task_args, **task_kwargs)
-        if self.task.chain:
-            # enqueue the chained task using the return_value
-            await self.task.chain.async_delay(return_value)
+        try:
+            return_value = await self.the_task.async_run(*task_args, **task_kwargs)
+            if self.the_task.chain:
+                # enqueue the chained task using the return_value
+                await self.the_task.chain.async_delay(return_value)
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "xyzabc.Worker.run",
+                    "stage": "end",
+                    "state": "task execution error",
+                    "error": str(e),
+                },
+            )
 
     async def consume_forever(
         self, TESTING: bool = False
@@ -124,7 +109,7 @@ class Worker:
 
             try:
                 # rate limit ourselves
-                await self.rateLimiter.limit()
+                await self.the_task.rateLimiter.limit()
             except Exception as e:
                 self._log(
                     logging.ERROR,
@@ -138,7 +123,9 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.task.broker.dequeue(queue_name=self.task.queue_name)
+                item_to_dequeue = await self.the_task.the_broker.dequeue(
+                    queue_name=self.the_task.queue_name
+                )
                 item_to_dequeue = json.loads(item_to_dequeue)
             except Exception as e:
                 poll_queue_interval = self._retry_after(retry_count)

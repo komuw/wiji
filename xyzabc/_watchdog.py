@@ -67,7 +67,7 @@ class _BlocingWatchdog(object):
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
                     print(
                         "Trio Watchdog has not received any notifications in "
-                        "5 seconds, main thread is blocked!",
+                        "{timeout} seconds, main thread is blocked!".format(timeout=self._timeout),
                         file=sys.stderr,
                     )
                     # faulthandler is not very useful to us, honestly

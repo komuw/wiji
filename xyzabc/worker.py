@@ -12,15 +12,28 @@ from . import task
 from . import hook
 from . import logger
 
+from . import _watchdog
+
 
 class Worker:
     """
     """
 
-    def __init__(self, the_task: task.Task, worker_id=None) -> None:
+    def __init__(
+        self,
+        the_task: task.Task,
+        worker_id=None,
+        use_watchdog: bool = False,
+        watchdog_timeout: float = 5.0,
+    ) -> None:
         """
         """
-        self._validate_worker_args(the_task, worker_id)
+        self._validate_worker_args(
+            the_task=the_task,
+            worker_id=worker_id,
+            use_watchdog=use_watchdog,
+            watchdog_timeout=watchdog_timeout,
+        )
 
         self.the_task = the_task
         self.worker_id = worker_id
@@ -33,7 +46,18 @@ class Worker:
         )
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
-    def _validate_worker_args(self, the_task, worker_id):
+        # Enables task watchdog. This will spawn a separate thread that will check if any tasks are blocked,
+        # and if so will notify you and print the stack traces of all threads to show exactly where the program is blocked.
+        self.use_watchdog = use_watchdog  # True
+        # The number of seconds the watchdog will wait before notifying that the main thread is blocked.
+        self.watchdog_timeout = watchdog_timeout
+
+        if self.use_watchdog:
+            self.watchdog = _watchdog._BlocingWatchdog(self.watchdog_timeout)
+        else:
+            self.watchdog = None
+
+    def _validate_worker_args(self, the_task, worker_id, use_watchdog, watchdog_timeout):
         if not isinstance(the_task, task.Task):
             raise ValueError(
                 """`the_task` should be of type:: `xyzabc.task.Task` You entered: {0}""".format(
@@ -44,6 +68,18 @@ class Worker:
             raise ValueError(
                 """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(worker_id)
+                )
+            )
+        if not isinstance(use_watchdog, bool):
+            raise ValueError(
+                """`use_watchdog` should be of type:: `bool` You entered: {0}""".format(
+                    type(use_watchdog)
+                )
+            )
+        if not isinstance(watchdog_timeout, float):
+            raise ValueError(
+                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
+                    type(watchdog_timeout)
                 )
             )
 
@@ -78,6 +114,9 @@ class Worker:
 
     async def run(self, *task_args, **task_kwargs):
         # run the actual queued task
+        if self.watchdog is not None:
+            self.watchdog.notify_alive_before()
+
         try:
             return_value = await self.the_task.async_run(*task_args, **task_kwargs)
             if self.the_task.chain:
@@ -93,6 +132,9 @@ class Worker:
                     "error": str(e),
                 },
             )
+        finally:
+            if self.watchdog is not None:
+                self.watchdog.notify_alive_after()
 
     async def consume_forever(
         self, TESTING: bool = False
@@ -103,8 +145,12 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
+        if self.watchdog is not None:
+            self.watchdog.start()
+
         retry_count = 0
         while True:
+
             self._log(logging.INFO, {"event": "xyzabc.Worker.consume_forever", "stage": "start"})
 
             try:
@@ -184,3 +230,11 @@ class Worker:
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop
                 return item_to_dequeue
+
+    def shutdown(self):
+        """
+        Cleanly shutdown worker.
+        TODO: see, https://github.com/komuw/xyzabc/issues/2
+        """
+        if self.watchdog is not None:
+            self.watchdog.stop()

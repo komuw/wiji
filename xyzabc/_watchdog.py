@@ -12,6 +12,11 @@ import threading
 import traceback
 
 
+# TODO: This code is taken from a PR that has not been merged in Trio.
+# We should monitor the tracking issue: https://github.com/python-trio/trio/issues/591
+# Eventually we should adopt the solution that eventually gets merged into Trio(or alternatively; adopt Trio itself)
+
+
 class _BlocingWatchdog(object):
     """
     monitors for any blocking calls in an otherwise async coroutine.

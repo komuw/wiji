@@ -69,7 +69,7 @@ async def produce_tasks_continously(task, *args, **kwargs):
         await task.async_delay(*args, **kwargs)
 
 
-def http_task(broker) -> xyzabc.task.Task:
+def http_task(the_broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
             print()
@@ -84,9 +84,9 @@ def http_task(broker) -> xyzabc.task.Task:
                     print(res_text[:50])
 
     task = MyTask(
-        broker=broker,
+        the_broker=the_broker,
         queue_name="HttpQueue",
-        eta=60,
+        eta=60.0,
         retries=3,
         log_id="myLogID",
         hook_metadata='{"email": "example@example.com"}',
@@ -94,7 +94,7 @@ def http_task(broker) -> xyzabc.task.Task:
     return task
 
 
-def print_task(broker) -> xyzabc.task.Task:
+def print_task(the_broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
             import hashlib
@@ -110,9 +110,9 @@ def print_task(broker) -> xyzabc.task.Task:
             await asyncio.sleep(1)
 
     task = MyTask(
-        broker=broker,
+        the_broker=the_broker,
         queue_name="PrintQueue",
-        eta=60,
+        eta=60.0,
         retries=3,
         log_id="myLogID",
         hook_metadata='{"email": "example@example.com"}',
@@ -121,7 +121,7 @@ def print_task(broker) -> xyzabc.task.Task:
 
 
 ################## CHAIN ##################
-def adder_task(broker, chain=None) -> xyzabc.task.Task:
+def adder_task(the_broker, chain=None) -> xyzabc.task.Task:
     class AdderTask(xyzabc.task.Task):
         async def async_run(self, a, b):
             res = a + b
@@ -133,9 +133,9 @@ def adder_task(broker, chain=None) -> xyzabc.task.Task:
             return res
 
     task = AdderTask(
-        broker=broker,
+        the_broker=the_broker,
         queue_name="AdderTaskQueue",
-        eta=60,
+        eta=60.8,
         retries=3,
         log_id="adder_task_myLogID",
         hook_metadata='{"email": "adder_task"}',
@@ -144,7 +144,7 @@ def adder_task(broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-def divider_task(broker, chain=None) -> xyzabc.task.Task:
+def divider_task(the_broker, chain=None) -> xyzabc.task.Task:
     class DividerTask(xyzabc.task.Task):
         async def async_run(self, a):
             res = a / 3
@@ -155,9 +155,9 @@ def divider_task(broker, chain=None) -> xyzabc.task.Task:
             return res
 
     task = DividerTask(
-        broker=broker,
+        the_broker=the_broker,
         queue_name="DividerTaskQueue",
-        eta=60,
+        eta=60.9,
         retries=3,
         log_id="divider_task_myLogID",
         hook_metadata='{"email": "divider_task"}',
@@ -166,7 +166,7 @@ def divider_task(broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
+def multiplier_task(the_broker, chain=None) -> xyzabc.task.Task:
     class MultiplierTask(xyzabc.task.Task):
         async def async_run(self, bbb, a=5.5):
             res = bbb * a
@@ -177,9 +177,9 @@ def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
             return res
 
     task = MultiplierTask(
-        broker=broker,
+        the_broker=the_broker,
         queue_name="MultiplierTaskQueue",
-        eta=60,
+        eta=60.7,
         retries=3,
         log_id="multiplier_task_myLogID",
         hook_metadata='{"email": "multiplier_task"}',
@@ -188,7 +188,7 @@ def multiplier_task(broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-def exception_task(broker, chain=None) -> xyzabc.task.Task:
+def exception_task(the_broker, chain=None) -> xyzabc.task.Task:
     class ExceptionTask(xyzabc.task.Task):
         async def async_run(self):
             print()
@@ -198,9 +198,9 @@ def exception_task(broker, chain=None) -> xyzabc.task.Task:
             raise ValueError("\n Houston We got 99 problems. \n")
 
     task = ExceptionTask(
-        broker=broker,
+        the_broker=the_broker,
         queue_name="ExceptionTaskQueue",
-        eta=60,
+        eta=60.1,
         retries=3,
         log_id="exception_task_myLogID",
         hook_metadata='{"email": "exception_task"}',
@@ -223,27 +223,27 @@ if __name__ == "__main__":
     # 1. publish task
 
     ##### publish 1 ###############
-    multiplier = multiplier_task(broker=MY_BROKER)
-    divider = divider_task(broker=MY_BROKER, chain=multiplier)
+    multiplier = multiplier_task(the_broker=MY_BROKER)
+    divider = divider_task(the_broker=MY_BROKER, chain=multiplier)
 
-    adder = adder_task(broker=MY_BROKER, chain=divider)
+    adder = adder_task(the_broker=MY_BROKER, chain=divider)
     adder.blocking_delay(3, 7)
     #############################################
 
     # ALTERNATIVE way of chaining
-    adder = adder_task(broker=MY_BROKER)
-    divider = divider_task(broker=MY_BROKER)
-    multiplier = multiplier_task(broker=MY_BROKER)
+    adder = adder_task(the_broker=MY_BROKER)
+    divider = divider_task(the_broker=MY_BROKER)
+    multiplier = multiplier_task(the_broker=MY_BROKER)
     adder | divider | multiplier
 
     #####################################
-    http_task1 = http_task(broker=MY_BROKER)
+    http_task1 = http_task(the_broker=MY_BROKER)
     http_task1.blocking_delay(url="http://httpbin.org/get")
 
-    print_task2 = print_task(broker=MY_BROKER)
+    print_task2 = print_task(the_broker=MY_BROKER)
     print_task2.blocking_delay("myarg", my_kwarg="my_kwarg")
 
-    exception_task22 = exception_task(broker=MY_BROKER)
+    exception_task22 = exception_task(the_broker=MY_BROKER)
     #####################################
 
     all_tasks = [adder, divider, multiplier, http_task1, print_task2, exception_task22]
@@ -269,3 +269,10 @@ if __name__ == "__main__":
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)
+
+
+async def my_async_fucn():
+    import requests
+
+    resp = requests.get("https://httpbin.org/delay/45")  # This should be detected as blocked
+    print("resp:", resp)

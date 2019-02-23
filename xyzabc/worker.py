@@ -9,119 +9,48 @@ import asyncio
 import datetime
 
 from . import task
-from . import hooks
+from . import hook
 from . import logger
-from . import ratelimiter
 
 
 class Worker:
     """
     """
 
-    def __init__(
-        self,
-        the_task: task.Task,
-        rateLimiter=None,
-        hook=None,
-        worker_id=None,
-        log_handler=None,
-        loglevel: str = "DEBUG",
-        log_metadata=None,
-    ) -> None:
+    def __init__(self, the_task: task.Task, worker_id=None) -> None:
         """
         """
-        self._validate_worker_args(
-            the_task, rateLimiter, hook, worker_id, log_handler, loglevel, log_metadata
-        )
+        self._validate_worker_args(the_task, worker_id)
 
-        self.loglevel = loglevel.upper()
         self.the_task = the_task
-
         self.worker_id = worker_id
         if not self.worker_id:
             self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
-        self.log_metadata = log_metadata
-        if not self.log_metadata:
-            self.log_metadata = {}
-        self.log_metadata.update(
-            {"worker_id": self.worker_id, "queue_name": self.the_task.queue_name}
+        self.the_task.log_metadata.update({"worker_id": self.worker_id})
+        self.the_task.logger.bind(
+            loglevel=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
         )
+        self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
-        self.logger = log_handler
-        if not self.logger:
-            self.logger = logger.SimpleBaseLogger("xyzabc.Worker")
-        self.logger.bind(loglevel=self.loglevel, log_metadata=self.log_metadata)
-        self._sanity_check_logger()
-
-        self.rateLimiter = rateLimiter
-        if not self.rateLimiter:
-            self.rateLimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
-
-        self.hook = hook
-        if not self.hook:
-            self.hook = hooks.SimpleHook(logger=self.logger)
-
-    def _validate_worker_args(
-        self, the_task, rateLimiter, hook, worker_id, log_handler, loglevel, log_metadata
-    ):
+    def _validate_worker_args(self, the_task, worker_id):
         if not isinstance(the_task, task.Task):
             raise ValueError(
                 """`the_task` should be of type:: `xyzabc.task.Task` You entered: {0}""".format(
                     type(the_task)
                 )
             )
-        if not isinstance(rateLimiter, (type(None), ratelimiter.BaseRateLimiter)):
-            raise ValueError(
-                """`rateLimiter` should be of type:: `None` or `xyzabc.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
-                    type(rateLimiter)
-                )
-            )
-        if not isinstance(hook, (type(None), hooks.BaseHook)):
-            raise ValueError(
-                """`hook` should be of type:: `None` or `xyzabc.hooks.BaseHook` You entered: {0}""".format(
-                    type(hook)
-                )
-            )
         if not isinstance(worker_id, (type(None), str)):
             raise ValueError(
-                """`worker_id` should be of type:: `None` or `string` You entered: {0}""".format(
+                """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(worker_id)
                 )
             )
-        if not isinstance(log_handler, (type(None), logger.BaseLogger)):
-            raise ValueError(
-                """`log_handler` should be of type:: `None` or `xyzabc.logger.BaseLogger` You entered: {0}""".format(
-                    type(log_handler)
-                )
-            )
-        if loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
-            raise ValueError(
-                """`loglevel` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {0}""".format(
-                    loglevel
-                )
-            )
-        if not isinstance(log_metadata, (type(None), dict)):
-            raise ValueError(
-                """`log_metadata` should be of type:: `None` or `dict` You entered: {0}""".format(
-                    type(log_metadata)
-                )
-            )
-
-    def _sanity_check_logger(self):
-        """
-        called when instantiating the Worker just to make sure the supplied
-        logger can log.
-        """
-        try:
-            self.logger.log(logging.DEBUG, {"event": "sanity_check_logger"})
-        except Exception as e:
-            raise e
 
     def _log(self, level, log_data):
         # if the supplied logger is unable to log; we move on
         try:
-            self.logger.log(level, log_data)
+            self.the_task.logger.log(level, log_data)
         except Exception:
             pass
 
@@ -180,7 +109,7 @@ class Worker:
 
             try:
                 # rate limit ourselves
-                await self.rateLimiter.limit()
+                await self.the_task.rateLimiter.limit()
             except Exception as e:
                 self._log(
                     logging.ERROR,
@@ -194,7 +123,7 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.the_task.broker.dequeue(
+                item_to_dequeue = await self.the_task.the_broker.dequeue(
                     queue_name=self.the_task.queue_name
                 )
                 item_to_dequeue = json.loads(item_to_dequeue)

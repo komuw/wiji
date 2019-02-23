@@ -83,7 +83,7 @@ class _BlocingWatchdog:
                         {
                             "event": "xyzabc._BlocingWatchdog.blocked",
                             "stage": "end",
-                            "state": error_msg,
+                            "error": error_msg,
                             "stack_trace": all_threads_stack_trace,
                         },
                     )

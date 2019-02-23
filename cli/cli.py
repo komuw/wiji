@@ -69,6 +69,26 @@ async def produce_tasks_continously(task, *args, **kwargs):
         await task.async_delay(*args, **kwargs)
 
 
+def BLOCKING_DISK_IO(the_broker) -> xyzabc.task.Task:
+    class BlockingDiskIOTask(xyzabc.task.Task):
+        async def async_run(self, *args, **kwargs):
+            print()
+            print("RUNNING BlockingDiskIOTask:")
+            import subprocess
+
+            subprocess.run(["dd", "if=/dev/zero", "of=/dev/null", "bs=500000", "count=1000000"])
+
+    task = BlockingDiskIOTask(
+        the_broker=the_broker,
+        queue_name="BlockingDiskIOTask",
+        eta=60.0,
+        retries=3,
+        log_id="BlockingDiskIOTask_LogID",
+        hook_metadata='{"email": "BlockingDiskIOTask"}',
+    )
+    return task
+
+
 def BLOCKING_http_task(the_broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
@@ -326,10 +346,3 @@ if __name__ == "__main__":
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)
-
-
-async def my_async_fucn():
-    import requests
-
-    resp = requests.get("https://httpbin.org/delay/45")  # This should be detected as blocked
-    print("resp:", resp)

@@ -7,33 +7,39 @@
 
 
 import sys
-
+import logging
 import threading
 import traceback
 
+
+from . import logger
 
 # TODO: This code is taken from a PR that has not been merged in Trio.
 # We should monitor the tracking issue: https://github.com/python-trio/trio/issues/591
 # Eventually we should adopt the solution that eventually gets merged into Trio(or alternatively; adopt Trio itself)
 
 
-class _BlocingWatchdog(object):
+class _BlocingWatchdog:
     """
     monitors for any blocking calls in an otherwise async coroutine.
     """
 
-    def __init__(self, timeout=5):
+    def __init__(self, timeout, task_name):
+        self._timeout = timeout
+        self.task_name = task_name
+
         self._stopped = False
         self._thread = None
         self._notify_event = threading.Event()
-        self._timeout = timeout
-
         self._before_counter = 0
         self._after_counter = 0
 
+        self.logger = logger.SimpleBaseLogger("xyzabc._BlocingWatchdog")
+        self.logger.bind(loglevel="DEBUG", log_metadata={"task_name": self.task_name})
+
     def notify_alive_before(self):
         """
-        Notifies the watchdog that the Trio thread is alive before running
+        Notifies the watchdog that the Worker thread(the Event loop) is alive before running
         a task.
         """
         self._before_counter += 1
@@ -41,7 +47,7 @@ class _BlocingWatchdog(object):
 
     def notify_alive_after(self):
         """
-        Notifies the watchdog that the Trio thread is alive after running a
+        Notifies the watchdog that the Worker thread(the Event loop) is alive after running a
         task.
         """
         self._after_counter += 1
@@ -65,25 +71,35 @@ class _BlocingWatchdog(object):
                     return
 
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
-                    print(
-                        "Trio Watchdog has not received any notifications in "
-                        "{timeout} seconds, main thread is blocked!".format(timeout=self._timeout),
-                        file=sys.stderr,
+                    error_msg = (
+                        "ERROR: blocked tasks Watchdog has not received any notifications in {timeout} seconds. Main thread is blocked!"
+                        "\nHint: are you running any blocking calls? using python-requests? etc?".format(
+                            timeout=self._timeout
+                        )
                     )
-                    # faulthandler is not very useful to us, honestly
-                    # faulthandler.dump_traceback(all_threads=True)
-                    print("Printing the traceback of all threads:", file=sys.stderr)
-                    self._print_all_threads()
+                    all_threads_stack_trace = self._save_stack_trace()
+                    self.logger.log(
+                        logging.ERROR,
+                        {
+                            "event": "xyzabc._BlocingWatchdog.blocked",
+                            "stage": "end",
+                            "state": error_msg,
+                            "stack_trace": all_threads_stack_trace,
+                        },
+                    )
 
-    def _print_all_threads(self):
-        # separated for indent reasons, damned 80 char limit
+    def _save_stack_trace(self):
+        # we could also use: faulthandler.dump_traceback(all_threads=True)
+        stack_trace_of_all_threads_during_block = []
         for thread in threading.enumerate():
-            print("Thread {} (most recent call last):".format(thread.name), file=sys.stderr)
-            # scary internal function!
-            traceback.print_stack(sys._current_frames()[thread.ident])
+            daara = traceback.format_stack(f=sys._current_frames()[thread.ident])
+            stack_trace_of_all_threads_during_block.append(daara)
+            return stack_trace_of_all_threads_during_block
 
     def start(self):
-        self._thread = threading.Thread(target=self._main_loop, name="<trio watchdog>", daemon=True)
+        self._thread = threading.Thread(
+            target=self._main_loop, name="<xyzabc watchdog>", daemon=True
+        )
         self._thread.start()
 
     def stop(self):

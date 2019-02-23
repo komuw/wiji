@@ -53,7 +53,9 @@ class Worker:
         self.watchdog_timeout = watchdog_timeout
 
         if self.use_watchdog:
-            self.watchdog = _watchdog._BlocingWatchdog(self.watchdog_timeout)
+            self.watchdog = _watchdog._BlocingWatchdog(
+                timeout=self.watchdog_timeout, task_name=self.the_task.task_name
+            )
         else:
             self.watchdog = None
 

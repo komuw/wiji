@@ -69,16 +69,39 @@ async def produce_tasks_continously(task, *args, **kwargs):
         await task.async_delay(*args, **kwargs)
 
 
-def http_task(the_broker) -> xyzabc.task.Task:
+def BLOCKING_http_task(the_broker) -> xyzabc.task.Task:
     class MyTask(xyzabc.task.Task):
         async def async_run(self, *args, **kwargs):
             print()
-            print("RUNNING http_task:")
+            print("RUNNING BLOCKING_http_task:")
             import requests
 
             url = kwargs["url"]
             resp = requests.get(url)
             print("resp: ", resp)
+
+    task = MyTask(
+        the_broker=the_broker,
+        queue_name="HttpQueue",
+        eta=60.0,
+        retries=3,
+        log_id="myLogID",
+        hook_metadata='{"email": "example@example.com"}',
+    )
+    return task
+
+
+def http_task(the_broker) -> xyzabc.task.Task:
+    class MyTask(xyzabc.task.Task):
+        async def async_run(self, *args, **kwargs):
+            import aiohttp
+
+            url = kwargs["url"]
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    print("resp statsus: ", resp.status)
+                    res_text = await resp.text()
+                    print(res_text[:50])
 
     task = MyTask(
         the_broker=the_broker,
@@ -185,6 +208,9 @@ def multiplier_task(the_broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
+################## CHAIN ##################
+
+
 def exception_task(the_broker, chain=None) -> xyzabc.task.Task:
     class ExceptionTask(xyzabc.task.Task):
         async def async_run(self):
@@ -206,7 +232,25 @@ def exception_task(the_broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-################## CHAIN ##################
+def watchdog_task(the_broker, chain=None) -> xyzabc.task.Task:
+    class WatchDogTask(xyzabc.task.Task):
+        async def async_run(self):
+            print()
+            print("RUNNING watchdog_task:")
+            print()
+            await asyncio.sleep(0.2)
+
+    task = WatchDogTask(
+        the_broker=the_broker,
+        queue_name="WatchDogTask",
+        eta=60.1,
+        retries=3,
+        log_id="watchdog_task_myLogID",
+        hook_metadata='{"email": "watchdog_task"}',
+        chain=chain,
+    )
+    return task
+
 
 if __name__ == "__main__":
     main()
@@ -220,18 +264,18 @@ if __name__ == "__main__":
     # 1. publish task
 
     # ##### publish 1 ###############
-    # multiplier = multiplier_task(the_broker=MY_BROKER)
-    # divider = divider_task(the_broker=MY_BROKER, chain=multiplier)
+    multiplier = multiplier_task(the_broker=MY_BROKER)
+    divider = divider_task(the_broker=MY_BROKER, chain=multiplier)
 
-    # adder = adder_task(the_broker=MY_BROKER, chain=divider)
-    # adder.blocking_delay(3, 7)
-    # #############################################
+    adder = adder_task(the_broker=MY_BROKER, chain=divider)
+    adder.blocking_delay(3, 7)
+    #############################################
 
-    # # ALTERNATIVE way of chaining
-    # adder = adder_task(the_broker=MY_BROKER)
-    # divider = divider_task(the_broker=MY_BROKER)
-    # multiplier = multiplier_task(the_broker=MY_BROKER)
-    # adder | divider | multiplier
+    # ALTERNATIVE way of chaining
+    adder = adder_task(the_broker=MY_BROKER)
+    divider = divider_task(the_broker=MY_BROKER)
+    multiplier = multiplier_task(the_broker=MY_BROKER)
+    adder | divider | multiplier
 
     #####################################
     http_task1 = http_task(the_broker=MY_BROKER)
@@ -240,14 +284,28 @@ if __name__ == "__main__":
     print_task2 = print_task(the_broker=MY_BROKER)
     print_task2.blocking_delay("myarg", my_kwarg="my_kwarg")
 
-    # exception_task22 = exception_task(the_broker=MY_BROKER)
+    exception_task22 = exception_task(the_broker=MY_BROKER)
     #####################################
 
-    all_tasks = [http_task1, print_task2]
+    BLOCKING_task = BLOCKING_http_task(the_broker=MY_BROKER)
+
+    all_tasks = [
+        http_task1,
+        print_task2,
+        adder,
+        divider,
+        multiplier,
+        exception_task22,
+        BLOCKING_task,
+    ]
     workers = []
     for task in all_tasks:
         _worker = xyzabc.Worker(the_task=task)
         workers.append(_worker)
+
+    watchie_task = watchdog_task(the_broker=MY_BROKER)
+    watchie_worker = xyzabc.Worker(the_task=watchie_task, use_watchdog=True, watchdog_timeout=5.2)
+    workers.append(watchie_worker)
 
     consumers = []
     for i in workers:
@@ -256,6 +314,10 @@ if __name__ == "__main__":
     producers = [
         produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
         produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
+        produce_tasks_continously(task=adder, a=23, b=67),
+        produce_tasks_continously(task=exception_task22),
+        produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
+        produce_tasks_continously(task=watchie_task),
     ]
 
     # 2.consume tasks

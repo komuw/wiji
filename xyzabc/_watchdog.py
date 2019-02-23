@@ -19,6 +19,18 @@ from . import logger
 # Eventually we should adopt the solution that eventually gets merged into Trio(or alternatively; adopt Trio itself)
 
 
+class BlockingTaskError(BlockingIOError):
+    """
+    Exception raised by xyzabc when the main asyncio thread is blocked by either
+    an IO bound task execution or a CPU bound task execution.
+
+    This Exception is raised in a separate thread(from the main asyncio thread) and thus does not
+    impact the main thread.
+    """
+
+    pass
+
+
 class _BlocingWatchdog:
     """
     monitors for any blocking calls in an otherwise async coroutine.
@@ -79,7 +91,7 @@ class _BlocingWatchdog:
                                 timeout=self._timeout
                             )
                         )
-                        raise BlockingIOError(error_msg)
+                        raise BlockingTaskError(error_msg)
                     except Exception as e:
                         all_threads_stack_trace = self._save_stack_trace()
                         self.logger.log(

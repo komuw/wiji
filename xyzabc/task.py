@@ -243,8 +243,8 @@ class Task:
 
     def _sanity_check_logger(self, event):
         """
-        called when instantiating the Task just to make sure the supplied
-        logger can log.
+        Called when we want to make sure the supplied logger can log.
+        This usually happens when we are instantiating a xyzabc.Task or a xyzabc.Worker
         """
         try:
             self.logger.log(logging.DEBUG, {"event": event})

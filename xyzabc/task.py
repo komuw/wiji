@@ -321,7 +321,7 @@ class _watchDogTask(Task):
 
     async def async_run(self):
         self._log(
-            logging.INFO,
+            logging.DEBUG,
             {
                 "event": "xyzabc.WatchDogTask.async_run",
                 "state": "watchdog_run",

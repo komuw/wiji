@@ -149,6 +149,8 @@ class Worker:
         """
         if self.watchdog is not None:
             self.watchdog.start()
+            # queue the first watchdog task
+            await self.the_task.async_delay()
 
         retry_count = 0
         while True:

@@ -303,7 +303,7 @@ class _watchDogTask(Task):
         retries=0,
         log_id="log_id",
         hook_metadata="hook_metadata",
-        the_broker=broker.SimpleBroker(),
+        the_broker=broker.YoloBroker(),
         queue_name="WatchDogTask_Queue",
         task_name=None,
         task_id=None,
@@ -329,7 +329,9 @@ class _watchDogTask(Task):
                 "task_id": self.task_id,
             },
         )
-        await asyncio.sleep(0.01)
+        # queue another watchdog task
+        await self.async_delay()
+        await asyncio.sleep(0.05)
 
 
 WatchDogTask = _watchDogTask()

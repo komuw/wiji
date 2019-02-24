@@ -1,4 +1,5 @@
 import abc
+import time
 import asyncio
 import typing
 
@@ -83,6 +84,8 @@ class YoloBroker(BaseBroker):
         """
         self.queue: asyncio.queues.Queue = asyncio.Queue(maxsize=maxsize)
         self.store: dict = {}
+        self.max_ttl: float = 20 * 60  # 20mins
+        self.start_timer = time.monotonic()
 
     async def enqueue(self, item: str, queue_name: str) -> None:
         if self.store.get(queue_name):
@@ -91,6 +94,9 @@ class YoloBroker(BaseBroker):
             self.store[queue_name] = [item]
         self.queue.put_nowait(self.store)
 
+        # garbage collect
+        await self.delete_after_ttl()
+
     async def dequeue(self, queue_name: str) -> str:
         store = await self.queue.get()
         if queue_name in store:
@@ -98,6 +104,17 @@ class YoloBroker(BaseBroker):
                 return self.store[queue_name].pop(0)
             except IndexError:
                 # queue is empty
-                await asyncio.sleep(5)
+                await asyncio.sleep(1.5)
         else:
             raise ValueError("queue with name: {0} does not exist.".format(queue_name))
+
+    async def delete_after_ttl(self) -> None:
+        """
+        iterate over all stored items and delete any that are
+        older than self.max_ttl seconds
+        """
+        now = time.monotonic()
+        time_diff = now - self.start_timer
+        if time_diff > self.max_ttl:
+            for key in list(self.store.keys()):
+                self.store[key] = []

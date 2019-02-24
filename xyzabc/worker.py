@@ -24,7 +24,7 @@ class Worker:
         the_task: task.Task,
         worker_id=None,
         use_watchdog: bool = False,
-        watchdog_timeout: float = 5.0,
+        watchdog_timeout: float = 0.1,  # 100ms
     ) -> None:
         """
         """

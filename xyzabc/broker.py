@@ -2,6 +2,7 @@ import abc
 import time
 import asyncio
 import typing
+import json
 
 
 class BaseBroker(abc.ABC):
@@ -48,6 +49,21 @@ class SimpleBroker(BaseBroker):
         """
         """
         self.store: dict = {}
+
+        WatchDogTask_Queue_name = "WatchDogTask_Queue"
+        WatchDogTask_Queue_init = {
+            "version": 1,
+            "task_id": "3c03f930-3098-44bd-a4e3-fee5162dd0e2",
+            "eta": "2019-02-24T17:37:06.534478",
+            "retries": 0,
+            "queue_name": WatchDogTask_Queue_name,
+            "log_id": "log_id",
+            "hook_metadata": "hook_metadata",
+            "timelimit": 1800,
+            "args": [],
+            "kwargs": {},
+        }
+        self.store[WatchDogTask_Queue_name] = [json.dumps(WatchDogTask_Queue_init)]
 
     async def enqueue(self, item: str, queue_name: str) -> None:
         if self.store.get(queue_name):

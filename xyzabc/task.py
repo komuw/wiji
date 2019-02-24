@@ -303,7 +303,7 @@ class _watchDogTask(Task):
         retries=0,
         log_id="log_id",
         hook_metadata="hook_metadata",
-        the_broker=broker.YoloBroker(),
+        the_broker=broker.SimpleBroker(),
         queue_name="WatchDogTask_Queue",
         task_name=None,
         task_id=None,
@@ -318,6 +318,25 @@ class _watchDogTask(Task):
         super(_watchDogTask, self).__init__(
             the_broker, queue_name, eta, retries, log_id, hook_metadata
         )
+        # Enables task watchdog. This will spawn a separate thread that will check if any tasks are blocked,
+        # and if so will notify you and print the stack traces of all threads to show exactly where the program is blocked.
+        self.use_watchdog: bool = True
+
+        # The number of seconds the watchdog will wait before notifying that the main thread is blocked.
+        self.watchdog_timeout: float = 0.1  # 100 millisecond
+
+        if not isinstance(self.use_watchdog, bool):
+            raise ValueError(
+                """`use_watchdog` should be of type:: `bool` You entered: {0}""".format(
+                    type(self.use_watchdog)
+                )
+            )
+        if not isinstance(self.watchdog_timeout, float):
+            raise ValueError(
+                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
+                    type(self.watchdog_timeout)
+                )
+            )
 
     async def async_run(self):
         self._log(
@@ -329,9 +348,7 @@ class _watchDogTask(Task):
                 "task_id": self.task_id,
             },
         )
-        # queue another watchdog task
-        await self.async_delay()
-        # await asyncio.sleep(0.05)
+        await asyncio.sleep(self.watchdog_timeout / 2)
 
 
 WatchDogTask = _watchDogTask()

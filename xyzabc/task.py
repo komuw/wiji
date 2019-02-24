@@ -294,3 +294,42 @@ class Task:
     def blocking_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.async_delay(*args, **kwargs))
+
+
+class _watchDogTask(Task):
+    def __init__(
+        self,
+        eta=0.00,
+        retries=0,
+        log_id="log_id",
+        hook_metadata="hook_metadata",
+        the_broker=broker.SimpleBroker(),
+        queue_name="WatchDogTask_Queue",
+        task_name=None,
+        task_id=None,
+        chain=None,
+        the_hook=None,
+        rateLimiter=None,
+        loglevel: str = "DEBUG",
+        log_metadata=None,
+        log_handler=None,
+    ):
+        # we should always use in-memory broker for watchdog task
+        super(_watchDogTask, self).__init__(
+            the_broker, queue_name, eta, retries, log_id, hook_metadata
+        )
+
+    async def async_run(self):
+        self._log(
+            logging.INFO,
+            {
+                "event": "xyzabc.WatchDogTask.async_run",
+                "state": "watchdog_run",
+                "task_name": self.task_name,
+                "task_id": self.task_id,
+            },
+        )
+        await asyncio.sleep(0.01)
+
+
+WatchDogTask = _watchDogTask()

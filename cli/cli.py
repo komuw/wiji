@@ -252,26 +252,6 @@ def exception_task(the_broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-def watchdog_task(the_broker, chain=None) -> xyzabc.task.Task:
-    class WatchDogTask(xyzabc.task.Task):
-        async def async_run(self):
-            print()
-            print("RUNNING watchdog_task:")
-            print()
-            await asyncio.sleep(0.2)
-
-    task = WatchDogTask(
-        the_broker=the_broker,
-        queue_name="WatchDogTask",
-        eta=60.1,
-        retries=3,
-        log_id="watchdog_task_myLogID",
-        hook_metadata='{"email": "watchdog_task"}',
-        chain=chain,
-    )
-    return task
-
-
 if __name__ == "__main__":
     main()
     """
@@ -323,8 +303,7 @@ if __name__ == "__main__":
         _worker = xyzabc.Worker(the_task=task)
         workers.append(_worker)
 
-    watchie_task = watchdog_task(the_broker=MY_BROKER)
-    watchie_worker = xyzabc.Worker(the_task=watchie_task, use_watchdog=True, watchdog_timeout=5.2)
+    watchie_worker = xyzabc.Worker(the_task=xyzabc.task.WatchDogTask, use_watchdog=True)
     workers.append(watchie_worker)
 
     consumers = []
@@ -337,7 +316,7 @@ if __name__ == "__main__":
         produce_tasks_continously(task=adder, a=23, b=67),
         produce_tasks_continously(task=exception_task22),
         produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
-        produce_tasks_continously(task=watchie_task),
+        produce_tasks_continously(task=xyzabc.task.WatchDogTask),
     ]
 
     # 2.consume tasks

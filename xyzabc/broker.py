@@ -66,3 +66,38 @@ class SimpleBroker(BaseBroker):
                     await asyncio.sleep(5)
             else:
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
+
+
+class YoloBroker(BaseBroker):
+    """
+    This is an in-memory implementation of BaseBroker.
+
+    Note: It should only be used for tests and demo purposes.
+    """
+
+    def __init__(self, maxsize: int = 0) -> None:
+        """
+        Parameters:
+            maxsize: the maximum number of items(not size) that can be put in the queue.
+            loop: an event loop
+        """
+        self.queue: asyncio.queues.Queue = asyncio.Queue(maxsize=maxsize)
+        self.store: dict = {}
+
+    async def enqueue(self, item: str, queue_name: str) -> None:
+        if self.store.get(queue_name):
+            self.store[queue_name].append(item)
+        else:
+            self.store[queue_name] = [item]
+        self.queue.put_nowait(self.store)
+
+    async def dequeue(self, queue_name: str) -> str:
+        store = await self.queue.get()
+        if queue_name in store:
+            try:
+                return self.store[queue_name].pop(0)
+            except IndexError:
+                # queue is empty
+                await asyncio.sleep(5)
+        else:
+            raise ValueError("queue with name: {0} does not exist.".format(queue_name))

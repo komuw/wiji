@@ -331,7 +331,7 @@ class _watchDogTask(Task):
         )
         # queue another watchdog task
         await self.async_delay()
-        await asyncio.sleep(0.05)
+        # await asyncio.sleep(0.05)
 
 
 WatchDogTask = _watchDogTask()

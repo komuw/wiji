@@ -101,6 +101,8 @@ class YoloBroker(BaseBroker):
         store = await self.queue.get()
         if queue_name in store:
             try:
+                # garbage collect
+                await self.delete_after_ttl()
                 return self.store[queue_name].pop(0)
             except IndexError:
                 # queue is empty

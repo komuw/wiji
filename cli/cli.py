@@ -259,7 +259,7 @@ if __name__ == "__main__":
         python cli/cli.py
     """
 
-    MY_BROKER = xyzabc.broker.YoloBroker()
+    MY_BROKER = xyzabc.broker.SimpleBroker()
 
     # 1. publish task
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
         _worker = xyzabc.Worker(the_task=task)
         workers.append(_worker)
 
-    watchie_worker = xyzabc.Worker(the_task=xyzabc.task.WatchDogTask, use_watchdog=True)
+    watchie_worker = xyzabc.Worker(the_task=xyzabc.task.WatchDogTask)
     workers.append(watchie_worker)
 
     consumers = []
@@ -316,6 +316,7 @@ if __name__ == "__main__":
         produce_tasks_continously(task=adder, a=23, b=67),
         produce_tasks_continously(task=exception_task22),
         produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
+        produce_tasks_continously(task=xyzabc.task.WatchDogTask),
     ]
 
     # 2.consume tasks

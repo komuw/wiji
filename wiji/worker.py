@@ -175,11 +175,10 @@ class Worker:
                 task_version = item_to_dequeue["version"]
                 task_id = item_to_dequeue["task_id"]
                 task_eta = item_to_dequeue["eta"]
-                task_retries = item_to_dequeue["retries"]
-                task_queue_name = item_to_dequeue["queue_name"]
+                task_current_retries = item_to_dequeue["current_retries"]
+                task_max_retries = item_to_dequeue["max_retries"]
                 task_log_id = item_to_dequeue["log_id"]
                 task_hook_metadata = item_to_dequeue["hook_metadata"]
-                task_timelimit = item_to_dequeue["timelimit"]
                 task_args = item_to_dequeue["args"]
                 task_kwargs = item_to_dequeue["kwargs"]
             except KeyError as e:

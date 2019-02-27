@@ -113,9 +113,7 @@ class _BlocingWatchdog:
             return stack_trace_of_all_threads_during_block
 
     def start(self):
-        self._thread = threading.Thread(
-            target=self._main_loop, name="<wiji watchdog>", daemon=True
-        )
+        self._thread = threading.Thread(target=self._main_loop, name="<wiji watchdog>", daemon=True)
         self._thread.start()
 
     def stop(self):

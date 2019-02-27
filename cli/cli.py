@@ -78,14 +78,7 @@ def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
 
             subprocess.run(["dd", "if=/dev/zero", "of=/dev/null", "bs=500000", "count=1000000"])
 
-    task = BlockingDiskIOTask(
-        the_broker=the_broker,
-        queue_name="BlockingDiskIOTask",
-        eta=60.0,
-        retries=3,
-        log_id="BlockingDiskIOTask_LogID",
-        hook_metadata='{"email": "BlockingDiskIOTask"}',
-    )
+    task = BlockingDiskIOTask(the_broker=the_broker, queue_name="BlockingDiskIOTask")
     return task
 
 
@@ -100,14 +93,7 @@ def BLOCKING_http_task(the_broker) -> wiji.task.Task:
             resp = requests.get(url)
             print("resp: ", resp)
 
-    task = MyTask(
-        the_broker=the_broker,
-        queue_name="HttpQueue",
-        eta=60.0,
-        retries=3,
-        log_id="myLogID",
-        hook_metadata='{"email": "example@example.com"}',
-    )
+    task = MyTask(the_broker=the_broker, queue_name="HttpQueue")
     return task
 
 
@@ -123,14 +109,7 @@ def http_task(the_broker) -> wiji.task.Task:
                     res_text = await resp.text()
                     print(res_text[:50])
 
-    task = MyTask(
-        the_broker=the_broker,
-        queue_name="HttpQueue",
-        eta=60.0,
-        retries=3,
-        log_id="myLogID",
-        hook_metadata='{"email": "example@example.com"}',
-    )
+    task = MyTask(the_broker=the_broker, queue_name="HttpQueue")
     return task
 
 
@@ -149,14 +128,7 @@ def print_task(the_broker) -> wiji.task.Task:
             h.hexdigest()
             await asyncio.sleep(0.4)
 
-    task = MyTask(
-        the_broker=the_broker,
-        queue_name="PrintQueue",
-        eta=60.0,
-        retries=3,
-        log_id="myLogID",
-        hook_metadata='{"email": "example@example.com"}',
-    )
+    task = MyTask(the_broker=the_broker, queue_name="PrintQueue")
     return task
 
 
@@ -172,15 +144,7 @@ def adder_task(the_broker, chain=None) -> wiji.task.Task:
             await asyncio.sleep(2)
             return res
 
-    task = AdderTask(
-        the_broker=the_broker,
-        queue_name="AdderTaskQueue",
-        eta=60.8,
-        retries=3,
-        log_id="adder_task_myLogID",
-        hook_metadata='{"email": "adder_task"}',
-        chain=chain,
-    )
+    task = AdderTask(the_broker=the_broker, queue_name="AdderTaskQueue", chain=chain)
     return task
 
 
@@ -194,15 +158,7 @@ def divider_task(the_broker, chain=None) -> wiji.task.Task:
             print()
             return res
 
-    task = DividerTask(
-        the_broker=the_broker,
-        queue_name="DividerTaskQueue",
-        eta=60.9,
-        retries=3,
-        log_id="divider_task_myLogID",
-        hook_metadata='{"email": "divider_task"}',
-        chain=chain,
-    )
+    task = DividerTask(the_broker=the_broker, queue_name="DividerTaskQueue", chain=chain)
     return task
 
 
@@ -216,15 +172,7 @@ def multiplier_task(the_broker, chain=None) -> wiji.task.Task:
             print()
             return res
 
-    task = MultiplierTask(
-        the_broker=the_broker,
-        queue_name="MultiplierTaskQueue",
-        eta=60.7,
-        retries=3,
-        log_id="multiplier_task_myLogID",
-        hook_metadata='{"email": "multiplier_task"}',
-        chain=chain,
-    )
+    task = MultiplierTask(the_broker=the_broker, queue_name="MultiplierTaskQueue", chain=chain)
     return task
 
 
@@ -240,15 +188,7 @@ def exception_task(the_broker, chain=None) -> wiji.task.Task:
             await asyncio.sleep(0.5)
             raise ValueError("\n Houston We got 99 problems. \n")
 
-    task = ExceptionTask(
-        the_broker=the_broker,
-        queue_name="ExceptionTaskQueue",
-        eta=60.1,
-        retries=3,
-        log_id="exception_task_myLogID",
-        hook_metadata='{"email": "exception_task"}',
-        chain=chain,
-    )
+    task = ExceptionTask(the_broker=the_broker, queue_name="ExceptionTaskQueue", chain=chain)
     return task
 
 
@@ -268,7 +208,8 @@ if __name__ == "__main__":
     divider = divider_task(the_broker=MY_BROKER, chain=multiplier)
 
     adder = adder_task(the_broker=MY_BROKER, chain=divider)
-    adder.blocking_delay(3, 7)
+
+    adder.blocking_delay(3, 7, task_options=wiji.task.TaskOptions(eta=76.87))
     #############################################
 
     # ALTERNATIVE way of chaining
@@ -325,3 +266,10 @@ if __name__ == "__main__":
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)
+
+
+# eta,
+# retries,
+# log_id,
+# hook_metadata,
+# task_id=None,

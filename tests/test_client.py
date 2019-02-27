@@ -8,7 +8,7 @@ import asyncio
 import logging
 from unittest import TestCase
 
-import xyzabc
+import wiji
 import mock
 
 
@@ -38,7 +38,7 @@ class TestWorker(TestCase):
 
     def setUp(self):
         self.loop = asyncio.get_event_loop()
-        self.cli = xyzabc.Worker()
+        self.cli = wiji.Worker()
 
     def tearDown(self):
         pass
@@ -54,7 +54,7 @@ class TestWorker(TestCase):
 
     def test_bad_instantiation(self):
         def mock_create_worker():
-            xyzabc.Worker()
+            wiji.Worker()
 
         self.assertRaises(ValueError, mock_create_worker)
         with self.assertRaises(ValueError) as raised_exception:

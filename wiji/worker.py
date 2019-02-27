@@ -48,7 +48,7 @@ class Worker:
     def _validate_worker_args(self, the_task, worker_id):
         if not isinstance(the_task, task.Task):
             raise ValueError(
-                """`the_task` should be of type:: `xyzabc.task.Task` You entered: {0}""".format(
+                """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
                     type(the_task)
                 )
             )
@@ -102,7 +102,7 @@ class Worker:
             self._log(
                 logging.ERROR,
                 {
-                    "event": "xyzabc.Worker.run",
+                    "event": "wiji.Worker.run",
                     "stage": "end",
                     "state": "task execution error",
                     "error": str(e),
@@ -129,7 +129,7 @@ class Worker:
         retry_count = 0
         while True:
 
-            self._log(logging.INFO, {"event": "xyzabc.Worker.consume_forever", "stage": "start"})
+            self._log(logging.INFO, {"event": "wiji.Worker.consume_forever", "stage": "start"})
 
             try:
                 # rate limit ourselves
@@ -138,7 +138,7 @@ class Worker:
                 self._log(
                     logging.ERROR,
                     {
-                        "event": "xyzabc.Worker.consume_forever",
+                        "event": "wiji.Worker.consume_forever",
                         "stage": "end",
                         "state": "consume_forever error",
                         "error": str(e),
@@ -157,7 +157,7 @@ class Worker:
                 self._log(
                     logging.ERROR,
                     {
-                        "event": "xyzabc.Worker.consume_forever",
+                        "event": "wiji.Worker.consume_forever",
                         "stage": "end",
                         "state": "consume_forever error. sleeping for {0}minutes".format(
                             poll_queue_interval / 60
@@ -187,7 +187,7 @@ class Worker:
                 self._log(
                     logging.ERROR,
                     {
-                        "event": "xyzabc.Worker.consume_forever",
+                        "event": "wiji.Worker.consume_forever",
                         "stage": "end",
                         "state": "consume_forever error",
                         "error": str(e),
@@ -199,7 +199,7 @@ class Worker:
             self._log(
                 logging.INFO,
                 {
-                    "event": "xyzabc.Worker.consume_forever",
+                    "event": "wiji.Worker.consume_forever",
                     "stage": "end",
                     "log_id": task_log_id,
                     "task_id": task_id,
@@ -212,7 +212,7 @@ class Worker:
     def shutdown(self):
         """
         Cleanly shutdown worker.
-        TODO: see, https://github.com/komuw/xyzabc/issues/2
+        TODO: see, https://github.com/komuw/wiji/issues/2
         """
         if self.watchdog is not None:
             self.watchdog.stop()

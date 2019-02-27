@@ -17,14 +17,14 @@ import os
 import ast
 
 
-project = "xyzabc"
+project = "wiji"
 copyright = "2019, Komu Wairagu"
 author = "Komu Wairagu"
 
 
 here = os.path.abspath(os.path.dirname(__file__))
 about = {}
-with open(os.path.join(here, "../../xyzabc", "__version__.py"), "r") as f:
+with open(os.path.join(here, "../../wiji", "__version__.py"), "r") as f:
     x = f.read()
     y = x.replace("about = ", "")
     about = ast.literal_eval(y)
@@ -98,7 +98,7 @@ html_theme = "alabaster"
 # html_theme_options = {}
 # see: https://github.com/bitprophet/alabaster/blob/master/docs/customization.rst
 html_theme_options = {
-    "description": "xyzabc is an async blah blash.",
+    "description": "wiji is an async blah blash.",
     "github_banner": False,
     "travis_button": False,  # see: https://github.com/bitprophet/alabaster/pull/147
     "badge_branch": "master",
@@ -106,7 +106,7 @@ html_theme_options = {
     "show_related": True,
     "github_user": "komuw",
     "pre_bg": "#4c4c4c",
-    "github_repo": "xyzabc",
+    "github_repo": "wiji",
     "github_type": "star",
     "github_button": True,
 }
@@ -130,7 +130,7 @@ html_theme_options = {
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "xyzabcdoc"
+htmlhelp_basename = "wijidoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -153,14 +153,14 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [(master_doc, "xyzabc.tex", "xyzabc Documentation", "Komu Wairagu", "manual")]
+latex_documents = [(master_doc, "wiji.tex", "wiji Documentation", "Komu Wairagu", "manual")]
 
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "xyzabc", "xyzabc Documentation", [author], 1)]
+man_pages = [(master_doc, "wiji", "wiji Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -171,10 +171,10 @@ man_pages = [(master_doc, "xyzabc", "xyzabc Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "xyzabc",
-        "xyzabc Documentation",
+        "wiji",
+        "wiji Documentation",
         author,
-        "xyzabc",
+        "wiji",
         "One line description of project.",
         "Miscellaneous",
     )

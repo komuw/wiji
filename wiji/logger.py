@@ -10,8 +10,8 @@ class BaseLogger(abc.ABC):
     @abc.abstractmethod
     def bind(self, loglevel: str, log_metadata: dict) -> None:
         """
-        called when a xyzabc worker is been instantiated so that the logger can be
-        notified of loglevel & log_metadata that a user supplied to a xyzabc worker.
+        called when a wiji worker is been instantiated so that the logger can be
+        notified of loglevel & log_metadata that a user supplied to a wiji worker.
         The logger can choose to bind these log_metadata to itself.
 
         Parameters:
@@ -23,7 +23,7 @@ class BaseLogger(abc.ABC):
     @abc.abstractmethod
     def log(self, level: int, log_data: dict) -> None:
         """
-        called by xyzabc everytime it wants to log something.
+        called by wiji everytime it wants to log something.
 
         Parameters:
             level: logging level eg `logging.INFO`
@@ -64,7 +64,7 @@ class SimpleBaseLogger(BaseLogger):
         if not self._logger.handlers:
             self._logger.addHandler(handler)
         self._logger.setLevel(loglevel)
-        self.logger: logging.LoggerAdapter = xyzabcLoggingAdapter(self._logger, log_metadata)
+        self.logger: logging.LoggerAdapter = wijiLoggingAdapter(self._logger, log_metadata)
 
     def log(self, level: int, log_data: dict) -> None:
         if not self.logger:
@@ -75,7 +75,7 @@ class SimpleBaseLogger(BaseLogger):
             self.logger.log(level, log_data)
 
 
-class xyzabcLoggingAdapter(logging.LoggerAdapter):
+class wijiLoggingAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         if isinstance(msg, str):
             merged_msg = "{0} {1}".format(msg, self.extra)

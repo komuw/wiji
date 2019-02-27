@@ -20,7 +20,7 @@ class Task:
         Task()(33,"hello", name="komu")
 
     usage:
-        broker = xyzabc.broker.SimpleBroker()
+        broker = wiji.broker.SimpleBroker()
         task = Task(
                 broker=broker,
                 queue_name="PrintQueue",
@@ -32,9 +32,9 @@ class Task:
         task.delay(33, "hello", name="komu")
     
     You can also chain things as:
-        task1 = xyzabc.task.Task()
-        task2 = xyzabc.task.Task(chain=task1)
-        task3 = xyzabc.task.Task(chain=task2)
+        task1 = wiji.task.Task()
+        task2 = wiji.task.Task(chain=task1)
+        task3 = wiji.task.Task(chain=task2)
     """
 
     def __init__(
@@ -104,7 +104,7 @@ class Task:
 
         self.logger = log_handler
         if not self.logger:
-            self.logger = logger.SimpleBaseLogger("xyzabc.Task")
+            self.logger = logger.SimpleBaseLogger("wiji.Task")
         self.logger.bind(loglevel=self.loglevel, log_metadata=self.log_metadata)
         self._sanity_check_logger(event="task_sanity_check_logger")
 
@@ -122,9 +122,9 @@ class Task:
         It should die a swift death.
 
         This allows someone to do:
-            task1 = xyzabc.task.Task()
-            task2 = xyzabc.task.Task()
-            task3 = xyzabc.task.Task()
+            task1 = wiji.task.Task()
+            task2 = wiji.task.Task()
+            task3 = wiji.task.Task()
 
             task1 | task2 | task3
         """
@@ -153,7 +153,7 @@ class Task:
     ):
         if not isinstance(the_broker, (type(None), broker.BaseBroker)):
             raise ValueError(
-                """the_broker should be of type:: None or xyzabc.broker.BaseBroker You entered: {0}""".format(
+                """the_broker should be of type:: None or wiji.broker.BaseBroker You entered: {0}""".format(
                     type(the_broker)
                 )
             )
@@ -195,25 +195,25 @@ class Task:
             )
         if not isinstance(chain, (type(None), Task)):
             raise ValueError(
-                """`chain` should be of type:: `None` or `xyzabc.task.Task` You entered: {0}""".format(
+                """`chain` should be of type:: `None` or `wiji.task.Task` You entered: {0}""".format(
                     type(chain)
                 )
             )
         if not isinstance(the_hook, (type(None), hook.BaseHook)):
             raise ValueError(
-                """`the_hook` should be of type:: `None` or `xyzabc.hook.BaseHook` You entered: {0}""".format(
+                """`the_hook` should be of type:: `None` or `wiji.hook.BaseHook` You entered: {0}""".format(
                     type(the_hook)
                 )
             )
         if not isinstance(rateLimiter, (type(None), ratelimiter.BaseRateLimiter)):
             raise ValueError(
-                """`rateLimiter` should be of type:: `None` or `xyzabc.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
+                """`rateLimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
                     type(rateLimiter)
                 )
             )
         if not isinstance(log_handler, (type(None), logger.BaseLogger)):
             raise ValueError(
-                """`log_handler` should be of type:: `None` or `xyzabc.logger.BaseLogger` You entered: {0}""".format(
+                """`log_handler` should be of type:: `None` or `wiji.logger.BaseLogger` You entered: {0}""".format(
                     type(log_handler)
                 )
             )
@@ -232,19 +232,19 @@ class Task:
 
         if not asyncio.iscoroutinefunction(self.async_run):
             raise ValueError(
-                "The method: `async_run` of a class derived from: `xyzabc.task.Task` should be a python coroutine."
+                "The method: `async_run` of a class derived from: `wiji.task.Task` should be a python coroutine."
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
         if not inspect.iscoroutinefunction(self.async_run):
             raise ValueError(
-                "The method: `async_run` of a class derived from: `xyzabc.task.Task` should be a python coroutine."
+                "The method: `async_run` of a class derived from: `wiji.task.Task` should be a python coroutine."
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
 
     def _sanity_check_logger(self, event):
         """
         Called when we want to make sure the supplied logger can log.
-        This usually happens when we are instantiating a xyzabc.Task or a xyzabc.Worker
+        This usually happens when we are instantiating a wiji.Task or a wiji.Worker
         """
         try:
             self.logger.log(logging.DEBUG, {"event": event})
@@ -342,7 +342,7 @@ class _watchDogTask(Task):
         self._log(
             logging.DEBUG,
             {
-                "event": "xyzabc.WatchDogTask.async_run",
+                "event": "wiji.WatchDogTask.async_run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
                 "task_id": self.task_id,

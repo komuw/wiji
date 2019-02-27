@@ -10,7 +10,7 @@ import inspect
 import argparse
 
 
-import xyzabc
+import wiji
 
 os.environ["PYTHONASYNCIODEBUG"] = "1"
 
@@ -69,8 +69,8 @@ async def produce_tasks_continously(task, *args, **kwargs):
         await task.async_delay(*args, **kwargs)
 
 
-def BLOCKING_DISK_IO(the_broker) -> xyzabc.task.Task:
-    class BlockingDiskIOTask(xyzabc.task.Task):
+def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
+    class BlockingDiskIOTask(wiji.task.Task):
         async def async_run(self, *args, **kwargs):
             print()
             print("RUNNING BlockingDiskIOTask:")
@@ -89,8 +89,8 @@ def BLOCKING_DISK_IO(the_broker) -> xyzabc.task.Task:
     return task
 
 
-def BLOCKING_http_task(the_broker) -> xyzabc.task.Task:
-    class MyTask(xyzabc.task.Task):
+def BLOCKING_http_task(the_broker) -> wiji.task.Task:
+    class MyTask(wiji.task.Task):
         async def async_run(self, *args, **kwargs):
             print()
             print("RUNNING BLOCKING_http_task:")
@@ -111,8 +111,8 @@ def BLOCKING_http_task(the_broker) -> xyzabc.task.Task:
     return task
 
 
-def http_task(the_broker) -> xyzabc.task.Task:
-    class MyTask(xyzabc.task.Task):
+def http_task(the_broker) -> wiji.task.Task:
+    class MyTask(wiji.task.Task):
         async def async_run(self, *args, **kwargs):
             import aiohttp
 
@@ -134,8 +134,8 @@ def http_task(the_broker) -> xyzabc.task.Task:
     return task
 
 
-def print_task(the_broker) -> xyzabc.task.Task:
-    class MyTask(xyzabc.task.Task):
+def print_task(the_broker) -> wiji.task.Task:
+    class MyTask(wiji.task.Task):
         async def async_run(self, *args, **kwargs):
             import hashlib
 
@@ -161,8 +161,8 @@ def print_task(the_broker) -> xyzabc.task.Task:
 
 
 ################## CHAIN ##################
-def adder_task(the_broker, chain=None) -> xyzabc.task.Task:
-    class AdderTask(xyzabc.task.Task):
+def adder_task(the_broker, chain=None) -> wiji.task.Task:
+    class AdderTask(wiji.task.Task):
         async def async_run(self, a, b):
             res = a + b
             print()
@@ -184,8 +184,8 @@ def adder_task(the_broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-def divider_task(the_broker, chain=None) -> xyzabc.task.Task:
-    class DividerTask(xyzabc.task.Task):
+def divider_task(the_broker, chain=None) -> wiji.task.Task:
+    class DividerTask(wiji.task.Task):
         async def async_run(self, a):
             res = a / 3
             print()
@@ -206,8 +206,8 @@ def divider_task(the_broker, chain=None) -> xyzabc.task.Task:
     return task
 
 
-def multiplier_task(the_broker, chain=None) -> xyzabc.task.Task:
-    class MultiplierTask(xyzabc.task.Task):
+def multiplier_task(the_broker, chain=None) -> wiji.task.Task:
+    class MultiplierTask(wiji.task.Task):
         async def async_run(self, bbb, a=5.5):
             res = bbb * a
             print()
@@ -231,8 +231,8 @@ def multiplier_task(the_broker, chain=None) -> xyzabc.task.Task:
 ################## CHAIN ##################
 
 
-def exception_task(the_broker, chain=None) -> xyzabc.task.Task:
-    class ExceptionTask(xyzabc.task.Task):
+def exception_task(the_broker, chain=None) -> wiji.task.Task:
+    class ExceptionTask(wiji.task.Task):
         async def async_run(self):
             print()
             print("RUNNING exception_task:")
@@ -259,7 +259,7 @@ if __name__ == "__main__":
         python cli/cli.py
     """
 
-    MY_BROKER = xyzabc.broker.SimpleBroker()
+    MY_BROKER = wiji.broker.SimpleBroker()
 
     # 1. publish task
 
@@ -300,10 +300,10 @@ if __name__ == "__main__":
     ]
     workers = []
     for task in all_tasks:
-        _worker = xyzabc.Worker(the_task=task)
+        _worker = wiji.Worker(the_task=task)
         workers.append(_worker)
 
-    watchie_worker = xyzabc.Worker(the_task=xyzabc.task.WatchDogTask)
+    watchie_worker = wiji.Worker(the_task=wiji.task.WatchDogTask)
     workers.append(watchie_worker)
 
     consumers = []
@@ -316,7 +316,7 @@ if __name__ == "__main__":
         produce_tasks_continously(task=adder, a=23, b=67),
         produce_tasks_continously(task=exception_task22),
         produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
-        produce_tasks_continously(task=xyzabc.task.WatchDogTask),
+        produce_tasks_continously(task=wiji.task.WatchDogTask),
     ]
 
     # 2.consume tasks

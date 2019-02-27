@@ -19,13 +19,13 @@ script:
   - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
   - black --line-length=100 --check . ||  { printf "\\n\\t please use black to format your code."; exit 77; }
   - flake8 .
-  - pylint --enable=E --disable=W,R,C --unsafe-load-any-extension=y examples/ xyzabc/ tests/ cli/ documentation/
+  - pylint --enable=E --disable=W,R,C --unsafe-load-any-extension=y examples/ wiji/ tests/ cli/ documentation/
   - bandit -r --exclude .venv -ll .
   # to find types, use reveal_type eg: reveal_type(asyncio.get_event_loop())
   # see: http://mypy.readthedocs.io/en/latest/common_issues.html#displaying-the-type-of-an-expression
-  - mypy --show-column-numbers xyzabc/ #--strict
-  - xyzabc-cli --version && xyzabc-cli --help
-  - xyzabc-cli --config examples/example_config.json --dry-run
+  - mypy --show-column-numbers wiji/ #--strict
+  - wiji-cli --version && wiji-cli --help
+  - wiji-cli --config examples/example_config.json --dry-run
   - coverage erase
   - export CI_ENVIRONMENT=Yes && coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s . && bash <(curl -s https://codecov.io/bash)
   - coverage report --show-missing --fail-under=84

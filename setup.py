@@ -8,7 +8,7 @@ import codecs
 
 here = os.path.abspath(os.path.dirname(__file__))
 about = {}
-with open(os.path.join(here, "xyzabc", "__version__.py"), "r") as f:
+with open(os.path.join(here, "wiji", "__version__.py"), "r") as f:
     x = f.read()
     y = x.replace("about = ", "")
     about = ast.literal_eval(y)
@@ -60,10 +60,10 @@ setup(
         "Programming Language :: Python :: 3.6",
     ],
     # What does your project relate to?
-    keywords="xyzabc, blah",
+    keywords="wiji, blah",
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    # packages=['xyzabc'],
+    # packages=['wiji'],
     packages=find_packages(
         exclude=[
             "documentation",
@@ -121,7 +121,7 @@ setup(
     #         'sample=sample:main',
     #     ],
     # },
-    entry_points={"console_scripts": ["xyzabc-cli=cli.cli:main"]},
+    entry_points={"console_scripts": ["wiji-cli=cli.cli:main"]},
 )
 
 # python packaging documentation:

@@ -7,11 +7,11 @@ import json
 
 class BaseBroker(abc.ABC):
     """
-    This is the interface that must be implemented to satisfy xyzabc's broker.
+    This is the interface that must be implemented to satisfy wiji's broker.
     User implementations should inherit this class and
     implement the :func:`enqueue <BaseBroker.enqueue>` and :func:`dequeue <BaseBroker.dequeue>` methods with the type signatures shown.
 
-    xyzabc calls an implementation of this class to enqueue and/or dequeue an item.
+    wiji calls an implementation of this class to enqueue and/or dequeue an item.
     """
 
     @abc.abstractmethod

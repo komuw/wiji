@@ -21,7 +21,7 @@ from . import logger
 
 class BlockingTaskError(BlockingIOError):
     """
-    Exception raised by xyzabc when the main asyncio thread is blocked by either
+    Exception raised by wiji when the main asyncio thread is blocked by either
     an IO bound task execution or a CPU bound task execution.
 
     This Exception is raised in a separate thread(from the main asyncio thread) and thus does not
@@ -46,7 +46,7 @@ class _BlocingWatchdog:
         self._before_counter = 0
         self._after_counter = 0
 
-        self.logger = logger.SimpleBaseLogger("xyzabc._BlocingWatchdog")
+        self.logger = logger.SimpleBaseLogger("wiji._BlocingWatchdog")
         self.logger.bind(loglevel="DEBUG", log_metadata={"task_name": self.task_name})
 
     def notify_alive_before(self):
@@ -97,7 +97,7 @@ class _BlocingWatchdog:
                         self.logger.log(
                             logging.ERROR,
                             {
-                                "event": "xyzabc._BlocingWatchdog.blocked",
+                                "event": "wiji._BlocingWatchdog.blocked",
                                 "stage": "end",
                                 "error": str(e),
                                 "stack_trace": all_threads_stack_trace,
@@ -114,7 +114,7 @@ class _BlocingWatchdog:
 
     def start(self):
         self._thread = threading.Thread(
-            target=self._main_loop, name="<xyzabc watchdog>", daemon=True
+            target=self._main_loop, name="<wiji watchdog>", daemon=True
         )
         self._thread.start()
 

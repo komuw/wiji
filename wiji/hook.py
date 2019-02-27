@@ -3,7 +3,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import xyzabc  # noqa: F401
+    import wiji  # noqa: F401
 
 
 class BaseHook(abc.ABC):
@@ -26,7 +26,7 @@ class BaseHook(abc.ABC):
 class SimpleHook(BaseHook):
     """
     This is an implementation of BaseHook.
-    When this class is called by xyzabc, it just logs the request or response.
+    When this class is called by wiji, it just logs the request or response.
     """
 
     def __init__(self, logger) -> None:
@@ -36,7 +36,7 @@ class SimpleHook(BaseHook):
         self.logger.log(
             logging.INFO,
             {
-                "event": "xyzabc.SimpleHook.request",
+                "event": "wiji.SimpleHook.request",
                 "stage": "start",
                 "task_id": task_id,
                 "log_id": log_id,
@@ -48,7 +48,7 @@ class SimpleHook(BaseHook):
         self.logger.log(
             logging.INFO,
             {
-                "event": "xyzabc.SimpleHook.response",
+                "event": "wiji.SimpleHook.response",
                 "stage": "start",
                 "task_id": task_id,
                 "log_id": log_id,

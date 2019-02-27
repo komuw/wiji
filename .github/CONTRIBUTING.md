@@ -1,11 +1,11 @@
-Thank you for thinking of contributing to xyzabc.                    
-Every contribution to xyzabc is important to.                       
+Thank you for thinking of contributing to wiji.                    
+Every contribution to wiji is important to.                       
                          
 
 Contributor offers to license certain software (a “Contribution” or multiple
-“Contributions”) to xyzabc, and xyzabc agrees to accept said Contributions,
+“Contributions”) to wiji, and wiji agrees to accept said Contributions,
 under the terms of the MIT License.
-Contributor understands and agrees that xyzabc shall have the irrevocable and perpetual right to make
+Contributor understands and agrees that wiji shall have the irrevocable and perpetual right to make
 and distribute copies of any Contribution, as well as to create and distribute collective works and
 derivative works of any Contribution, under the MIT License.
 
@@ -31,7 +31,7 @@ flake8 .
 ```                      
 - run [pylint](https://pypi.python.org/pypi/pylint) on the code and fix any issues:                      
 ```shell
-pylint --enable=E --disable=W,R,C --unsafe-load-any-extension=y examples/ xyzabc/ tests/ cli/
+pylint --enable=E --disable=W,R,C --unsafe-load-any-extension=y examples/ wiji/ tests/ cli/
 ```    
 - run bandit
 ```shell

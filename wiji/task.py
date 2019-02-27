@@ -289,7 +289,7 @@ class Task:
         for a in args:
             if isinstance(a, TaskOptions):
                 raise ValueError(
-                    "you cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Instead pass it in as a kwarg(named argument)"
+                    "you cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: pass it in as a kwarg(named argument)"
                 )
         for k, v in list(kwargs.items()):
             if isinstance(v, TaskOptions):

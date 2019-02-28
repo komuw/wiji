@@ -349,7 +349,7 @@ class _watchdogTask(Task):
                 "task_id": self.task_options.task_id,
             },
         )
-        await asyncio.sleep(0.1 / 3)
+        await asyncio.sleep(0.1 / 1.5)
 
 
 WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name="WatchDogTask_Queue")

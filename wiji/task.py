@@ -33,8 +33,9 @@ class TaskOptions:
             task_id=task_id,
         )
         self.eta = eta
-        if self.eta < 0:
-            self.eta = 0
+        if self.eta < 0.00:
+            self.eta = 0.00
+        self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
 
         self.current_retries = 0
         self.max_retries = max_retries
@@ -319,7 +320,6 @@ class Task(abc.ABC):
             argsy=args,
             kwargsy=kwargs,
         )
-
         await self.the_broker.enqueue(
             item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
         )

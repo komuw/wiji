@@ -1,4 +1,5 @@
 import json
+import typing
 import datetime
 
 
@@ -7,7 +8,7 @@ class Protocol:
         self,
         version: int,
         task_id: str,
-        eta: float,
+        eta: typing.Union[float, str],
         current_retries: int,
         max_retries: int,
         log_id: str,
@@ -29,13 +30,17 @@ class Protocol:
 
         self.version = version
         self.task_id = task_id
-        self.eta = self._eta_to_isoformat(eta=eta)
         self.current_retries = current_retries
         self.max_retries = max_retries
         self.log_id = log_id
         self.hook_metadata = hook_metadata
         self.argsy = argsy
         self.kwargsy = kwargsy
+
+        if isinstance(eta, float):
+            self.eta = self._eta_to_isoformat(eta=eta)
+        else:
+            self.eta = eta
 
     def _validate_protocol_args(
         self,
@@ -57,10 +62,20 @@ class Protocol:
             raise ValueError(
                 """`task_id` should be of type:: `str` You entered: {0}""".format(type(task_id))
             )
-        if not isinstance(eta, float):
+        if not isinstance(eta, (str, float)):
             raise ValueError(
-                """`eta` should be of type:: `float` You entered: {0}""".format(type(eta))
+                """`eta` should be of type:: `str` or `float` You entered: {0}""".format(type(eta))
             )
+        if isinstance(eta, str):
+            try:
+                # type-check that string eta is ISO 8601-formatted
+                self._from_isoformat(eta)
+            except Exception as e:
+                raise ValueError(
+                    """`eta` in string format should be a python ISO 8601-formatted string. You entered: {0}""".format(
+                        eta
+                    )
+                )
 
         if not isinstance(current_retries, int):
             raise ValueError(

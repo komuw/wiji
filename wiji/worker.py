@@ -11,7 +11,7 @@ import datetime
 from . import task
 from . import hook
 from . import logger
-
+from . import protocol
 from . import watchdog
 
 
@@ -219,7 +219,12 @@ class Worker:
                 )
                 continue
 
-            await self.run_task(*task_args, **task_kwargs)
+            now = datetime.datetime.now(tz=datetime.timezone.utc)
+            if protocol.Protocol._from_isoformat(task_eta) <= now:
+                await self.run_task(*task_args, **task_kwargs)
+            else:
+                # respect eta
+                await self.the_task.delay(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,
                 {

@@ -1,4 +1,5 @@
 import os
+import abc
 import uuid
 import json
 import asyncio
@@ -12,9 +13,79 @@ from . import broker
 from . import ratelimiter
 from . import hook
 from . import logger
+from . import protocol
 
 
-class Task:
+class TaskOptions:
+    def __init__(
+        self,
+        eta: float = 0.00,
+        max_retries: int = 0,
+        log_id: str = "",
+        hook_metadata=None,
+        task_id=None,
+    ):
+        self._validate_task_options_args(
+            eta=eta,
+            max_retries=max_retries,
+            log_id=log_id,
+            hook_metadata=hook_metadata,
+            task_id=task_id,
+        )
+        self.eta = eta
+        if self.eta < 0:
+            self.eta = 0
+
+        self.current_retries = 0
+        self.max_retries = max_retries
+        if self.max_retries < 0:
+            self.max_retries = 0
+
+        self.log_id = log_id
+        if not self.log_id:
+            self.log_id = ""
+
+        self.hook_metadata = hook_metadata
+        if not self.hook_metadata:
+            self.hook_metadata = ""
+
+        self.task_id = task_id
+        if not self.task_id:
+            self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    def _validate_task_options_args(self, eta, max_retries, log_id, hook_metadata, task_id):
+        if not isinstance(eta, float):
+            raise ValueError(
+                """`eta` should be of type:: `float` You entered: {0}""".format(type(eta))
+            )
+        if not isinstance(max_retries, int):
+            raise ValueError(
+                """`max_retries` should be of type:: `int` You entered: {0}""".format(
+                    type(max_retries)
+                )
+            )
+        if not isinstance(log_id, str):
+            raise ValueError(
+                """`log_id` should be of type:: `str` You entered: {0}""".format(type(log_id))
+            )
+        if not isinstance(hook_metadata, (type(None), str)):
+            raise ValueError(
+                """`hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
+                    type(hook_metadata)
+                )
+            )
+        if not isinstance(task_id, (type(None), str)):
+            raise ValueError(
+                """`task_id` should be of type:: `None` or `str` You entered: {0}""".format(
+                    type(task_id)
+                )
+            )
+
+
+class Task(abc.ABC):
     """
     call it as:
         Task()(33,"hello", name="komu")
@@ -41,12 +112,7 @@ class Task:
         self,
         the_broker: broker.BaseBroker,
         queue_name,
-        eta,
-        retries,
-        log_id,
-        hook_metadata,
         task_name=None,
-        task_id=None,
         chain=None,
         the_hook=None,
         rateLimiter=None,
@@ -57,12 +123,7 @@ class Task:
         self._validate_task_args(
             the_broker=the_broker,
             queue_name=queue_name,
-            eta=eta,
-            retries=retries,
-            log_id=log_id,
-            hook_metadata=hook_metadata,
             task_name=task_name,
-            task_id=task_id,
             chain=chain,
             the_hook=the_hook,
             rateLimiter=rateLimiter,
@@ -73,12 +134,7 @@ class Task:
 
         self.the_broker = the_broker
         self.queue_name = queue_name
-        self.eta = eta
-        self.retries = retries
-        self.log_id = log_id
-        self.hook_metadata = hook_metadata
         self.task_name = task_name
-        self.task_id = task_id
         self.chain = chain
         self.loglevel = loglevel.upper()
 
@@ -86,21 +142,10 @@ class Task:
         if not self.task_name:
             self.task_name = self.__class__.__name__
 
-        self.task_id = task_id
-        if not self.task_id:
-            self.task_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
-
         self.log_metadata = log_metadata
         if not self.log_metadata:
             self.log_metadata = {}
-        self.log_metadata.update(
-            {
-                "task_name": self.task_name,
-                "task_id": self.task_id,
-                "log_id": self.log_id,
-                "queue_name": self.queue_name,
-            }
-        )
+        self.log_metadata.update({"task_name": self.task_name, "queue_name": self.queue_name})
 
         self.logger = log_handler
         if not self.logger:
@@ -115,6 +160,8 @@ class Task:
         self.rateLimiter = rateLimiter
         if not self.rateLimiter:
             self.rateLimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
+
+        self.task_options = TaskOptions()
 
     def __or__(self, other):
         """
@@ -134,16 +181,22 @@ class Task:
     async def __call__(self, *args, **kwargs):
         await self.async_run(*args, **kwargs)
 
+    def __str__(self):
+        return str(
+            {
+                "task_name": self.task_name,
+                "the_broker": self.the_broker,
+                "queue_name": self.queue_name,
+                "chain": self.chain,
+                "task_options": self.task_options.__dict__,
+            }
+        )
+
     def _validate_task_args(
         self,
         the_broker,
         queue_name,
-        eta,
-        retries,
-        log_id,
-        hook_metadata,
         task_name,
-        task_id,
         chain,
         the_hook,
         rateLimiter,
@@ -163,34 +216,11 @@ class Task:
                     type(queue_name)
                 )
             )
-        if not isinstance(eta, float):
-            raise ValueError(
-                """`eta` should be of type:: `float` You entered: {0}""".format(type(eta))
-            )
-        if not isinstance(retries, int):
-            raise ValueError(
-                """`retries` should be of type:: `int` You entered: {0}""".format(type(retries))
-            )
-        if not isinstance(log_id, str):
-            raise ValueError(
-                """`log_id` should be of type:: `str` You entered: {0}""".format(type(log_id))
-            )
-        if not isinstance(hook_metadata, (type(None), str)):
-            raise ValueError(
-                """`hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(hook_metadata)
-                )
-            )
+
         if not isinstance(task_name, (type(None), str)):
             raise ValueError(
                 """`task_name` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(task_name)
-                )
-            )
-        if not isinstance(task_id, (type(None), str)):
-            raise ValueError(
-                """`task_id` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(task_id)
                 )
             )
         if not isinstance(chain, (type(None), Task)):
@@ -258,8 +288,9 @@ class Task:
         except Exception:
             pass
 
+    @abc.abstractmethod
     async def async_run(self, *args, **kwargs):
-        raise NotImplementedError("run method must be implemented.")
+        raise NotImplementedError("`async_run` method must be implemented.")
 
     def blocking_run(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
@@ -271,72 +302,46 @@ class Task:
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        # Queue this to queue
-        class_name: str = self.__class__.__name__
+        for a in args:
+            if isinstance(a, TaskOptions):
+                raise ValueError(
+                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
+                )
+        for k, v in list(kwargs.items()):
+            if isinstance(v, TaskOptions):
+                self.task_options = v
+                kwargs.pop(k)
 
-        eta = datetime.datetime.utcnow() + datetime.timedelta(seconds=self.eta)
-        protocol = {
-            "version": 1,
-            "task_id": str(uuid.uuid4()),
-            "eta": eta.isoformat(),
-            "retries": self.retries,
-            "queue_name": self.queue_name,
-            "log_id": self.log_id,
-            "hook_metadata": self.hook_metadata,
-            "timelimit": 1800,
-            "args": args,
-            "kwargs": kwargs,
-        }
+        proto = protocol.Protocol(
+            version=1,
+            task_id=self.task_options.task_id,
+            eta=self.task_options.eta,
+            current_retries=self.task_options.current_retries,
+            max_retries=self.task_options.max_retries,
+            log_id=self.task_options.log_id,
+            hook_metadata=self.task_options.hook_metadata,
+            argsy=args,
+            kwargsy=kwargs,
+        )
 
-        protocol_json = json.dumps(protocol)
-        await self.the_broker.enqueue(item=protocol_json, queue_name=self.queue_name)
+        await self.the_broker.enqueue(
+            item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+        )
 
     def blocking_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.async_delay(*args, **kwargs))
 
 
-class _watchDogTask(Task):
-    def __init__(
-        self,
-        eta=0.00,
-        retries=0,
-        log_id="log_id",
-        hook_metadata="hook_metadata",
-        the_broker=broker.SimpleBroker(),
-        queue_name="WatchDogTask_Queue",
-        task_name=None,
-        task_id=None,
-        chain=None,
-        the_hook=None,
-        rateLimiter=None,
-        loglevel: str = "DEBUG",
-        log_metadata=None,
-        log_handler=None,
-    ):
-        # we should always use in-memory broker for watchdog task
-        super(_watchDogTask, self).__init__(
-            the_broker, queue_name, eta, retries, log_id, hook_metadata
-        )
-        # Enables task watchdog. This will spawn a separate thread that will check if any tasks are blocked,
-        # and if so will notify you and print the stack traces of all threads to show exactly where the program is blocked.
-        self.use_watchdog: bool = True
+class _watchdogTask(Task):
+    """
+    This is a task that runs in the MainThread(as every other task).
+    Its job is to start a new thread(Thread-<wiji_watchdog>) and communicate with it.
+    That new thread will log a stack-trace if it detects any blocking calls(IO-bound, CPU-bound or otherwise) running on the MainThread.
+    That trace is meant to help users of `wiji` be able to fix their applications.
 
-        # The number of seconds the watchdog will wait before notifying that the main thread is blocked.
-        self.watchdog_timeout: float = 0.1  # 100 millisecond
-
-        if not isinstance(self.use_watchdog, bool):
-            raise ValueError(
-                """`use_watchdog` should be of type:: `bool` You entered: {0}""".format(
-                    type(self.use_watchdog)
-                )
-            )
-        if not isinstance(self.watchdog_timeout, float):
-            raise ValueError(
-                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
-                    type(self.watchdog_timeout)
-                )
-            )
+    This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
+    """
 
     async def async_run(self):
         self._log(
@@ -345,10 +350,10 @@ class _watchDogTask(Task):
                 "event": "wiji.WatchDogTask.async_run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
-                "task_id": self.task_id,
+                "task_id": self.task_options.task_id,
             },
         )
-        await asyncio.sleep(self.watchdog_timeout / 2)
+        await asyncio.sleep(0.1 / 3)
 
 
-WatchDogTask = _watchDogTask()
+WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name="WatchDogTask_Queue")

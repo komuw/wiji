@@ -4,6 +4,11 @@ import asyncio
 import typing
 import json
 
+from . import protocol
+
+if typing.TYPE_CHECKING:
+    from . import task
+
 
 class BaseBroker(abc.ABC):
     """
@@ -15,15 +20,16 @@ class BaseBroker(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def enqueue(self, item: str, queue_name: str) -> None:
+    async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         """
         enqueue/save an item.
 
         Parameters:
             item: The item to be enqueued/saved
             queue_name: name of queue to enqueue in
+            task_options: options for the specific task been enqueued
         """
-        raise NotImplementedError("enqueue method must be implemented.")
+        raise NotImplementedError("`enqueue` method must be implemented.")
 
     @abc.abstractmethod
     async def dequeue(self, queue_name: str) -> str:
@@ -33,7 +39,7 @@ class BaseBroker(abc.ABC):
         Returns:
             item that was dequeued
         """
-        raise NotImplementedError("dequeue method must be implemented.")
+        raise NotImplementedError("`dequeue` method must be implemented.")
 
 
 class SimpleBroker(BaseBroker):
@@ -49,23 +55,9 @@ class SimpleBroker(BaseBroker):
         """
         """
         self.store: dict = {}
+        self._queue_watchdog_task()
 
-        WatchDogTask_Queue_name = "WatchDogTask_Queue"
-        WatchDogTask_Queue_init = {
-            "version": 1,
-            "task_id": "3c03f930-3098-44bd-a4e3-fee5162dd0e2",
-            "eta": "2019-02-24T17:37:06.534478",
-            "retries": 0,
-            "queue_name": WatchDogTask_Queue_name,
-            "log_id": "log_id",
-            "hook_metadata": "hook_metadata",
-            "timelimit": 1800,
-            "args": [],
-            "kwargs": {},
-        }
-        self.store[WatchDogTask_Queue_name] = [json.dumps(WatchDogTask_Queue_init)]
-
-    async def enqueue(self, item: str, queue_name: str) -> None:
+    async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         if self.store.get(queue_name):
             self.store[queue_name].append(item)
             await asyncio.sleep(delay=-1)
@@ -84,55 +76,18 @@ class SimpleBroker(BaseBroker):
             else:
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
 
-
-class YoloBroker(BaseBroker):
-    """
-    This is an in-memory implementation of BaseBroker.
-
-    Note: It should only be used for tests and demo purposes.
-    """
-
-    def __init__(self, maxsize: int = 0) -> None:
-        """
-        Parameters:
-            maxsize: the maximum number of items(not size) that can be put in the queue.
-            loop: an event loop
-        """
-        self.queue: asyncio.queues.Queue = asyncio.Queue(maxsize=maxsize)
-        self.store: dict = {}
-        self.max_ttl: float = 20 * 60  # 20mins
-        self.start_timer = time.monotonic()
-
-    async def enqueue(self, item: str, queue_name: str) -> None:
-        if self.store.get(queue_name):
-            self.store[queue_name].append(item)
-        else:
-            self.store[queue_name] = [item]
-        self.queue.put_nowait(self.store)
-
-        # garbage collect
-        await self.delete_after_ttl()
-
-    async def dequeue(self, queue_name: str) -> str:
-        store = await self.queue.get()
-        if queue_name in store:
-            try:
-                # garbage collect
-                await self.delete_after_ttl()
-                return self.store[queue_name].pop(0)
-            except IndexError:
-                # queue is empty
-                await asyncio.sleep(1.5)
-        else:
-            raise ValueError("queue with name: {0} does not exist.".format(queue_name))
-
-    async def delete_after_ttl(self) -> None:
-        """
-        iterate over all stored items and delete any that are
-        older than self.max_ttl seconds
-        """
-        now = time.monotonic()
-        time_diff = now - self.start_timer
-        if time_diff > self.max_ttl:
-            for key in list(self.store.keys()):
-                self.store[key] = []
+    def _queue_watchdog_task(self):
+        # queue the first WatchDogTask
+        _watchDogTask_name = "WatchDogTask"
+        _proto = protocol.Protocol(
+            version=1,
+            task_id="{0}_id_1".format(_watchDogTask_name),
+            eta=0.00,
+            current_retries=0,
+            max_retries=0,
+            log_id="{0}_log_id".format(_watchDogTask_name),
+            hook_metadata="",
+            argsy=(),
+            kwargsy={},
+        )
+        self.store["{0}_Queue".format(_watchDogTask_name)] = [_proto.json()]

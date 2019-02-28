@@ -12,17 +12,28 @@ from . import task
 from . import hook
 from . import logger
 
-from . import _watchdog
+from . import watchdog
 
 
 class Worker:
     """
     """
 
-    def __init__(self, the_task: task.Task, worker_id=None) -> None:
+    def __init__(
+        self,
+        the_task: task.Task,
+        worker_id=None,
+        use_watchdog: bool = False,
+        watchdog_timeout: float = 0.1,
+    ) -> None:
         """
         """
-        self._validate_worker_args(the_task=the_task, worker_id=worker_id)
+        self._validate_worker_args(
+            the_task=the_task,
+            worker_id=worker_id,
+            use_watchdog=use_watchdog,
+            watchdog_timeout=watchdog_timeout,
+        )
 
         self.the_task = the_task
         self.worker_id = worker_id
@@ -34,18 +45,18 @@ class Worker:
             loglevel=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
         )
 
-        self.use_watchdog = False
+        self.use_watchdog = use_watchdog
+        self.watchdog_timeout = watchdog_timeout
+
         self.watchdog = None
-        if hasattr(self.the_task, "use_watchdog") and hasattr(self.the_task, "watchdog_timeout"):
-            self.use_watchdog = self.the_task.use_watchdog
-            self.watchdog_timeout = self.the_task.watchdog_timeout
-            self.watchdog = _watchdog._BlocingWatchdog(
-                timeout=self.watchdog_timeout, task_name=self.the_task.task_name
+        if self.use_watchdog:
+            self.watchdog = watchdog._BlocingWatchdog(
+                watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
             )
 
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
-    def _validate_worker_args(self, the_task, worker_id):
+    def _validate_worker_args(self, the_task, worker_id, use_watchdog, watchdog_timeout):
         if not isinstance(the_task, task.Task):
             raise ValueError(
                 """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
@@ -56,6 +67,18 @@ class Worker:
             raise ValueError(
                 """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(worker_id)
+                )
+            )
+        if not isinstance(use_watchdog, bool):
+            raise ValueError(
+                """`use_watchdog` should be of type:: `bool` You entered: {0}""".format(
+                    type(use_watchdog)
+                )
+            )
+        if not isinstance(watchdog_timeout, float):
+            raise ValueError(
+                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
+                    type(watchdog_timeout)
                 )
             )
 
@@ -96,6 +119,8 @@ class Worker:
         try:
             return_value = await self.the_task.async_run(*task_args, **task_kwargs)
             if self.the_task.chain:
+                # TODO: (komuw) make sure that chains wait for the parents retries to end before running
+                #      Celery solves this by using/listening celery.exceptions.Retry(which you should never swallow)
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.async_delay(return_value)
         except Exception as e:
@@ -175,11 +200,10 @@ class Worker:
                 task_version = item_to_dequeue["version"]
                 task_id = item_to_dequeue["task_id"]
                 task_eta = item_to_dequeue["eta"]
-                task_retries = item_to_dequeue["retries"]
-                task_queue_name = item_to_dequeue["queue_name"]
+                task_current_retries = item_to_dequeue["current_retries"]
+                task_max_retries = item_to_dequeue["max_retries"]
                 task_log_id = item_to_dequeue["log_id"]
                 task_hook_metadata = item_to_dequeue["hook_metadata"]
-                task_timelimit = item_to_dequeue["timelimit"]
                 task_args = item_to_dequeue["args"]
                 task_kwargs = item_to_dequeue["kwargs"]
             except KeyError as e:

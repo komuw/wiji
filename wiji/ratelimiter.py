@@ -25,7 +25,7 @@ class BaseRateLimiter(abc.ABC):
         """
         rate limit consumation/execution of tasks.
         """
-        raise NotImplementedError("limit method must be implemented.")
+        raise NotImplementedError("`limit` method must be implemented.")
 
 
 class SimpleRateLimiter(BaseRateLimiter):

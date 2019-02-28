@@ -56,6 +56,7 @@ if __name__ == "__main__":
     # sync_req.delay(url="https://httpbin.org/delay/5")
     # print("!!! SYNC messages enqueued !!!")
 
+
     # # for _ in range(0, 10):
     # Async_req.delay(url="https://httpbin.org/delay/7")
     # print("!!! Async messages enqueued !!!")

@@ -239,7 +239,10 @@ if __name__ == "__main__":
         exception_task22,
         BLOCKING_task,
     ]
+
     workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
+    producers = [produce_tasks_continously(task=wiji.task.WatchDogTask)]
+
     for task in all_tasks:
         _worker = wiji.Worker(the_task=task)
         workers.append(_worker)
@@ -248,14 +251,15 @@ if __name__ == "__main__":
     for i in workers:
         consumers.append(i.consume_forever())
 
-    producers = [
-        produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
-        produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
-        produce_tasks_continously(task=adder, a=23, b=67),
-        produce_tasks_continously(task=exception_task22),
-        produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
-        produce_tasks_continously(task=wiji.task.WatchDogTask),
-    ]
+    producers.extend(
+        [
+            produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
+            produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
+            produce_tasks_continously(task=adder, a=23, b=67),
+            produce_tasks_continously(task=exception_task22),
+            produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
+        ]
+    )
 
     # 2.consume tasks
     async def async_main():
@@ -263,4 +267,3 @@ if __name__ == "__main__":
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)
-

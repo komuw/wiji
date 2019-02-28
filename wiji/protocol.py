@@ -1,4 +1,5 @@
 import json
+import datetime
 
 
 class Protocol:
@@ -28,7 +29,7 @@ class Protocol:
 
         self.version = version
         self.task_id = task_id
-        self.eta = eta
+        self.eta = self._eta_to_isoformat(eta=eta)
         self.current_retries = current_retries
         self.max_retries = max_retries
         self.log_id = log_id
@@ -93,6 +94,25 @@ class Protocol:
             raise ValueError(
                 """`kwargsy` should be of type:: `dict` You entered: {0}""".format(type(kwargsy))
             )
+
+    @staticmethod
+    def _eta_to_isoformat(eta):
+        """
+        converts eta in float seconds to python's ISO 8601-formatted datetime.
+        """
+        eta = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(seconds=eta)
+        eta = eta.isoformat()
+        return eta
+
+    @staticmethod
+    def _from_isoformat(eta):
+        """
+        converts ISO 8601-formatted datetime to python datetime
+        usage:
+            dt = Protocol._from_isoformat(eta="2020-04-01T18:41:54.195638+00:00")
+        """
+        dt = datetime.datetime.strptime(eta, "%Y-%m-%dT%H:%M:%S.%f%z")
+        return dt
 
     def json(self):
         return json.dumps(

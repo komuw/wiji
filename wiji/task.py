@@ -308,7 +308,9 @@ class Task:
             kwargsy=kwargs,
         )
 
-        await self.the_broker.enqueue(item=proto.json(), queue_name=self.queue_name)
+        await self.the_broker.enqueue(
+            item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+        )
 
     def blocking_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
@@ -353,6 +355,3 @@ class _watchDogTask(Task):
 
 
 WatchDogTask = _watchDogTask()
-
-# eta = datetime.datetime.utcnow() + datetime.timedelta(seconds=self.eta)
-# eta = eta.isoformat()

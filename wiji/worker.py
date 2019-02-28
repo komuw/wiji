@@ -96,6 +96,8 @@ class Worker:
         try:
             return_value = await self.the_task.async_run(*task_args, **task_kwargs)
             if self.the_task.chain:
+                # TODO: (komuw) make sure that chains wait for the parents retries to end before running
+                #      Celery solves this by using/listening celery.exceptions.Retry(which you should never swallow)
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.async_delay(return_value)
         except Exception as e:

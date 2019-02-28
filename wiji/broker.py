@@ -18,7 +18,7 @@ class BaseBroker(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def enqueue(self, item: str, queue_name: str, task_options: task.TaskOptions) -> None:
+    async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         """
         enqueue/save an item.
 
@@ -69,7 +69,7 @@ class SimpleBroker(BaseBroker):
         }
         self.store[WatchDogTask_Queue_name] = [json.dumps(WatchDogTask_Queue_init)]
 
-    async def enqueue(self, item: str, queue_name: str, task_options: task.TaskOptions) -> None:
+    async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         if self.store.get(queue_name):
             self.store[queue_name].append(item)
             await asyncio.sleep(delay=-1)

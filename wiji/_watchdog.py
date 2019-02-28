@@ -36,8 +36,19 @@ class _BlocingWatchdog:
     monitors for any blocking calls in an otherwise async coroutine.
     """
 
-    def __init__(self, timeout, task_name):
-        self._timeout = timeout
+    def __init__(self, watchdog_timeout: float, task_name: str):
+        if not isinstance(watchdog_timeout, float):
+            raise ValueError(
+                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
+                    type(watchdog_timeout)
+                )
+            )
+        if not isinstance(task_name, str):
+            raise ValueError(
+                """`task_name` should be of type:: `str` You entered: {0}""".format(type(task_name))
+            )
+
+        self.watchdog_timeout = watchdog_timeout
         self.task_name = task_name
 
         self._stopped = False
@@ -78,17 +89,17 @@ class _BlocingWatchdog:
                 if self._stopped:
                     return
             else:
-                self._notify_event.wait(timeout=self._timeout)
+                self._notify_event.wait(watchdog_timeout=self.watchdog_timeout)
                 if self._stopped:
                     return
 
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
                     try:
                         error_msg = (
-                            "ERROR: blocked tasks Watchdog has not received any notifications in {timeout} seconds. This means the Main thread is blocked! "
+                            "ERROR: blocked tasks Watchdog has not received any notifications in {watchdog_timeout} seconds. This means the Main thread is blocked! "
                             "\nHint: are you running any blocking calls? using python-requests? etc? "
                             "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(
-                                timeout=self._timeout
+                                watchdog_timeout=self.watchdog_timeout
                             )
                         )
                         raise BlockingTaskError(error_msg)
@@ -108,12 +119,14 @@ class _BlocingWatchdog:
         # we could also use: faulthandler.dump_traceback(all_threads=True)
         stack_trace_of_all_threads_during_block = []
         for thread in threading.enumerate():
-            daara = traceback.format_stack(f=sys._current_frames()[thread.ident])
-            stack_trace_of_all_threads_during_block.append(daara)
+            trace = traceback.format_stack(f=sys._current_frames()[thread.ident])
+            stack_trace_of_all_threads_during_block.append(trace)
             return stack_trace_of_all_threads_during_block
 
     def start(self):
-        self._thread = threading.Thread(target=self._main_loop, name="<wiji watchdog>", daemon=True)
+        self._thread = threading.Thread(
+            target=self._main_loop, name="Thread-<wiji_watchdog>", daemon=True
+        )
         self._thread.start()
 
     def stop(self):

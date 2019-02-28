@@ -40,7 +40,7 @@ class Worker:
             self.use_watchdog = self.the_task.use_watchdog
             self.watchdog_timeout = self.the_task.watchdog_timeout
             self.watchdog = _watchdog._BlocingWatchdog(
-                timeout=self.watchdog_timeout, task_name=self.the_task.task_name
+                watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
             )
 
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")

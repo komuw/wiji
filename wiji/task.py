@@ -348,7 +348,7 @@ class _watchDogTask(Task):
                 "event": "wiji.WatchDogTask.async_run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
-                "task_id": self.task_id,
+                "task_id": self.task_options.task_id,
             },
         )
         await asyncio.sleep(self.watchdog_timeout / 2)

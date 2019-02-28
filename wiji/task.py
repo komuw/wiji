@@ -179,7 +179,7 @@ class Task(abc.ABC):
         return other
 
     async def __call__(self, *args, **kwargs):
-        await self.async_run(*args, **kwargs)
+        await self.run(*args, **kwargs)
 
     def __str__(self):
         return str(
@@ -260,14 +260,14 @@ class Task(abc.ABC):
                 )
             )
 
-        if not asyncio.iscoroutinefunction(self.async_run):
+        if not asyncio.iscoroutinefunction(self.run):
             raise ValueError(
-                "The method: `async_run` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "The method: `run` of a class derived from: `wiji.task.Task` should be a python coroutine."
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
-        if not inspect.iscoroutinefunction(self.async_run):
+        if not inspect.iscoroutinefunction(self.run):
             raise ValueError(
-                "The method: `async_run` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "The method: `run` of a class derived from: `wiji.task.Task` should be a python coroutine."
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
 
@@ -289,14 +289,10 @@ class Task(abc.ABC):
             pass
 
     @abc.abstractmethod
-    async def async_run(self, *args, **kwargs):
-        raise NotImplementedError("`async_run` method must be implemented.")
+    async def run(self, *args, **kwargs):
+        raise NotImplementedError("`run` method must be implemented.")
 
-    def blocking_run(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.async_run(*args, **kwargs))
-
-    async def async_delay(self, *args, **kwargs):
+    async def delay(self, *args, **kwargs):
         """
         Parameters:
             args: The positional arguments to pass on to the task.
@@ -328,9 +324,9 @@ class Task(abc.ABC):
             item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
         )
 
-    def blocking_delay(self, *args, **kwargs):
+    def synchronous_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.async_delay(*args, **kwargs))
+        loop.run_until_complete(self.delay(*args, **kwargs))
 
 
 class _watchdogTask(Task):
@@ -343,11 +339,11 @@ class _watchdogTask(Task):
     This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
     """
 
-    async def async_run(self):
+    async def run(self):
         self._log(
             logging.DEBUG,
             {
-                "event": "wiji.WatchDogTask.async_run",
+                "event": "wiji.WatchDogTask.run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
                 "task_id": self.task_options.task_id,

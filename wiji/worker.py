@@ -111,18 +111,18 @@ class Worker:
         else:
             return (60 * (2 ** current_retries)) + jitter
 
-    async def run(self, *task_args, **task_kwargs):
+    async def run_task(self, *task_args, **task_kwargs):
         # run the actual queued task
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
 
         try:
-            return_value = await self.the_task.async_run(*task_args, **task_kwargs)
+            return_value = await self.the_task.run(*task_args, **task_kwargs)
             if self.the_task.chain:
                 # TODO: (komuw) make sure that chains wait for the parents retries to end before running
                 #      Celery solves this by using/listening celery.exceptions.Retry(which you should never swallow)
                 # enqueue the chained task using the return_value
-                await self.the_task.chain.async_delay(return_value)
+                await self.the_task.chain.delay(return_value)
         except Exception as e:
             self._log(
                 logging.ERROR,
@@ -149,7 +149,7 @@ class Worker:
         if self.watchdog is not None:
             self.watchdog.start()
             # queue the first watchdog task
-            await self.the_task.async_delay()
+            await self.the_task.delay()
 
         retry_count = 0
         while True:
@@ -219,7 +219,7 @@ class Worker:
                 )
                 continue
 
-            await self.run(*task_args, **task_kwargs)
+            await self.run_task(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,
                 {

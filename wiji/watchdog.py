@@ -96,8 +96,9 @@ class _BlocingWatchdog:
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
                     try:
                         error_msg = (
-                            "ERROR: blocked tasks Watchdog has not received any notifications in {watchdog_timeout} seconds. This means the Main thread is blocked! "
-                            "\nHint: are you running any blocking calls? using python-requests? etc? "
+                            "ERROR: blocked tasks Watchdog has not received any notifications in {watchdog_timeout} seconds. "
+                            "This means the Main thread is blocked! "
+                            "\nHint: are you running any tasks with blocking calls? eg; using python-requests? etc? "
                             "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(
                                 watchdog_timeout=self.watchdog_timeout
                             )
@@ -115,12 +116,40 @@ class _BlocingWatchdog:
                             },
                         )
 
-    def _save_stack_trace(self):
+    def _save_stack_trace(self) -> list:
+        """
+        This method returns a list of dictionaries each of which contains a thread name and its corresponding stack_trace.
+        It returns something like:
+            [
+                {
+                    "thread_name": "MainThread",
+                    "thread_stack_trace": [
+                        "File cli/cli.py, line 269, in <module>\n    asyncio.run(async_main(), debug=True)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/runners.py, line 43, in run\n    return loop.run_until_complete(main)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 555, in run_until_complete\n    self.run_forever()\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 523, in run_forever\n    self._run_once()\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 1750, in _run_once\n    handle._run()\n",
+                        "File /mystuff/wiji/wiji/worker.py, line 222, in consume_forever\n    await self.run(*task_args, **task_kwargs)\n",
+                        "File cli/cli.py, line 93, in async_run\n    resp = requests.get(url)\n",
+                        "File /myVirtualenv/site-packages/requests/sessions.py, line 533, in request\n    resp = self.send(prep, **send_kwargs)\n",
+                        "File /myVirtualenv/site-packages/requests/sessions.py, line 646, in send\n    r = adapter.send(request, **kwargs)\n",
+                        "File /myVirtualenv/site-packages/requests/adapters.py, line 449, in send\n    timeout=timeout\n",
+                        "File /myVirtualenv/site-packages/urllib3/connectionpool.py, line 600, in urlopen\n    chunked=chunked)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/http/client.py, line 1321, in getresponse\n    response.begin()\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/socket.py, line 589, in readinto\n    return self._sock.recv_into(b)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/ssl.py, line 1049, in recv_into\n    return self.read(nbytes, buffer)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/ssl.py, line 908, in read\n    return self._sslobj.read(len, buffer)\n"
+                    ]
+                },
+            ]
+        """
         # we could also use: faulthandler.dump_traceback(all_threads=True)
         stack_trace_of_all_threads_during_block = []
         for thread in threading.enumerate():
-            trace = traceback.format_stack(f=sys._current_frames()[thread.ident])
-            stack_trace_of_all_threads_during_block.append(trace)
+            thread_stack_trace = traceback.format_stack(f=sys._current_frames()[thread.ident])
+            stack_trace_of_all_threads_during_block.append(
+                {"thread_name": thread.name, "thread_stack_trace": thread_stack_trace}
+            )
             return stack_trace_of_all_threads_during_block
 
     def start(self):

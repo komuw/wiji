@@ -118,6 +118,7 @@ class Worker:
 
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
+            import pdb;pdb.set_trace()
             if self.the_task.chain and not self.the_task.task_options.under_retry:
                 # TODO: (komuw) make sure that chains wait for the parents retries to end before running
                 #      Celery solves this by using/listening celery.exceptions.Retry(which you should never swallow)

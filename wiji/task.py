@@ -336,7 +336,6 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
-        print("self.task_options:", str(self.task_options))
         await self.the_broker.enqueue(
             item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
         )
@@ -354,16 +353,20 @@ class Task(abc.ABC):
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
+        # import pdb
+
+        # pdb.set_trace()
         args = args if args else self.task_options.args
         kwargs = kwargs if kwargs else self.task_options.kwargs
 
         if self.task_options.current_retries >= self.task_options.max_retries:
             self.task_options.under_retry = False
-            raise MaxRetriesExceededError(
-                "The task: {task_name} has reached its max_retries count. args:{args} kwargs:{kwargs}".format(
-                    task_name=self.task_name, args=args, kwargs=kwargs
-                )
-            )
+            return
+        #     raise MaxRetriesExceededError(
+        #         "The task:`{task_name}` has reached its max_retries count of:{max_retries}".format(
+        #             task_name=self.task_name, max_retries=self.task_options.max_retries
+        #         )
+        #     )``
 
         self.task_options.current_retries + 1
         self.task_options.under_retry = True

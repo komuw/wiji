@@ -89,7 +89,7 @@ class _BlocingWatchdog:
                 if self._stopped:
                     return
             else:
-                self._notify_event.wait(watchdog_timeout=self.watchdog_timeout)
+                self._notify_event.wait(timeout=self.watchdog_timeout)
                 if self._stopped:
                     return
 

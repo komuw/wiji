@@ -4,6 +4,8 @@ import asyncio
 import typing
 import json
 
+from . import protocol
+
 if typing.TYPE_CHECKING:
     from . import task
 
@@ -27,7 +29,7 @@ class BaseBroker(abc.ABC):
             queue_name: name of queue to enqueue in
             task_options: options for the specific task been enqueued
         """
-        raise NotImplementedError("enqueue method must be implemented.")
+        raise NotImplementedError("`enqueue` method must be implemented.")
 
     @abc.abstractmethod
     async def dequeue(self, queue_name: str) -> str:
@@ -37,7 +39,7 @@ class BaseBroker(abc.ABC):
         Returns:
             item that was dequeued
         """
-        raise NotImplementedError("dequeue method must be implemented.")
+        raise NotImplementedError("`dequeue` method must be implemented.")
 
 
 class SimpleBroker(BaseBroker):
@@ -53,21 +55,7 @@ class SimpleBroker(BaseBroker):
         """
         """
         self.store: dict = {}
-
-        WatchDogTask_Queue_name = "WatchDogTask_Queue"
-        WatchDogTask_Queue_init = {
-            "version": 1,
-            "task_id": "3c03f930-3098-44bd-a4e3-fee5162dd0e2",
-            "eta": "2019-02-24T17:37:06.534478",
-            "retries": 0,
-            "queue_name": WatchDogTask_Queue_name,
-            "log_id": "log_id",
-            "hook_metadata": "hook_metadata",
-            "timelimit": 1800,
-            "args": [],
-            "kwargs": {},
-        }
-        self.store[WatchDogTask_Queue_name] = [json.dumps(WatchDogTask_Queue_init)]
+        self._queue_watchdog_task()
 
     async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         if self.store.get(queue_name):
@@ -87,3 +75,19 @@ class SimpleBroker(BaseBroker):
                     await asyncio.sleep(5)
             else:
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
+
+    def _queue_watchdog_task(self):
+        # queue the first WatchDogTask
+        _watchDogTask_name = "WatchDogTask"
+        _proto = protocol.Protocol(
+            version=1,
+            task_id="{0}_id_1".format(_watchDogTask_name),
+            eta=0.00,
+            current_retries=0,
+            max_retries=0,
+            log_id="{0}_log_id".format(_watchDogTask_name),
+            hook_metadata="",
+            argsy=(),
+            kwargsy={},
+        )
+        self.store["{0}_Queue".format(_watchDogTask_name)] = [_proto.json()]

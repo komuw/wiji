@@ -1,4 +1,5 @@
 import os
+import abc
 import uuid
 import json
 import asyncio
@@ -50,7 +51,10 @@ class TaskOptions:
 
         self.task_id = task_id
         if not self.task_id:
-            self.task_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
+            self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
+
+    def __str__(self):
+        return str(self.__dict__)
 
     def _validate_task_options_args(self, eta, max_retries, log_id, hook_metadata, task_id):
         if not isinstance(eta, float):
@@ -81,7 +85,7 @@ class TaskOptions:
             )
 
 
-class Task:
+class Task(abc.ABC):
     """
     call it as:
         Task()(33,"hello", name="komu")
@@ -176,6 +180,17 @@ class Task:
 
     async def __call__(self, *args, **kwargs):
         await self.async_run(*args, **kwargs)
+
+    def __str__(self):
+        return str(
+            {
+                "task_name": self.task_name,
+                "the_broker": self.the_broker,
+                "queue_name": self.queue_name,
+                "chain": self.chain,
+                "task_options": self.task_options.__dict__,
+            }
+        )
 
     def _validate_task_args(
         self,
@@ -273,8 +288,9 @@ class Task:
         except Exception:
             pass
 
+    @abc.abstractmethod
     async def async_run(self, *args, **kwargs):
-        raise NotImplementedError("run method must be implemented.")
+        raise NotImplementedError("`async_run` method must be implemented.")
 
     def blocking_run(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
@@ -317,29 +333,15 @@ class Task:
         loop.run_until_complete(self.async_delay(*args, **kwargs))
 
 
-class _watchDogTask(Task):
-    def __init__(self, the_broker=broker.SimpleBroker(), queue_name="WatchDogTask_Queue"):
-        # we should always use in-memory broker for watchdog task
-        super(_watchDogTask, self).__init__(the_broker, queue_name)
-        # Enables task watchdog. This will spawn a separate thread that will check if any tasks are blocked,
-        # and if so will notify you and print the stack traces of all threads to show exactly where the program is blocked.
-        self.use_watchdog: bool = True
+class _watchdogTask(Task):
+    """
+    This is a task that runs in a different Thread from the one running the other tasks.
+    ie, It does not run on the main thread.
+    Its job is to check if there are any blocking calls(IO-bound, CPU-bound or otherwise), and if there are;
+    it logs a stack-trace so that users of wiji can be able to fix their applications.
 
-        # The number of seconds the watchdog will wait before notifying that the main thread is blocked.
-        self.watchdog_timeout: float = 0.1  # 100 millisecond
-
-        if not isinstance(self.use_watchdog, bool):
-            raise ValueError(
-                """`use_watchdog` should be of type:: `bool` You entered: {0}""".format(
-                    type(self.use_watchdog)
-                )
-            )
-        if not isinstance(self.watchdog_timeout, float):
-            raise ValueError(
-                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
-                    type(self.watchdog_timeout)
-                )
-            )
+    This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
+    """
 
     async def async_run(self):
         self._log(
@@ -351,7 +353,7 @@ class _watchDogTask(Task):
                 "task_id": self.task_options.task_id,
             },
         )
-        await asyncio.sleep(self.watchdog_timeout / 2)
+        await asyncio.sleep(0.1 / 3)
 
 
-WatchDogTask = _watchDogTask()
+WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name="WatchDogTask_Queue")

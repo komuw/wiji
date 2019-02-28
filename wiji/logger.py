@@ -18,7 +18,7 @@ class BaseLogger(abc.ABC):
             loglevel: logging level eg DEBUG
             log_metadata: log metadata that can be included in all log statements
         """
-        raise NotImplementedError("bind method must be implemented.")
+        raise NotImplementedError("`bind` method must be implemented.")
 
     @abc.abstractmethod
     def log(self, level: int, log_data: dict) -> None:
@@ -29,7 +29,7 @@ class BaseLogger(abc.ABC):
             level: logging level eg `logging.INFO`
             log_data: the message to log
         """
-        raise NotImplementedError("log method must be implemented.")
+        raise NotImplementedError("`log` method must be implemented.")
 
 
 class SimpleBaseLogger(BaseLogger):

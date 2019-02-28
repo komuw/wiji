@@ -14,13 +14,13 @@ class BaseHook(abc.ABC):
     async def request(self, task_id: str, log_id: str, hook_metadata: str) -> None:
         """
         """
-        raise NotImplementedError("request method must be implemented.")
+        raise NotImplementedError("`request` method must be implemented.")
 
     @abc.abstractmethod
     async def response(self, task_id: str, log_id: str, hook_metadata: str) -> None:
         """
         """
-        raise NotImplementedError("response method must be implemented.")
+        raise NotImplementedError("`response` method must be implemented.")
 
 
 class SimpleHook(BaseHook):

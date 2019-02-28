@@ -239,13 +239,10 @@ if __name__ == "__main__":
         exception_task22,
         BLOCKING_task,
     ]
-    workers = []
+    workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
     for task in all_tasks:
         _worker = wiji.Worker(the_task=task)
         workers.append(_worker)
-
-    watchie_worker = wiji.Worker(the_task=wiji.task.WatchDogTask)
-    workers.append(watchie_worker)
 
     consumers = []
     for i in workers:
@@ -267,9 +264,3 @@ if __name__ == "__main__":
 
     asyncio.run(async_main(), debug=True)
 
-
-# eta,
-# retries,
-# log_id,
-# hook_metadata,
-# task_id=None,

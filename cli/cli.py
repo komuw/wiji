@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     adder = adder_task(the_broker=MY_BROKER, chain=divider)
 
-    adder.synchronous_delay(3, 7, task_options=wiji.task.TaskOptions(eta=76.87))
+    adder.synchronous_delay(3, 7, task_options=wiji.task.TaskOptions(eta=4.56))
     #############################################
 
     # ALTERNATIVE way of chaining
@@ -256,8 +256,14 @@ if __name__ == "__main__":
             produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
             produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
             produce_tasks_continously(task=adder, a=23, b=67),
-            produce_tasks_continously(task=exception_task22),
-            produce_tasks_continously(task=BLOCKING_task, url="https://httpbin.org/delay/11"),
+            produce_tasks_continously(
+                task=exception_task22, task_options=wiji.task.TaskOptions(eta=-34.99)
+            ),
+            produce_tasks_continously(
+                task=BLOCKING_task,
+                url="https://httpbin.org/delay/11",
+                task_options=wiji.task.TaskOptions(eta=2.33),
+            ),
         ]
     )
 

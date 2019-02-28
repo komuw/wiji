@@ -66,12 +66,12 @@ def main():
 
 async def produce_tasks_continously(task, *args, **kwargs):
     while True:
-        await task.async_delay(*args, **kwargs)
+        await task.delay(*args, **kwargs)
 
 
 def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
     class BlockingDiskIOTask(wiji.task.Task):
-        async def async_run(self, *args, **kwargs):
+        async def run(self, *args, **kwargs):
             print()
             print("RUNNING BlockingDiskIOTask:")
             import subprocess
@@ -84,7 +84,7 @@ def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
 
 def BLOCKING_http_task(the_broker) -> wiji.task.Task:
     class MyTask(wiji.task.Task):
-        async def async_run(self, *args, **kwargs):
+        async def run(self, *args, **kwargs):
             print()
             print("RUNNING BLOCKING_http_task:")
             import requests
@@ -99,7 +99,7 @@ def BLOCKING_http_task(the_broker) -> wiji.task.Task:
 
 def http_task(the_broker) -> wiji.task.Task:
     class MyTask(wiji.task.Task):
-        async def async_run(self, *args, **kwargs):
+        async def run(self, *args, **kwargs):
             import aiohttp
 
             url = kwargs["url"]
@@ -115,7 +115,7 @@ def http_task(the_broker) -> wiji.task.Task:
 
 def print_task(the_broker) -> wiji.task.Task:
     class MyTask(wiji.task.Task):
-        async def async_run(self, *args, **kwargs):
+        async def run(self, *args, **kwargs):
             import hashlib
 
             print()
@@ -135,7 +135,7 @@ def print_task(the_broker) -> wiji.task.Task:
 ################## CHAIN ##################
 def adder_task(the_broker, chain=None) -> wiji.task.Task:
     class AdderTask(wiji.task.Task):
-        async def async_run(self, a, b):
+        async def run(self, a, b):
             res = a + b
             print()
             print("RUNNING adder_task:")
@@ -150,7 +150,7 @@ def adder_task(the_broker, chain=None) -> wiji.task.Task:
 
 def divider_task(the_broker, chain=None) -> wiji.task.Task:
     class DividerTask(wiji.task.Task):
-        async def async_run(self, a):
+        async def run(self, a):
             res = a / 3
             print()
             print("RUNNING divider_task:")
@@ -164,7 +164,7 @@ def divider_task(the_broker, chain=None) -> wiji.task.Task:
 
 def multiplier_task(the_broker, chain=None) -> wiji.task.Task:
     class MultiplierTask(wiji.task.Task):
-        async def async_run(self, bbb, a=5.5):
+        async def run(self, bbb, a=5.5):
             res = bbb * a
             print()
             print("RUNNING multiplier_task:")
@@ -181,7 +181,7 @@ def multiplier_task(the_broker, chain=None) -> wiji.task.Task:
 
 def exception_task(the_broker, chain=None) -> wiji.task.Task:
     class ExceptionTask(wiji.task.Task):
-        async def async_run(self):
+        async def run(self):
             print()
             print("RUNNING exception_task:")
             print()
@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     adder = adder_task(the_broker=MY_BROKER, chain=divider)
 
-    adder.blocking_delay(3, 7, task_options=wiji.task.TaskOptions(eta=76.87))
+    adder.synchronous_delay(3, 7, task_options=wiji.task.TaskOptions(eta=76.87))
     #############################################
 
     # ALTERNATIVE way of chaining
@@ -220,10 +220,10 @@ if __name__ == "__main__":
 
     #####################################
     http_task1 = http_task(the_broker=MY_BROKER)
-    http_task1.blocking_delay(url="http://httpbin.org/get")
+    http_task1.synchronous_delay(url="http://httpbin.org/get")
 
     print_task2 = print_task(the_broker=MY_BROKER)
-    print_task2.blocking_delay("myarg", my_kwarg="my_kwarg")
+    print_task2.synchronous_delay("myarg", my_kwarg="my_kwarg")
 
     exception_task22 = exception_task(the_broker=MY_BROKER)
     #####################################

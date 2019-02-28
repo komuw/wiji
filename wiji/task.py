@@ -8,6 +8,7 @@ import datetime
 import random
 import string
 import logging
+import typing
 
 from . import broker
 from . import ratelimiter
@@ -22,8 +23,8 @@ class TaskOptions:
         eta: float = 0.00,
         max_retries: int = 0,
         log_id: str = "",
-        hook_metadata=None,
-        task_id=None,
+        hook_metadata: typing.Union[None, str] = None,
+        task_id: typing.Union[None, str] = None,
     ):
         self._validate_task_options_args(
             eta=eta,
@@ -94,12 +95,8 @@ class Task(abc.ABC):
     usage:
         broker = wiji.broker.SimpleBroker()
         task = Task(
-                broker=broker,
+                the_broker=broker,
                 queue_name="PrintQueue",
-                eta=60,
-                retries=3,
-                log_id="myLogID",
-                hook_metadata='{"email": "example@example.com"}',
             )
         task.delay(33, "hello", name="komu")
     
@@ -112,14 +109,14 @@ class Task(abc.ABC):
     def __init__(
         self,
         the_broker: broker.BaseBroker,
-        queue_name,
-        task_name=None,
-        chain=None,
-        the_hook=None,
-        rateLimiter=None,
+        queue_name: str,
+        task_name: typing.Union[None, str] = None,
+        chain: typing.Union[None, "Task"] = None,
+        the_hook: typing.Union[None, hook.BaseHook] = None,
+        the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None,
         loglevel: str = "DEBUG",
-        log_metadata=None,
-        log_handler=None,
+        log_metadata: typing.Union[None, dict] = None,
+        log_handler: typing.Union[None, logger.BaseLogger] = None,
     ) -> None:
         self._validate_task_args(
             the_broker=the_broker,
@@ -127,7 +124,7 @@ class Task(abc.ABC):
             task_name=task_name,
             chain=chain,
             the_hook=the_hook,
-            rateLimiter=rateLimiter,
+            the_ratelimiter=the_ratelimiter,
             loglevel=loglevel,
             log_metadata=log_metadata,
             log_handler=log_handler,
@@ -158,13 +155,13 @@ class Task(abc.ABC):
         if not self.the_hook:
             self.the_hook = hook.SimpleHook(logger=self.logger)
 
-        self.rateLimiter = rateLimiter
-        if not self.rateLimiter:
-            self.rateLimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
+        self.the_ratelimiter = the_ratelimiter
+        if not self.the_ratelimiter:
+            self.the_ratelimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
 
         self.task_options = TaskOptions()
 
-    def __or__(self, other):
+    def __or__(self, other: "Task"):
         """
         Operator Overloading is bad.
         It should die a swift death.
@@ -200,7 +197,7 @@ class Task(abc.ABC):
         task_name,
         chain,
         the_hook,
-        rateLimiter,
+        the_ratelimiter,
         loglevel,
         log_metadata,
         log_handler,
@@ -236,10 +233,10 @@ class Task(abc.ABC):
                     type(the_hook)
                 )
             )
-        if not isinstance(rateLimiter, (type(None), ratelimiter.BaseRateLimiter)):
+        if not isinstance(the_ratelimiter, (type(None), ratelimiter.BaseRateLimiter)):
             raise ValueError(
-                """`rateLimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
-                    type(rateLimiter)
+                """`the_ratelimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
+                    type(the_ratelimiter)
                 )
             )
         if not isinstance(log_handler, (type(None), logger.BaseLogger)):

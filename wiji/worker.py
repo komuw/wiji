@@ -22,7 +22,7 @@ class Worker:
     def __init__(
         self,
         the_task: task.Task,
-        worker_id=None,
+        worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
         watchdog_timeout: float = 0.1,
     ) -> None:
@@ -158,7 +158,7 @@ class Worker:
 
             try:
                 # rate limit ourselves
-                await self.the_task.rateLimiter.limit()
+                await self.the_task.the_ratelimiter.limit()
             except Exception as e:
                 self._log(
                     logging.ERROR,

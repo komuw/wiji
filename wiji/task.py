@@ -335,10 +335,10 @@ class Task(abc.ABC):
 
 class _watchdogTask(Task):
     """
-    This is a task that runs in a different Thread from the one running the other tasks.
-    ie, It does not run on the main thread.
-    Its job is to check if there are any blocking calls(IO-bound, CPU-bound or otherwise), and if there are;
-    it logs a stack-trace so that users of wiji can be able to fix their applications.
+    This is a task that runs in the MainThread(as every other task).
+    Its job is to start a new thread(Thread-<wiji_watchdog>) and communicate with it.
+    That new thread will log a stack-trace if it detects any blocking calls(IO-bound, CPU-bound or otherwise) running on the MainThread.
+    That trace is meant to help users of `wiji` be able to fix their applications.
 
     This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
     """

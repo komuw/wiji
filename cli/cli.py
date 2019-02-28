@@ -93,7 +93,7 @@ def BLOCKING_http_task(the_broker) -> wiji.task.Task:
             resp = requests.get(url)
             print("resp: ", resp)
 
-    task = MyTask(the_broker=the_broker, queue_name="HttpQueue")
+    task = MyTask(the_broker=the_broker, queue_name="BlockingHttp_Queue")
     return task
 
 
@@ -109,7 +109,7 @@ def http_task(the_broker) -> wiji.task.Task:
                     res_text = await resp.text()
                     print(res_text[:50])
 
-    task = MyTask(the_broker=the_broker, queue_name="HttpQueue")
+    task = MyTask(the_broker=the_broker, queue_name="AsyncHttpQueue")
     return task
 
 

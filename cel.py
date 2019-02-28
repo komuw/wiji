@@ -30,16 +30,24 @@ async def Async_req(url):
             print(res_text[:50])
 
 
-@celobj.task(name="adder")
-def adder(a, b):
+from celery.exceptions import Retry
+
+
+@celobj.task(name="adder", bind=True, throw=False)
+def adder(self, a, b):
     res = a + b
+    print()
     print("adder: ", res)
+
+    self.retry(countdown=2, max_retries=3)
+
     return res
 
 
 @celobj.task(name="divider")
 def divider(a):
     res = a / 3
+    print()
     print("divider: ", res)
     return res
 
@@ -52,7 +60,7 @@ if __name__ == "__main__":
     # Async_req.delay(url="https://httpbin.org/delay/7")
     # print("!!! Async messages enqueued !!!")
 
-    chain = adder.s(3, 7).set(queue="adder") | divider.s().set(queue="divider")
+    chain = adder.s(3, 7) | divider.s()
     chain()
     print("!!! chain enqueued !!!")
     """

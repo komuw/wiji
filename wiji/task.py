@@ -16,6 +16,19 @@ from . import hook
 from . import logger
 from . import protocol
 
+# TODO: disambiguate which attributes should be in TaskOptions class
+# and which ones should be in Task class.
+# looks like the attributes that should be in TaskOptions class are the ones
+# that have to do with the task as it is been called as opposed to when it is been declared.
+
+
+class MaxRetriesExceededError(Exception):
+    """
+    The tasks max_retries count has been exceeded.
+    """
+
+    pass
+
 
 class TaskOptions:
     def __init__(
@@ -54,6 +67,10 @@ class TaskOptions:
         self.task_id = task_id
         if not self.task_id:
             self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
+
+        self.args = ()
+        self.kwargs = {}
+        self.under_retry = False
 
     def __str__(self):
         return str(self.__dict__)
@@ -305,6 +322,8 @@ class Task(abc.ABC):
             if isinstance(v, TaskOptions):
                 self.task_options = v
                 kwargs.pop(k)
+        self.task_options.args = args
+        self.task_options.kwargs = kwargs
 
         proto = protocol.Protocol(
             version=1,
@@ -314,9 +333,10 @@ class Task(abc.ABC):
             max_retries=self.task_options.max_retries,
             log_id=self.task_options.log_id,
             hook_metadata=self.task_options.hook_metadata,
-            argsy=args,
-            kwargsy=kwargs,
+            argsy=self.task_options.args,
+            kwargsy=self.task_options.kwargs,
         )
+        print("self.task_options:", str(self.task_options))
         await self.the_broker.enqueue(
             item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
         )
@@ -324,6 +344,30 @@ class Task(abc.ABC):
     def synchronous_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.delay(*args, **kwargs))
+
+    async def retry(self, *args, **kwargs):
+        """
+        Parameters:
+            args: The positional arguments to pass on to the task.
+            kwargs: The keyword arguments to pass on to the task.
+        
+        This method takes the same parameters as the `delay` method.
+        It also behaves the same as `delay`
+        """
+        args = args if args else self.task_options.args
+        kwargs = kwargs if kwargs else self.task_options.kwargs
+
+        if self.task_options.current_retries >= self.task_options.max_retries:
+            self.task_options.under_retry = False
+            raise MaxRetriesExceededError(
+                "The task: {task_name} has reached its max_retries count. args:{args} kwargs:{kwargs}".format(
+                    task_name=self.task_name, args=args, kwargs=kwargs
+                )
+            )
+
+        self.task_options.current_retries + 1
+        self.task_options.under_retry = True
+        await self.delay(*args, **kwargs)
 
 
 class _watchdogTask(Task):

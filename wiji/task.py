@@ -313,17 +313,7 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        for a in args:
-            if isinstance(a, TaskOptions):
-                raise ValueError(
-                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
-                )
-        for k, v in list(kwargs.items()):
-            if isinstance(v, TaskOptions):
-                self.task_options = v
-                kwargs.pop(k)
-        self.task_options.args = args
-        self.task_options.kwargs = kwargs
+        self._validate_delay_args(*args, **kwargs)
 
         proto = protocol.Protocol(
             version=1,
@@ -356,8 +346,7 @@ class Task(abc.ABC):
         # import pdb
 
         # pdb.set_trace()
-        args = args if args else self.task_options.args
-        kwargs = kwargs if kwargs else self.task_options.kwargs
+        self._validate_delay_args(*args, **kwargs)
 
         if self.task_options.current_retries >= self.task_options.max_retries:
             self.task_options.under_retry = False
@@ -371,6 +360,19 @@ class Task(abc.ABC):
         self.task_options.current_retries + 1
         self.task_options.under_retry = True
         await self.delay(*args, **kwargs)
+
+    def _validate_delay_args(self, *args, **kwargs):
+        for a in args:
+            if isinstance(a, TaskOptions):
+                raise ValueError(
+                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
+                )
+        for k, v in list(kwargs.items()):
+            if isinstance(v, TaskOptions):
+                self.task_options = v
+                kwargs.pop(k)
+        self.task_options.args = args
+        self.task_options.kwargs = kwargs
 
 
 class _watchdogTask(Task):

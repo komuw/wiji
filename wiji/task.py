@@ -30,6 +30,16 @@ class MaxRetriesExceededError(Exception):
     pass
 
 
+class RetryError(Exception):
+    """
+    Exception that is raised so that `wiji.Worker` can know that current executing task is retrying.
+    This enables `wiji.Worker` not to schedule any chained tasks of the current executing task.
+    User applications should not capture this Exception!
+    """
+
+    pass
+
+
 class TaskOptions:
     def __init__(
         self,
@@ -70,7 +80,6 @@ class TaskOptions:
 
         self.args = ()
         self.kwargs = {}
-        self.under_retry = False
 
     def __str__(self):
         return str(self.__dict__)
@@ -339,27 +348,32 @@ class Task(abc.ABC):
         Parameters:
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
-        
+
+        Raises:
+            MaxRetriesExceededError: the task exceeded its max_retries count.
+            RetryError: the task is been retried. User applications should not capture this Exception.
+
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
-        # import pdb
 
-        # pdb.set_trace()
         self._validate_delay_args(*args, **kwargs)
 
         if self.task_options.current_retries >= self.task_options.max_retries:
-            self.task_options.under_retry = False
-            return
-        #     raise MaxRetriesExceededError(
-        #         "The task:`{task_name}` has reached its max_retries count of:{max_retries}".format(
-        #             task_name=self.task_name, max_retries=self.task_options.max_retries
-        #         )
-        #     )``
+            raise MaxRetriesExceededError(
+                "The task:`{task_name}` has reached its max_retries count of:{max_retries}".format(
+                    task_name=self.task_name, max_retries=self.task_options.max_retries
+                )
+            )
 
-        self.task_options.current_retries + 1
-        self.task_options.under_retry = True
+        self.task_options.current_retries += 1
         await self.delay(*args, **kwargs)
+
+        raise RetryError(
+            "Task: `{task_name}` is been retried. User applications should not capture this Exception!".format(
+                task_name=self.task_name
+            )
+        )
 
     def _validate_delay_args(self, *args, **kwargs):
         for a in args:

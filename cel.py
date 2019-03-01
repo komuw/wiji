@@ -30,16 +30,17 @@ async def Async_req(url):
             print(res_text[:50])
 
 
-from celery.exceptions import Retry
+# from celery.exceptions import Retry
 
 
-@celobj.task(name="adder", bind=True, throw=False)
+@celobj.task(name="adder", bind=True, throw=True)
 def adder(self, a, b):
     res = a + b
     print()
     print("adder: ", res)
 
-    self.retry(countdown=2, max_retries=3)
+    if res == 10:
+        self.retry(a=44, b=98, countdown=2, max_retries=3)
 
     return res
 
@@ -55,7 +56,6 @@ def divider(a):
 if __name__ == "__main__":
     # sync_req.delay(url="https://httpbin.org/delay/5")
     # print("!!! SYNC messages enqueued !!!")
-
 
     # # for _ in range(0, 10):
     # Async_req.delay(url="https://httpbin.org/delay/7")

@@ -118,12 +118,22 @@ class Worker:
 
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
-            # import pdb;pdb.set_trace()
-            if self.the_task.chain and not self.the_task.task_options.under_retry:
-                # TODO: (komuw) make sure that chains wait for the parents retries to end before running
-                #      Celery solves this by using/listening celery.exceptions.Retry(which you should never swallow)
+            if self.the_task.chain:
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.delay(return_value)
+        except task.RetryError as e:
+            # task is been retried
+            self._log(
+                logging.INFO,
+                {
+                    "event": "wiji.Worker.run_task",
+                    "state": str(e),
+                    "stage": "end",
+                    "task_name": self.the_task.task_name,
+                    "current_retries": self.the_task.task_options.current_retries,
+                    "max_retries": self.the_task.task_options.max_retries,
+                },
+            )
         except Exception as e:
             self._log(
                 logging.ERROR,

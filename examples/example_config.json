@@ -1,0 +1,6 @@
+{
+    "loglevel": "INFO",
+    "tasks": [
+        "examples.example_tasks.print_task2"
+    ]
+}

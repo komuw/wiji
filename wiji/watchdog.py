@@ -130,7 +130,7 @@ class _BlocingWatchdog:
                         "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 555, in run_until_complete\n    self.run_forever()\n",
                         "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 523, in run_forever\n    self._run_once()\n",
                         "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 1750, in _run_once\n    handle._run()\n",
-                        "File /mystuff/wiji/wiji/worker.py, line 222, in consume_forever\n    await self.run(*task_args, **task_kwargs)\n",
+                        "File /mystuff/wiji/wiji/worker.py, line 222, in consume_tasks\n    await self.run(*task_args, **task_kwargs)\n",
                         "File cli/cli.py, line 93, in run\n    resp = requests.get(url)\n",
                         "File /myVirtualenv/site-packages/requests/sessions.py, line 533, in request\n    resp = self.send(prep, **send_kwargs)\n",
                         "File /myVirtualenv/site-packages/requests/sessions.py, line 646, in send\n    r = adapter.send(request, **kwargs)\n",

@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
     consumers = []
     for i in workers:
-        consumers.append(i.consume_forever())
+        consumers.append(i.consume_tasks())
 
     producers.extend(
         [

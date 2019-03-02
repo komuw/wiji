@@ -161,7 +161,7 @@ def print_task(the_broker) -> wiji.task.Task:
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
-            await asyncio.sleep(6)
+            await asyncio.sleep(0.4)
 
     task = MyTask(the_broker=the_broker, queue_name="PrintQueue")
     return task
@@ -176,9 +176,9 @@ def adder_task(the_broker, chain=None) -> wiji.task.Task:
             print("RUNNING adder_task:")
             print("adder: ", res)
             print()
-            await asyncio.sleep(5)
-            # if res in [10, 90]:
-            #     await self.retry(a=221, b=555)
+            await asyncio.sleep(2)
+            if res in [10, 90]:
+                await self.retry(a=221, b=555)
             return res
 
     task = AdderTask(the_broker=the_broker, queue_name="AdderTaskQueue", chain=chain)
@@ -268,17 +268,17 @@ if __name__ == "__main__":
     BLOCKING_task = BLOCKING_http_task(the_broker=MY_BROKER)
 
     all_tasks = [
-        # http_task1,
+        http_task1,
         print_task2,
         adder,
-        # divider,
-        # multiplier,
-        # exception_task22,
-        # BLOCKING_task,
+        divider,
+        multiplier,
+        exception_task22,
+        BLOCKING_task,
     ]
 
-    workers = []  # [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
-    producers = []  # [produce_tasks_continously(task=wiji.task.WatchDogTask)]
+    workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
+    producers = [produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
     for task in all_tasks:
         _worker = wiji.Worker(the_task=task)
@@ -290,17 +290,17 @@ if __name__ == "__main__":
 
     producers.extend(
         [
-            # produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
+            produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
             produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
             produce_tasks_continously(task=adder, a=23, b=67),
-            # produce_tasks_continously(
-            #     task=exception_task22, task_options=wiji.task.TaskOptions(eta=-34.99)
-            # ),
-            # produce_tasks_continously(
-            #     task=BLOCKING_task,
-            #     url="https://httpbin.org/delay/11",
-            #     task_options=wiji.task.TaskOptions(eta=2.33),
-            # ),
+            produce_tasks_continously(
+                task=exception_task22, task_options=wiji.task.TaskOptions(eta=-34.99)
+            ),
+            produce_tasks_continously(
+                task=BLOCKING_task,
+                url="https://httpbin.org/delay/11",
+                task_options=wiji.task.TaskOptions(eta=2.33),
+            ),
         ]
     )
 

@@ -4,10 +4,8 @@ import asyncio
 import typing
 import json
 
+from . import task
 from . import protocol
-
-if typing.TYPE_CHECKING:
-    from . import task
 
 
 class BaseBroker(abc.ABC):
@@ -77,4 +75,4 @@ class SimpleBroker(BaseBroker):
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
 
     def _create_watchdog_queue(self):
-        self.store["WatchDogTask_Queue"] = []
+        self.store[task._watchdogTask.queue_name] = []

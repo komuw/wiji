@@ -399,6 +399,8 @@ class _watchdogTask(Task):
     This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
     """
 
+    queue_name = "__WatchDogTaskQueue__"
+
     async def run(self):
         self._log(
             logging.DEBUG,
@@ -412,4 +414,4 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name="WatchDogTask_Queue")
+WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name=_watchdogTask.queue_name)

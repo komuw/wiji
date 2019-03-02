@@ -2,6 +2,7 @@ import os
 import uuid
 import json
 import random
+import signal
 import string
 import typing
 import logging
@@ -19,12 +20,15 @@ class Worker:
     """
     """
 
+    SHUT_DOWN: bool = False
+
     def __init__(
         self,
         the_task: task.Task,
         worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
         watchdog_timeout: float = 0.1,
+        shutdown_interval: float = 10.0,
     ) -> None:
         """
         """
@@ -33,6 +37,7 @@ class Worker:
             worker_id=worker_id,
             use_watchdog=use_watchdog,
             watchdog_timeout=watchdog_timeout,
+            shutdown_interval=shutdown_interval,
         )
 
         self.the_task = the_task
@@ -54,9 +59,13 @@ class Worker:
                 watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
             )
 
+        self.shutdown_interval = shutdown_interval
+
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
-    def _validate_worker_args(self, the_task, worker_id, use_watchdog, watchdog_timeout):
+    def _validate_worker_args(
+        self, the_task, worker_id, use_watchdog, watchdog_timeout, shutdown_interval
+    ):
         if not isinstance(the_task, task.Task):
             raise ValueError(
                 """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
@@ -79,6 +88,12 @@ class Worker:
             raise ValueError(
                 """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
                     type(watchdog_timeout)
+                )
+            )
+        if not isinstance(shutdown_interval, float):
+            raise ValueError(
+                """`shutdown_interval` should be of type:: `float` You entered: {0}""".format(
+                    type(shutdown_interval)
                 )
             )
 
@@ -159,13 +174,20 @@ class Worker:
         """
         if self.watchdog is not None:
             self.watchdog.start()
-            # queue the first watchdog task
-            await self.the_task.delay()
 
         retry_count = 0
         while True:
-
             self._log(logging.INFO, {"event": "wiji.Worker.consume_tasks", "stage": "start"})
+            if self.SHUT_DOWN:
+                self._log(
+                    logging.INFO,
+                    {
+                        "event": "wiji.Worker.consume_tasks",
+                        "stage": "end",
+                        "state": "cleanly shutting down worker.",
+                    },
+                )
+                return
 
             try:
                 # rate limit ourselves
@@ -249,10 +271,25 @@ class Worker:
                 # offer escape hatch for tests to come out of endless loop
                 return item_to_dequeue
 
-    def shutdown(self):
+    async def shutdown(self):
         """
         Cleanly shutdown worker.
         TODO: see, https://github.com/komuw/wiji/issues/2
         """
+        self._log(
+            logging.INFO,
+            {
+                "event": "wiji.Worker.shutdown",
+                "stage": "start",
+                "state": "intiating shutdown",
+                "shutdown_interval": self.shutdown_interval,
+            },
+        )
+        self.SHUT_DOWN = True
         if self.watchdog is not None:
             self.watchdog.stop()
+
+        # sleep so that worker can finish executing any tasks it had already dequeued.
+        # we need to use asyncio.sleep so that we do not block eventloop.
+        # this way, we do not prevent any other workers in the same loop from also shutting down cleanly.
+        await asyncio.sleep(self.shutdown_interval)

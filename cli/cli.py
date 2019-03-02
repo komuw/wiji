@@ -1,14 +1,15 @@
 import os
 import sys
 import json
-import random
 import string
-import asyncio
+import signal
+import random
 import typing
-import logging
+import asyncio
 import inspect
+import logging
 import argparse
-
+import functools
 
 import wiji
 
@@ -56,6 +57,40 @@ def load_class(dotted_path):
         err_message = "Error importing {0}".format(dotted_path)
         sys.stderr.write("\033[91m{0}\033[0m\n".format(err_message))
         raise
+
+
+# TODO: this functions should live in their own file
+async def _signal_handling(workers):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+
+    try:
+        for signal_number in [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
+            loop.add_signal_handler(
+                signal_number,
+                functools.partial(
+                    asyncio.ensure_future,
+                    _handle_termination_signal(signal_number=signal_number, workers=workers),
+                ),
+            )
+    except ValueError as e:
+        # TODO: add debug logging
+        print("this OS does not support the said signal")
+
+
+async def _handle_termination_signal(signal_number, workers):
+    signal_table = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 9: "SIGKILL", 15: "SIGTERM"}
+    # TODO: add debug logging
+    shutdown_tasks = []
+    for worker in workers:
+        shutdown_tasks.append(worker.shutdown())
+
+    # the shutdown process for all tasks needs to happen concurrently
+    tasks = asyncio.gather(*shutdown_tasks)
+    asyncio.ensure_future(tasks)
+    return
 
 
 def main():
@@ -126,7 +161,7 @@ def print_task(the_broker) -> wiji.task.Task:
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(6)
 
     task = MyTask(the_broker=the_broker, queue_name="PrintQueue")
     return task
@@ -141,9 +176,9 @@ def adder_task(the_broker, chain=None) -> wiji.task.Task:
             print("RUNNING adder_task:")
             print("adder: ", res)
             print()
-            await asyncio.sleep(2)
-            if res in [10, 90]:
-                await self.retry(a=221, b=555)
+            await asyncio.sleep(5)
+            # if res in [10, 90]:
+            #     await self.retry(a=221, b=555)
             return res
 
     task = AdderTask(the_broker=the_broker, queue_name="AdderTaskQueue", chain=chain)
@@ -233,17 +268,17 @@ if __name__ == "__main__":
     BLOCKING_task = BLOCKING_http_task(the_broker=MY_BROKER)
 
     all_tasks = [
-        http_task1,
+        # http_task1,
         print_task2,
         adder,
-        divider,
-        multiplier,
-        exception_task22,
-        BLOCKING_task,
+        # divider,
+        # multiplier,
+        # exception_task22,
+        # BLOCKING_task,
     ]
 
-    workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
-    producers = [produce_tasks_continously(task=wiji.task.WatchDogTask)]
+    workers = []  # [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
+    producers = []  # [produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
     for task in all_tasks:
         _worker = wiji.Worker(the_task=task)
@@ -255,23 +290,23 @@ if __name__ == "__main__":
 
     producers.extend(
         [
-            produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
+            # produce_tasks_continously(task=http_task1, url="https://httpbin.org/delay/45"),
             produce_tasks_continously(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
             produce_tasks_continously(task=adder, a=23, b=67),
-            produce_tasks_continously(
-                task=exception_task22, task_options=wiji.task.TaskOptions(eta=-34.99)
-            ),
-            produce_tasks_continously(
-                task=BLOCKING_task,
-                url="https://httpbin.org/delay/11",
-                task_options=wiji.task.TaskOptions(eta=2.33),
-            ),
+            # produce_tasks_continously(
+            #     task=exception_task22, task_options=wiji.task.TaskOptions(eta=-34.99)
+            # ),
+            # produce_tasks_continously(
+            #     task=BLOCKING_task,
+            #     url="https://httpbin.org/delay/11",
+            #     task_options=wiji.task.TaskOptions(eta=2.33),
+            # ),
         ]
     )
 
     # 2.consume tasks
     async def async_main():
-        gather_tasks = asyncio.gather(*consumers, *producers)
+        gather_tasks = asyncio.gather(*consumers, *producers, _signal_handling(workers))
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)

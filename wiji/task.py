@@ -80,14 +80,17 @@ class TaskOptions:
         if not self.task_id:
             self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
 
-        # this is the duration(seconds) that a worker should wait
+        # `draining_interval` is the duration(seconds) that a worker should wait
         # after getting a termination signal(SIGTERM, SIGQUIT etc).
         # during this duration, the worker does not consumer anymore tasks from the broker,
         # the worker will continue executing any tasks that it had already dequeued from the broker.
         # a simple way of choosing a value to set is:
         # draining_interval = time_taken_to_run_this_task + 1.00
         # eg: if your task is making a network call that lasts 30seconds,
-        # then; draining_interval = 30 + 1.00
+        # thus; draining_interval = 30 + 1.00
+
+        # the default value is 10.00 seconds.
+        # mainly because that is also the default value of the process supervisor: `supervisord`
         self.draining_interval = draining_interval
 
         self.args = ()

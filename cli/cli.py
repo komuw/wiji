@@ -83,13 +83,36 @@ async def _signal_handling(workers):
 async def _handle_termination_signal(signal_number, workers):
     signal_table = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 9: "SIGKILL", 15: "SIGTERM"}
     # TODO: add debug logging
+
     shutdown_tasks = []
     for worker in workers:
         shutdown_tasks.append(worker.shutdown())
-
     # the shutdown process for all tasks needs to happen concurrently
     tasks = asyncio.gather(*shutdown_tasks)
     asyncio.ensure_future(tasks)
+
+    def wait_worker_shutdown(workers) -> bool:
+        no_workers = len(workers)
+        success_shut_down = 0
+        for worker in workers:
+            if worker.SUCCESFULLY_SHUT_DOWN:
+                success_shut_down += 1
+
+        if success_shut_down == no_workers:
+            loop_continue = False
+        else:
+            loop_continue = True
+        return loop_continue
+
+    while wait_worker_shutdown(workers=workers):
+        print()
+        print("wiji-cli: waiting for all workers to drain properly....")
+        print()
+        await asyncio.sleep(5)
+
+    print()
+    print("wiji-cli: shuttting down all workers was achieved succesfully.")
+    print()
     return
 
 
@@ -306,6 +329,8 @@ if __name__ == "__main__":
 
     # 2.consume tasks
     async def async_main():
+        wiji_pid = workers[0]._PID
+        print("PID", wiji_pid)
         gather_tasks = asyncio.gather(*consumers, *producers, _signal_handling(workers))
         await gather_tasks
 

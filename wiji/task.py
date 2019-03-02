@@ -408,6 +408,7 @@ class Task(abc.ABC):
             if isinstance(v, TaskOptions):
                 self.task_options = v
                 kwargs.pop(k)
+
         self.task_options.args = args
         self.task_options.kwargs = kwargs
 

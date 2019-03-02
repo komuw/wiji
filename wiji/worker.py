@@ -269,7 +269,7 @@ class Worker:
                 "event": "wiji.Worker.shutdown",
                 "stage": "start",
                 "state": "intiating shutdown",
-                "draining_interval": self.draining_interval,
+                "drain_duration": self.the_task.task_options.drain_duration,
             },
         )
         self.SHUT_DOWN = True
@@ -279,4 +279,4 @@ class Worker:
         # sleep so that worker can finish executing any tasks it had already dequeued.
         # we need to use asyncio.sleep so that we do not block eventloop.
         # this way, we do not prevent any other workers in the same loop from also shutting down cleanly.
-        await asyncio.sleep(self.the_task.task_options.draining_interval)
+        await asyncio.sleep(self.the_task.task_options.drain_duration)

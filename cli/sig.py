@@ -20,14 +20,12 @@ async def _signal_handling(logger, workers):
         loop = asyncio.get_event_loop()
 
     try:
-        for signal_number in [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
+        for _signal in [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
             loop.add_signal_handler(
-                signal_number,
+                _signal,
                 functools.partial(
                     asyncio.ensure_future,
-                    _handle_termination_signal(
-                        logger=logger, signal_number=signal_number, workers=workers
-                    ),
+                    _handle_termination_signal(logger=logger, _signal=_signal, workers=workers),
                 ),
             )
     except ValueError as e:
@@ -41,18 +39,14 @@ async def _signal_handling(logger, workers):
         )
 
 
-async def _handle_termination_signal(logger, signal_number, workers):
-    signal_table = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 9: "SIGKILL", 15: "SIGTERM"}
-    # TODO: add debug logging
-
+async def _handle_termination_signal(logger, _signal, workers):
     logger.log(
         logging.DEBUG,
         {
             "event": "wiji.cli.signals",
             "stage": "start",
             "state": "received termination signal",
-            "signal_number": signal_number,
-            "signal_name": signal_table.get("signal_number", "unknown signal"),
+            "signal": _signal,
         },
     )
 

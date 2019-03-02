@@ -118,7 +118,7 @@ def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
 
 
 def BLOCKING_http_task(the_broker) -> wiji.task.Task:
-    class MyTask(wiji.task.Task):
+    class BlockinTask(wiji.task.Task):
         async def run(self, *args, **kwargs):
             print()
             print("RUNNING BLOCKING_http_task:")
@@ -128,12 +128,12 @@ def BLOCKING_http_task(the_broker) -> wiji.task.Task:
             resp = requests.get(url)
             print("resp: ", resp)
 
-    task = MyTask(the_broker=the_broker, queue_name="BlockingHttp_Queue")
+    task = BlockinTask(the_broker=the_broker, queue_name="BlockingHttp_Queue")
     return task
 
 
 def http_task(the_broker) -> wiji.task.Task:
-    class MyTask(wiji.task.Task):
+    class HttpTask(wiji.task.Task):
         async def run(self, *args, **kwargs):
             import aiohttp
 
@@ -144,12 +144,12 @@ def http_task(the_broker) -> wiji.task.Task:
                     res_text = await resp.text()
                     print(res_text[:50])
 
-    task = MyTask(the_broker=the_broker, queue_name="AsyncHttpQueue")
+    task = HttpTask(the_broker=the_broker, queue_name="AsyncHttpQueue")
     return task
 
 
 def print_task(the_broker) -> wiji.task.Task:
-    class MyTask(wiji.task.Task):
+    class PrintTask(wiji.task.Task):
         async def run(self, *args, **kwargs):
             import hashlib
 
@@ -163,7 +163,7 @@ def print_task(the_broker) -> wiji.task.Task:
             h.hexdigest()
             await asyncio.sleep(0.4)
 
-    task = MyTask(the_broker=the_broker, queue_name="PrintQueue")
+    task = PrintTask(the_broker=the_broker, queue_name="PrintQueue")
     return task
 
 

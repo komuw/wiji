@@ -2,6 +2,7 @@ import os
 import uuid
 import json
 import random
+import signal
 import string
 import typing
 import logging
@@ -35,12 +36,13 @@ class Worker:
             watchdog_timeout=watchdog_timeout,
         )
 
+        self._PID = os.getpid()
         self.the_task = the_task
         self.worker_id = worker_id
         if not self.worker_id:
             self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
-        self.the_task.log_metadata.update({"worker_id": self.worker_id})
+        self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(
             loglevel=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
         )
@@ -53,6 +55,9 @@ class Worker:
             self.watchdog = watchdog._BlocingWatchdog(
                 watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
             )
+
+        self.SHOULD_SHUT_DOWN: bool = False
+        self.SUCCESFULLY_SHUT_DOWN: bool = False
 
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
@@ -159,13 +164,20 @@ class Worker:
         """
         if self.watchdog is not None:
             self.watchdog.start()
-            # queue the first watchdog task
-            await self.the_task.delay()
 
         retry_count = 0
         while True:
-
             self._log(logging.INFO, {"event": "wiji.Worker.consume_tasks", "stage": "start"})
+            if self.SHOULD_SHUT_DOWN:
+                self._log(
+                    logging.INFO,
+                    {
+                        "event": "wiji.Worker.consume_tasks",
+                        "stage": "end",
+                        "state": "cleanly shutting down worker.",
+                    },
+                )
+                return
 
             try:
                 # rate limit ourselves
@@ -249,10 +261,25 @@ class Worker:
                 # offer escape hatch for tests to come out of endless loop
                 return item_to_dequeue
 
-    def shutdown(self):
+    async def shutdown(self):
         """
-        Cleanly shutdown worker.
-        TODO: see, https://github.com/komuw/wiji/issues/2
+        Cleanly shutdown this worker.
         """
+        self._log(
+            logging.INFO,
+            {
+                "event": "wiji.Worker.shutdown",
+                "stage": "start",
+                "state": "intiating shutdown",
+                "drain_duration": self.the_task.task_options.drain_duration,
+            },
+        )
+        self.SHOULD_SHUT_DOWN = True
         if self.watchdog is not None:
             self.watchdog.stop()
+
+        # sleep so that worker can finish executing any tasks it had already dequeued.
+        # we need to use asyncio.sleep so that we do not block eventloop.
+        # this way, we do not prevent any other workers in the same loop from also shutting down cleanly.
+        await asyncio.sleep(self.the_task.task_options.drain_duration)
+        self.SUCCESFULLY_SHUT_DOWN = True

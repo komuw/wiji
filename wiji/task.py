@@ -48,6 +48,7 @@ class TaskOptions:
         log_id: str = "",
         hook_metadata: typing.Union[None, str] = None,
         task_id: typing.Union[None, str] = None,
+        drain_duration: float = 10.0,
     ):
         self._validate_task_options_args(
             eta=eta,
@@ -55,6 +56,7 @@ class TaskOptions:
             log_id=log_id,
             hook_metadata=hook_metadata,
             task_id=task_id,
+            drain_duration=drain_duration,
         )
         self.eta = eta
         if self.eta < 0.00:
@@ -78,13 +80,28 @@ class TaskOptions:
         if not self.task_id:
             self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
 
+        # `drain_duration` is the duration(in seconds) that a worker should wait
+        # after getting a termination signal(SIGTERM, SIGQUIT etc).
+        # during this duration, the worker does not consumer anymore tasks from the broker,
+        # the worker will continue executing any tasks that it had already dequeued from the broker.
+        # a simple way of choosing a value to set is:
+        # drain_duration = time_taken_to_run_this_task + 1.00
+        # eg: if your task is making a network call that lasts 30seconds,
+        # thus; drain_duration = 30 + 1.00
+
+        # the default value is 10.00 seconds.
+        # mainly because that is also the default value of the process supervisor: `supervisord`
+        self.drain_duration = drain_duration
+
         self.args = ()
         self.kwargs = {}
 
     def __str__(self):
         return str(self.__dict__)
 
-    def _validate_task_options_args(self, eta, max_retries, log_id, hook_metadata, task_id):
+    def _validate_task_options_args(
+        self, eta, max_retries, log_id, hook_metadata, task_id, drain_duration
+    ):
         if not isinstance(eta, float):
             raise ValueError(
                 """`eta` should be of type:: `float` You entered: {0}""".format(type(eta))
@@ -109,6 +126,12 @@ class TaskOptions:
             raise ValueError(
                 """`task_id` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(task_id)
+                )
+            )
+        if not isinstance(drain_duration, float):
+            raise ValueError(
+                """`drain_duration` should be of type:: `float` You entered: {0}""".format(
+                    type(drain_duration)
                 )
             )
 
@@ -385,6 +408,7 @@ class Task(abc.ABC):
             if isinstance(v, TaskOptions):
                 self.task_options = v
                 kwargs.pop(k)
+
         self.task_options.args = args
         self.task_options.kwargs = kwargs
 

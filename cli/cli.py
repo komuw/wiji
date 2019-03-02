@@ -1,14 +1,15 @@
 import os
 import sys
 import json
-import random
 import string
-import asyncio
+import signal
+import random
 import typing
-import logging
+import asyncio
 import inspect
+import logging
 import argparse
-
+import functools
 
 import wiji
 
@@ -58,6 +59,63 @@ def load_class(dotted_path):
         raise
 
 
+# TODO: this functions should live in their own file
+async def _signal_handling(workers):
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.get_event_loop()
+
+    try:
+        for signal_number in [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
+            loop.add_signal_handler(
+                signal_number,
+                functools.partial(
+                    asyncio.ensure_future,
+                    _handle_termination_signal(signal_number=signal_number, workers=workers),
+                ),
+            )
+    except ValueError as e:
+        # TODO: add debug logging
+        print("this OS does not support the said signal")
+
+
+async def _handle_termination_signal(signal_number, workers):
+    signal_table = {1: "SIGHUP", 2: "SIGINT", 3: "SIGQUIT", 9: "SIGKILL", 15: "SIGTERM"}
+    # TODO: add debug logging
+
+    shutdown_tasks = []
+    for worker in workers:
+        shutdown_tasks.append(worker.shutdown())
+    # the shutdown process for all tasks needs to happen concurrently
+    tasks = asyncio.gather(*shutdown_tasks)
+    asyncio.ensure_future(tasks)
+
+    def wait_worker_shutdown(workers) -> bool:
+        no_workers = len(workers)
+        success_shut_down = 0
+        for worker in workers:
+            if worker.SUCCESFULLY_SHUT_DOWN:
+                success_shut_down += 1
+
+        if success_shut_down == no_workers:
+            loop_continue = False
+        else:
+            loop_continue = True
+        return loop_continue
+
+    while wait_worker_shutdown(workers=workers):
+        print()
+        print("wiji-cli: waiting for all workers to drain properly....")
+        print()
+        await asyncio.sleep(5)
+
+    print()
+    print("wiji-cli: shuttting down all workers was achieved succesfully.")
+    print()
+    return
+
+
 def main():
     """
     """
@@ -83,7 +141,7 @@ def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
 
 
 def BLOCKING_http_task(the_broker) -> wiji.task.Task:
-    class MyTask(wiji.task.Task):
+    class BlockinTask(wiji.task.Task):
         async def run(self, *args, **kwargs):
             print()
             print("RUNNING BLOCKING_http_task:")
@@ -93,12 +151,12 @@ def BLOCKING_http_task(the_broker) -> wiji.task.Task:
             resp = requests.get(url)
             print("resp: ", resp)
 
-    task = MyTask(the_broker=the_broker, queue_name="BlockingHttp_Queue")
+    task = BlockinTask(the_broker=the_broker, queue_name="BlockingHttp_Queue")
     return task
 
 
 def http_task(the_broker) -> wiji.task.Task:
-    class MyTask(wiji.task.Task):
+    class HttpTask(wiji.task.Task):
         async def run(self, *args, **kwargs):
             import aiohttp
 
@@ -109,12 +167,12 @@ def http_task(the_broker) -> wiji.task.Task:
                     res_text = await resp.text()
                     print(res_text[:50])
 
-    task = MyTask(the_broker=the_broker, queue_name="AsyncHttpQueue")
+    task = HttpTask(the_broker=the_broker, queue_name="AsyncHttpQueue")
     return task
 
 
 def print_task(the_broker) -> wiji.task.Task:
-    class MyTask(wiji.task.Task):
+    class PrintTask(wiji.task.Task):
         async def run(self, *args, **kwargs):
             import hashlib
 
@@ -128,7 +186,7 @@ def print_task(the_broker) -> wiji.task.Task:
             h.hexdigest()
             await asyncio.sleep(0.4)
 
-    task = MyTask(the_broker=the_broker, queue_name="PrintQueue")
+    task = PrintTask(the_broker=the_broker, queue_name="PrintQueue")
     return task
 
 
@@ -271,7 +329,9 @@ if __name__ == "__main__":
 
     # 2.consume tasks
     async def async_main():
-        gather_tasks = asyncio.gather(*consumers, *producers)
+        wiji_pid = workers[0]._PID
+        print("PID", wiji_pid)
+        gather_tasks = asyncio.gather(*consumers, *producers, _signal_handling(workers))
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)

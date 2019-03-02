@@ -252,4 +252,19 @@ async def task_producer(task, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    asyncio.run(task_producer(print_task2))
+
+    async def t():
+        gather_tasks = asyncio.gather(
+            task_producer(task=print_task2, my_KWARGS={"name": "Jay-Z", "age": 4040}),
+            task_producer(task=adder, a=23, b=67),
+            task_producer(task=http_task1, url="https://httpbin.org/delay/45"),
+            task_producer(task=exception_task22, task_options=wiji.task.TaskOptions(eta=-34.99)),
+            task_producer(
+                task=BLOCKING_task,
+                url="https://httpbin.org/delay/11",
+                task_options=wiji.task.TaskOptions(eta=2.33),
+            ),
+        )
+        await gather_tasks
+
+    asyncio.run(t())

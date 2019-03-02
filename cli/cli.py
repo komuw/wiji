@@ -69,8 +69,6 @@ def make_parser():
 def main():
     """
     run as:
-        python cli/cli.py --config /path/to/my_config.json
-            or
         wiji-cli --config /path/to/my_config.json
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))

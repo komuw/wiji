@@ -43,8 +43,3 @@ def load_class(dotted_path):
         err_message = "Error importing {0}".format(dotted_path)
         sys.stderr.write("\033[91m{0}\033[0m\n".format(err_message))
         raise
-
-
-async def produce_tasks_continously(task, *args, **kwargs):
-    while True:
-        await task.delay(*args, **kwargs)

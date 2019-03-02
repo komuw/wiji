@@ -12,9 +12,7 @@ import argparse
 import functools
 
 import wiji
-
-import utils
-import sig
+from cli import utils
 
 
 os.environ["PYTHONASYNCIODEBUG"] = "1"
@@ -93,7 +91,7 @@ def main():
         list_of_tasks = []
 
         for config_tsk in config_tasks:
-            task = utils.load_class(config_tsk)
+            task = utils.load.load_class(config_tsk)
             if inspect.isclass(task):
                 # DO NOT instantiate class instance, fail with appropriate error instead.
                 msg = "task should be a class instance."
@@ -103,7 +101,9 @@ def main():
 
         async def async_main():
             workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
-            producers = []  # [utils.produce_tasks_continously(task=wiji.task.WatchDogTask)]
+            producers = (
+                []
+            )  # [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
             for task in list_of_tasks:
                 _worker = wiji.Worker(the_task=task)
@@ -114,7 +114,7 @@ def main():
                 consumers.append(i.consume_tasks())
 
             gather_tasks = asyncio.gather(
-                *consumers, *producers, sig._signal_handling(logger=logger, workers=workers)
+                *consumers, *producers, utils.sig._signal_handling(logger=logger, workers=workers)
             )
             await gather_tasks
 

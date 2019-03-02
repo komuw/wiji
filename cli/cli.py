@@ -69,9 +69,9 @@ def make_parser():
 def main():
     """
     run as:
-        python cli/cli.py
-        or
-        wiji-cli
+        python cli/cli.py --config /path/to/my_config.json
+            or
+        wiji-cli --config /path/to/my_config.json
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
     logger = wiji.logger.SimpleBaseLogger("wiji.cli")
@@ -105,7 +105,7 @@ def main():
 
         async def async_main():
             workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
-            producers = [utils.produce_tasks_continously(task=wiji.task.WatchDogTask)]
+            producers = []  # [utils.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
             for task in list_of_tasks:
                 _worker = wiji.Worker(the_task=task)

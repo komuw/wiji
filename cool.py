@@ -34,9 +34,7 @@ if __name__ == "__main__":
 
     async def async_main():
         xxx = Deriv()
-        import pdb
 
-        pdb.set_trace()
         ############### ASYNC ###############
         start_time_cpu = time.process_time()
         start_time_io = time.monotonic()

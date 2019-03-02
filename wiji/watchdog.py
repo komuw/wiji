@@ -106,6 +106,7 @@ class _BlocingWatchdog:
                         raise BlockingTaskError(error_msg)
                     except Exception as e:
                         all_threads_stack_trace = self._save_stack_trace()
+                        # TODO: maybe we should log this at WARNING level, or DEBUG??
                         self.logger.log(
                             logging.ERROR,
                             {

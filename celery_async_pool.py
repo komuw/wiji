@@ -40,11 +40,6 @@ def apply_target(
         callback(ret)
 
 
-import pdb
-
-pdb.set_trace()
-
-
 class MyTaskPool(concurrency.base.BasePool):
     """
     Solo task pool (blocking, inline, fast).

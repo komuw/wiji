@@ -16,6 +16,29 @@ from . import hook
 from . import logger
 from . import protocol
 
+# TODO: disambiguate which attributes should be in TaskOptions class
+# and which ones should be in Task class.
+# looks like the attributes that should be in TaskOptions class are the ones
+# that have to do with the task as it is been called as opposed to when it is been declared.
+
+
+class MaxRetriesExceededError(Exception):
+    """
+    The tasks max_retries count has been exceeded.
+    """
+
+    pass
+
+
+class RetryError(Exception):
+    """
+    Exception that is raised so that `wiji.Worker` can know that current executing task is retrying.
+    This enables `wiji.Worker` not to schedule any chained tasks of the current executing task.
+    User applications should not capture this Exception!
+    """
+
+    pass
+
 
 class TaskOptions:
     def __init__(
@@ -54,6 +77,9 @@ class TaskOptions:
         self.task_id = task_id
         if not self.task_id:
             self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
+
+        self.args = ()
+        self.kwargs = {}
 
     def __str__(self):
         return str(self.__dict__)
@@ -296,15 +322,7 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        for a in args:
-            if isinstance(a, TaskOptions):
-                raise ValueError(
-                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
-                )
-        for k, v in list(kwargs.items()):
-            if isinstance(v, TaskOptions):
-                self.task_options = v
-                kwargs.pop(k)
+        self._validate_delay_args(*args, **kwargs)
 
         proto = protocol.Protocol(
             version=1,
@@ -314,8 +332,8 @@ class Task(abc.ABC):
             max_retries=self.task_options.max_retries,
             log_id=self.task_options.log_id,
             hook_metadata=self.task_options.hook_metadata,
-            argsy=args,
-            kwargsy=kwargs,
+            argsy=self.task_options.args,
+            kwargsy=self.task_options.kwargs,
         )
         await self.the_broker.enqueue(
             item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
@@ -324,6 +342,51 @@ class Task(abc.ABC):
     def synchronous_delay(self, *args, **kwargs):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.delay(*args, **kwargs))
+
+    async def retry(self, *args, **kwargs):
+        """
+        Parameters:
+            args: The positional arguments to pass on to the task.
+            kwargs: The keyword arguments to pass on to the task.
+
+        Raises:
+            MaxRetriesExceededError: the task exceeded its max_retries count.
+            RetryError: the task is been retried. User applications should not capture this Exception.
+
+        This method takes the same parameters as the `delay` method.
+        It also behaves the same as `delay`
+        """
+
+        self._validate_delay_args(*args, **kwargs)
+
+        if self.task_options.current_retries >= self.task_options.max_retries:
+            raise MaxRetriesExceededError(
+                "The task:`{task_name}` has reached its max_retries count of:{max_retries}".format(
+                    task_name=self.task_name, max_retries=self.task_options.max_retries
+                )
+            )
+
+        self.task_options.current_retries += 1
+        await self.delay(*args, **kwargs)
+
+        raise RetryError(
+            "Task: `{task_name}` is been retried. User applications should not capture this Exception!".format(
+                task_name=self.task_name
+            )
+        )
+
+    def _validate_delay_args(self, *args, **kwargs):
+        for a in args:
+            if isinstance(a, TaskOptions):
+                raise ValueError(
+                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
+                )
+        for k, v in list(kwargs.items()):
+            if isinstance(v, TaskOptions):
+                self.task_options = v
+                kwargs.pop(k)
+        self.task_options.args = args
+        self.task_options.kwargs = kwargs
 
 
 class _watchdogTask(Task):
@@ -335,6 +398,8 @@ class _watchdogTask(Task):
 
     This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
     """
+
+    queue_name = "__WatchDogTaskQueue__"
 
     async def run(self):
         self._log(
@@ -349,4 +414,4 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name="WatchDogTask_Queue")
+WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name=_watchdogTask.queue_name)

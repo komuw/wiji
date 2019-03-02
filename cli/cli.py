@@ -142,6 +142,8 @@ def adder_task(the_broker, chain=None) -> wiji.task.Task:
             print("adder: ", res)
             print()
             await asyncio.sleep(2)
+            if res in [10, 90]:
+                await self.retry(a=221, b=555)
             return res
 
     task = AdderTask(the_broker=the_broker, queue_name="AdderTaskQueue", chain=chain)

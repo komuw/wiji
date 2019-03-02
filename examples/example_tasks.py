@@ -71,7 +71,7 @@ def print_task(the_broker) -> wiji.task.Task:
             h = hashlib.blake2b()
             h.update(b"Hello world")
             h.hexdigest()
-            await asyncio.sleep(0.4)
+            # await asyncio.sleep(0.4)
 
     task = PrintTask(the_broker=the_broker, queue_name="PrintQueue")
     return task
@@ -86,7 +86,7 @@ def adder_task(the_broker, chain=None) -> wiji.task.Task:
             print("RUNNING adder_task:")
             print("adder: ", res)
             print()
-            await asyncio.sleep(2)
+            # await asyncio.sleep(2)
             if res in [10, 90]:
                 await self.retry(a=221, b=555)
             return res
@@ -132,7 +132,7 @@ def exception_task(the_broker, chain=None) -> wiji.task.Task:
             print()
             print("RUNNING exception_task:")
             print()
-            await asyncio.sleep(0.5)
+            # await asyncio.sleep(0.5)
             raise ValueError("\n Houston We got 99 problems. \n")
 
     task = ExceptionTask(the_broker=the_broker, queue_name="ExceptionTaskQueue", chain=chain)

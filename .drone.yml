@@ -12,7 +12,7 @@ steps:
   image: python:3.7
   commands:
     - pwd
-    - sudo apt -y update; sudo apt-get -y install pandoc curl
+    - apt -y update; sudo apt-get -y install pandoc curl
     - pip install -e .[dev,test]
     - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
     - coverage erase
@@ -25,7 +25,7 @@ steps:
   image: python:3.7
   commands:
     - pwd
-    - sudo apt -y update; sudo apt-get -y install pandoc curl
+    - apt -y update; sudo apt-get -y install pandoc curl
     - pip install -e .[dev,test]
     - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
     - black --line-length=100 --check . ||  { printf "\\n\\t please use black to format your code."; exit 77; }
@@ -40,7 +40,7 @@ steps:
   image: python:3.7
   commands:
     - pwd
-    - sudo apt -y update; sudo apt-get -y install pandoc curl
+    - apt -y update; sudo apt-get -y install pandoc curl
     - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
     - |
       git remote set-branches --add origin master # https://github.com/travis-ci/travis-ci/issues/6069

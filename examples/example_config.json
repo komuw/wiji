@@ -1,6 +1,12 @@
 {
     "loglevel": "INFO",
     "tasks": [
-        "examples.example_tasks.print_task2"
+        "examples.example_tasks.print_task2",
+        "examples.example_tasks.multiplier",
+        "examples.example_tasks.divider",
+        "examples.example_tasks.adder",
+        "examples.example_tasks.http_task1",
+        "examples.example_tasks.exception_task22",
+        "examples.example_tasks.BLOCKING_task"
     ]
 }

@@ -101,9 +101,7 @@ def main():
 
         async def async_main():
             workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
-            producers = (
-                []
-            )  # [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
+            producers = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
             for task in list_of_tasks:
                 _worker = wiji.Worker(the_task=task)

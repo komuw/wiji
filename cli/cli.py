@@ -116,12 +116,6 @@ async def _handle_termination_signal(signal_number, workers):
     return
 
 
-def main():
-    """
-    """
-    pass
-
-
 async def produce_tasks_continously(task, *args, **kwargs):
     while True:
         await task.delay(*args, **kwargs)
@@ -252,13 +246,13 @@ def exception_task(the_broker, chain=None) -> wiji.task.Task:
     return task
 
 
-if __name__ == "__main__":
-    main()
+def main():
     """
     run as:
         python cli/cli.py
+        or
+        wiji-cli
     """
-
     MY_BROKER = wiji.broker.SimpleBroker()
 
     # 1. publish task
@@ -335,3 +329,7 @@ if __name__ == "__main__":
         await gather_tasks
 
     asyncio.run(async_main(), debug=True)
+
+
+if __name__ == "__main__":
+    main()

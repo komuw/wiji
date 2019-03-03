@@ -363,7 +363,11 @@ class Task(abc.ABC):
         )
 
     def synchronous_delay(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+
         loop.run_until_complete(self.delay(*args, **kwargs))
 
     async def retry(self, *args, **kwargs):

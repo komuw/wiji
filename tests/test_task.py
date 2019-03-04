@@ -29,12 +29,12 @@ def AsyncMock(*args, **kwargs):
     return mock_coro
 
 
-class TestTask(TestCase):
+class TestTypeChecking(TestCase):
     """
     run tests as:
         python -m unittest discover -v -s .
     run one testcase as:
-        python -m unittest -v tests.test_task.TestTask.test_something
+        python -m unittest -v tests.test_task.TestTypeChecking.test_something
     """
 
     def setUp(self):

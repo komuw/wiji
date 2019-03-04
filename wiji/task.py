@@ -416,6 +416,8 @@ class Task(abc.ABC):
     @staticmethod
     def _type_check(func, *args, **kwargs):
         """
+        Check that `delay` is called with right arguments/signature.
+
         if you have a func like:
             def foo(a, b, *args, c, d=10, **kwargs):
                 pass

@@ -345,7 +345,8 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        self._validate_delay_args(*args, **kwargs)
+        args, kwargs = self._validate_delay_args(*args, **kwargs)
+        self._type_check(self.run, *args, **kwargs)
 
         proto = protocol.Protocol(
             version=1,
@@ -379,8 +380,7 @@ class Task(abc.ABC):
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
-
-        self._validate_delay_args(*args, **kwargs)
+        args, kwargs = self._validate_delay_args(*args, **kwargs)
 
         if self.task_options.current_retries >= self.task_options.max_retries:
             raise MaxRetriesExceededError(
@@ -411,6 +411,19 @@ class Task(abc.ABC):
 
         self.task_options.args = args
         self.task_options.kwargs = kwargs
+        return self.task_options.args, self.task_options.kwargs
+
+    @staticmethod
+    def _type_check(func, *args, **kwargs):
+        """
+        if you have a func like:
+            def foo(a, b, *args, c, d=10, **kwargs):
+                pass
+        you can type-check like:
+            Task._type_check(foo, 1, 4)
+        """
+        sig = inspect.signature(func)
+        return sig.bind(*args, **kwargs)
 
 
 class _watchdogTask(Task):

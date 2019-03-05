@@ -66,8 +66,15 @@ def main():
         parser = make_parser()
         args = parser.parse_args()
 
-        dry_run = args.dry_run
         config = args.config
+        dry_run = args.dry_run
+        if dry_run:
+            logger.log(
+                logging.WARNING,
+                "\n\n\t {} \n\n".format(
+                    "Wiji: Caution; You have activated dry-run, wiji may not behave correctly."
+                ),
+            )
 
         config_instance = utils.load.load_class(config)
         if not isinstance(config_instance, wiji.conf.WijiConf):
@@ -79,35 +86,46 @@ def main():
             logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": str(err)})
             sys.exit(77)
 
-        async def async_main():
-            watchdog_worker = wiji.Worker(
-                the_task=wiji.task.WatchDogTask,
-                use_watchdog=True,
-                watchdog_duration=config_instance.watchdog_duration,
+        if dry_run:
+            logger.log(
+                logging.INFO, {"event": "wiji.cli.main", "stage": "end", "state": "dry_run end"}
             )
+            return
 
-            workers = [watchdog_worker]
-            producers = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
-
-            for task in config_instance.tasks:
-                _worker = wiji.Worker(the_task=task)
-                workers.append(_worker)
-
-            consumers = []
-            for i in workers:
-                consumers.append(i.consume_tasks())
-
-            gather_tasks = asyncio.gather(
-                *consumers, *producers, utils.sig._signal_handling(logger=logger, workers=workers)
-            )
-            await gather_tasks
-
-        asyncio.run(async_main(), debug=True)
+        asyncio.run(async_main(logger=logger, config_instance=config_instance), debug=True)
     except Exception as e:
         logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": str(e)})
         sys.exit(77)
     finally:
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
+
+
+async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.conf.WijiConf):
+    """
+    (i)   set signal handlers.
+    (ii)  consume tasks.
+    (iii) continuously produce watchdog tasks.
+    """
+    watchdog_worker = wiji.Worker(
+        the_task=wiji.task.WatchDogTask,
+        use_watchdog=True,
+        watchdog_duration=config_instance.watchdog_duration,
+    )
+    workers = [watchdog_worker]
+    watch_dog_producer = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
+
+    for task in config_instance.tasks:
+        _worker = wiji.Worker(the_task=task)
+        workers.append(_worker)
+
+    consumers = []
+    for i in workers:
+        consumers.append(i.consume_tasks())
+
+    gather_tasks = asyncio.gather(
+        *consumers, *watch_dog_producer, utils.sig._signal_handling(logger=logger, workers=workers)
+    )
+    await gather_tasks
 
 
 if __name__ == "__main__":

@@ -476,5 +476,5 @@ class _watchdogTask(Task):
 
 
 WatchDogTask = _watchdogTask(
-    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name
+    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name, loglevel="WARNING"
 )

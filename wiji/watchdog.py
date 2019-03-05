@@ -31,7 +31,7 @@ class BlockingTaskError(BlockingIOError):
     pass
 
 
-class _BlockingWatchdog:
+class BlockingWatchdog:
     """
     Monitors for any blocking calls in the main python asyncio thread.
 
@@ -45,7 +45,7 @@ class _BlockingWatchdog:
     When it detects a blocking - IO/CPU bound - call that lasts for longer than `X` seconds(where `X` is configurable and defaults to 0.1seconds);
     this class will log an event that looks like:
         {
-            "event": "wiji._BlockingWatchdog.blocked",
+            "event": "wiji.BlockingWatchdog.blocked",
             "stage": "end",
             "error": "ERROR: blocked tasks Watchdog has not received any notifications in 0.1 seconds. This means the Main thread is blocked! "
             "Hint: are you running any tasks with blocking calls? eg; using python-requests? etc? "
@@ -105,7 +105,7 @@ class _BlockingWatchdog:
         self._before_counter = 0
         self._after_counter = 0
 
-        self.logger = logger.SimpleBaseLogger("wiji._BlockingWatchdog")
+        self.logger = logger.SimpleBaseLogger("wiji.BlockingWatchdog")
         self.logger.bind(loglevel="DEBUG", log_metadata={"task_name": self.task_name})
 
     def notify_alive_before(self):
@@ -162,7 +162,7 @@ class _BlockingWatchdog:
                         self.logger.log(
                             logging.ERROR,
                             {
-                                "event": "wiji._BlockingWatchdog.blocked",
+                                "event": "wiji.BlockingWatchdog.blocked",
                                 "stage": "end",
                                 "error": str(e),
                                 "stack_trace": all_threads_stack_trace,

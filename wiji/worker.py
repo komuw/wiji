@@ -52,7 +52,7 @@ class Worker:
 
         self.watchdog = None
         if self.use_watchdog:
-            self.watchdog = watchdog._BlockingWatchdog(
+            self.watchdog = watchdog.BlockingWatchdog(
                 watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
             )
 

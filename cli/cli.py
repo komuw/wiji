@@ -37,15 +37,6 @@ def make_parser():
         help="The currently installed wiji version.",
     )
     parser.add_argument(
-        "--loglevel",
-        type=str,
-        required=False,
-        default="INFO",
-        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
-        help="The log level to output log messages at. \
-        eg: --loglevel DEBUG",
-    )
-    parser.add_argument(
         "--config",
         required=True,
         type=argparse.FileType(mode="r"),
@@ -82,14 +73,8 @@ def main():
         # todo: validate that config_contents hold all the required params
         kwargs = json.loads(config_contents)
 
-        loglevel = (
-            kwargs.get("loglevel").upper() if kwargs.get("loglevel") else args.loglevel.upper()
-        )
-
         config_tasks = kwargs["tasks"]  # this is a mandatory param
-
         list_of_tasks = []
-
         for config_tsk in config_tasks:
             task = utils.load.load_class(config_tsk)
             if inspect.isclass(task):

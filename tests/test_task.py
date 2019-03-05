@@ -39,7 +39,7 @@ class TestTypeChecking(TestCase):
 
     def setUp(self):
         self.loop = asyncio.get_event_loop()
-        self.BROKER = wiji.broker.SimpleBroker()
+        self.BROKER = wiji.broker.InMemoryBroker()
 
     def tearDown(self):
         pass
@@ -103,3 +103,31 @@ class TestTypeChecking(TestCase):
             myAdderTask.synchronous_delay(4, 6, task_options=wiji.task.TaskOptions(eta=4.56))
 
         call_delay()
+
+
+class TestTaskOptions(TestCase):
+    """
+    run tests as:
+        python -m unittest discover -v -s .
+    run one testcase as:
+        python -m unittest -v tests.test_task.TestTaskOptions.test_something
+    """
+
+    def setUp(self):
+        self.loop = asyncio.get_event_loop()
+        self.BROKER = wiji.broker.InMemoryBroker()
+
+    def tearDown(self):
+        pass
+
+    def test_bad_instantiation(self):
+        def create_task_options():
+            wiji.task.TaskOptions(hook_metadata={"name": "kool"})
+
+        self.assertRaises(ValueError, create_task_options)
+        with self.assertRaises(ValueError) as raised_exception:
+            create_task_options()
+        self.assertIn(
+            "`hook_metadata` should be of type:: `None` or `str` You entered: <class 'dict'>",
+            str(raised_exception.exception),
+        )

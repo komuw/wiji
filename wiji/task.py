@@ -142,7 +142,7 @@ class Task(abc.ABC):
         Task()(33,"hello", name="komu")
 
     usage:
-        broker = wiji.broker.SimpleBroker()
+        broker = wiji.broker.InMemoryBroker()
         task = Task(
                 the_broker=broker,
                 queue_name="PrintQueue",
@@ -436,7 +436,7 @@ class _watchdogTask(Task):
     That new thread will log a stack-trace if it detects any blocking calls(IO-bound, CPU-bound or otherwise) running on the MainThread.
     That trace is meant to help users of `wiji` be able to fix their applications.
 
-    This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
+    This task is always scheduled in the in-memory broker(`wiji.broker.InMemoryBroker`).
     """
 
     queue_name = "__WatchDogTaskQueue__"
@@ -454,4 +454,6 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name=_watchdogTask.queue_name)
+WatchDogTask = _watchdogTask(
+    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name
+)

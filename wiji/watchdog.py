@@ -33,7 +33,55 @@ class BlockingTaskError(BlockingIOError):
 
 class _BlockingWatchdog:
     """
-    monitors for any blocking calls in an otherwise async coroutine.
+    Monitors for any blocking calls in the main python asyncio thread.
+
+    Python runs all asyncio operations(coroutines/tasks) on one Main thread in an evented manner.
+    It is thus important that any operation you run in an asyncio environment be non-blocking.
+    All your libraries(for http requests, database connections, rabbbitMQ clients etc) need to be async.
+      As an example, the popular python http library/client; `python-requests <https://github.com/kennethreitz/requests>`_ is not async(non-blocking)
+      For http requests, you should consider using an async client like `aiohttp <https://github.com/aio-libs/aiohttp>`_
+
+    This class runs in a separate thread(away from the Main asyncio thread) so that it can monitor for any blocking calls on the Main thread.
+    When it detects a blocking - IO/CPU bound - call that lasts for longer than `X` seconds(where `X` is configurable and defaults to 0.1seconds);
+    this class will log an event that looks like:
+        {
+            "event": "wiji._BlockingWatchdog.blocked",
+            "stage": "end",
+            "error": "ERROR: blocked tasks Watchdog has not received any notifications in 0.1 seconds. This means the Main thread is blocked! "
+            "Hint: are you running any tasks with blocking calls? eg; using python-requests? etc? "
+            "Hint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.",
+            "stack_trace": [
+                {
+                    "thread_name": "MainThread",
+                    "thread_stack_trace": [
+                        "File cli/cli.py, line 269, in <module>\n    asyncio.run(async_main(), debug=True)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/runners.py, line 43, in run\n    return loop.run_until_complete(main)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 555, in run_until_complete\n    self.run_forever()\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 523, in run_forever\n    self._run_once()\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/asyncio/base_events.py, line 1750, in _run_once\n    handle._run()\n",
+                        "File /mystuff/wiji/wiji/worker.py, line 222, in consume_tasks\n    await self.run(*task_args, **task_kwargs)\n",
+                        "File cli/cli.py, line 93, in run\n    resp = requests.get(url)\n",
+                        "File /myVirtualenv/site-packages/requests/sessions.py, line 533, in request\n    resp = self.send(prep, **send_kwargs)\n",
+                        "File /myVirtualenv/site-packages/requests/sessions.py, line 646, in send\n    r = adapter.send(request, **kwargs)\n",
+                        "File /myVirtualenv/site-packages/requests/adapters.py, line 449, in send\n    timeout=timeout\n",
+                        "File /myVirtualenv/site-packages/urllib3/connectionpool.py, line 600, in urlopen\n    chunked=chunked)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/http/client.py, line 1321, in getresponse\n    response.begin()\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/socket.py, line 589, in readinto\n    return self._sock.recv_into(b)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/ssl.py, line 1049, in recv_into\n    return self.read(nbytes, buffer)\n",
+                        "File /usr/python/3.7.0/3.7/lib/python3.7/ssl.py, line 908, in read\n    return self._sslobj.read(len, buffer)\n",
+                    ],
+                }
+            ],
+            "task_name": "_watchdogTask",
+        }
+
+    As you can see from that log event, you should as an application developer be able to identify where in your code the blocking calls are.
+    When you do that, it is important you rectify them and make them async calls.
+    If you do not, your task processing/execution is going to slow down considerably.
+
+    If you buy into Python's asyncio world(which I think you should if your tasks/operations are mostly IO-bound), you should accept the fact that
+    Python is running your stuff on one Thread.
+    Your life will be much happier once you accept this and architect your operations with that in mind.
     """
 
     def __init__(self, watchdog_timeout: float, task_name: str):
@@ -76,6 +124,10 @@ class _BlockingWatchdog:
         self._after_counter += 1
 
     def _main_loop(self):
+        """
+        Raises:
+            BlockingTaskError: Exception raised when the main asyncio thread is blocked by either an IO/CPU bound task execution.
+        """
         while True:
             if self._stopped:
                 return

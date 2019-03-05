@@ -52,7 +52,7 @@ class Worker:
 
         self.watchdog = None
         if self.use_watchdog:
-            self.watchdog = watchdog._BlocingWatchdog(
+            self.watchdog = watchdog._BlockingWatchdog(
                 watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
             )
 
@@ -230,7 +230,7 @@ class Worker:
                 task_args = item_to_dequeue["args"]
                 task_kwargs = item_to_dequeue["kwargs"]
             except KeyError as e:
-                e = KeyError("enqueued message/object is missing required field:{}".format(str(e)))
+                e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(
                     logging.ERROR,
                     {

@@ -31,7 +31,7 @@ class BlockingTaskError(BlockingIOError):
     pass
 
 
-class _BlocingWatchdog:
+class _BlockingWatchdog:
     """
     monitors for any blocking calls in an otherwise async coroutine.
     """
@@ -57,7 +57,7 @@ class _BlocingWatchdog:
         self._before_counter = 0
         self._after_counter = 0
 
-        self.logger = logger.SimpleBaseLogger("wiji._BlocingWatchdog")
+        self.logger = logger.SimpleBaseLogger("wiji._BlockingWatchdog")
         self.logger.bind(loglevel="DEBUG", log_metadata={"task_name": self.task_name})
 
     def notify_alive_before(self):
@@ -110,7 +110,7 @@ class _BlocingWatchdog:
                         self.logger.log(
                             logging.ERROR,
                             {
-                                "event": "wiji._BlocingWatchdog.blocked",
+                                "event": "wiji._BlockingWatchdog.blocked",
                                 "stage": "end",
                                 "error": str(e),
                                 "stack_trace": all_threads_stack_trace,

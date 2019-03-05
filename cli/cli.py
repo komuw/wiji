@@ -39,7 +39,7 @@ def make_parser():
     parser.add_argument(
         "--config",
         required=True,
-        type=argparse.FileType(mode="r"),
+        # type=argparse.FileType(mode="r"),
         help="The config file to use. \
         eg: --config /path/to/my_config.json",
     )
@@ -69,37 +69,28 @@ def main():
 
         dry_run = args.dry_run
         config = args.config
-        config_contents = config.read()
-        # todo: validate that config_contents hold all the required params
-        kwargs = json.loads(config_contents)
 
-        watchdog_duration = kwargs.get("watchdog_duration", None)
-        config_tasks = kwargs["tasks"]  # this is a mandatory param
-        list_of_tasks = []
-        for config_tsk in config_tasks:
-            task = utils.load.load_class(config_tsk)
-            if inspect.isclass(task):
-                # DO NOT instantiate class instance, fail with appropriate error instead.
-                err_msg = "task should be a class instance."
-                logger.log(
-                    logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": err_msg}
+        config_instance = utils.load.load_class(config)
+        if not isinstance(config_instance, wiji.conf.WijiConf):
+            err = ValueError(
+                """`config_instance` should be of type:: `wiji.conf.WijiConf` You entered: {0}""".format(
+                    type(config_instance)
                 )
-                sys.exit(77)
-            list_of_tasks.append(task)
+            )
+            logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": str(err)})
+            sys.exit(77)
 
         async def async_main():
-            watchdog_worker = wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)
-            if watchdog_duration:
-                watchdog_worker = wiji.Worker(
-                    the_task=wiji.task.WatchDogTask,
-                    use_watchdog=True,
-                    watchdog_duration=watchdog_duration,
-                )
+            watchdog_worker = wiji.Worker(
+                the_task=wiji.task.WatchDogTask,
+                use_watchdog=True,
+                watchdog_duration=config_instance.watchdog_duration,
+            )
 
             workers = [watchdog_worker]
             producers = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
-            for task in list_of_tasks:
+            for task in config_instance.tasks:
                 _worker = wiji.Worker(the_task=task)
                 workers.append(_worker)
 

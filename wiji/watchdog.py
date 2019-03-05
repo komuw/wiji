@@ -49,7 +49,7 @@ class BlockingWatchdog:
       Of course, if you are doing any interstellar communication, then we urge you to consider using tools that are better suited for those
       kind of endeavours. `wiji` is not (as yet) suitable for interstellar communication.
 
-    When it detects a blocking - IO/CPU bound - call that lasts for longer than `watchdog_duration` seconds.
+    When `BlockingWatchdog` detects a blocking - IO/CPU bound - call that lasts for longer than `watchdog_duration` seconds.
     this class will log an event that looks like:
         {
             "event": "wiji.BlockingWatchdog.blocked",

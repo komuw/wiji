@@ -25,7 +25,7 @@ class Worker:
         the_task: task.Task,
         worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
-        watchdog_timeout: float = 0.1,
+        watchdog_duration: float = 0.1,
     ) -> None:
         """
         """
@@ -33,7 +33,7 @@ class Worker:
             the_task=the_task,
             worker_id=worker_id,
             use_watchdog=use_watchdog,
-            watchdog_timeout=watchdog_timeout,
+            watchdog_duration=watchdog_duration,
         )
 
         self._PID = os.getpid()
@@ -48,12 +48,12 @@ class Worker:
         )
 
         self.use_watchdog = use_watchdog
-        self.watchdog_timeout = watchdog_timeout
+        self.watchdog_duration = watchdog_duration
 
         self.watchdog = None
         if self.use_watchdog:
-            self.watchdog = watchdog._BlocingWatchdog(
-                watchdog_timeout=self.watchdog_timeout, task_name=self.the_task.task_name
+            self.watchdog = watchdog.BlockingWatchdog(
+                watchdog_duration=self.watchdog_duration, task_name=self.the_task.task_name
             )
 
         self.SHOULD_SHUT_DOWN: bool = False
@@ -61,7 +61,7 @@ class Worker:
 
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
-    def _validate_worker_args(self, the_task, worker_id, use_watchdog, watchdog_timeout):
+    def _validate_worker_args(self, the_task, worker_id, use_watchdog, watchdog_duration):
         if not isinstance(the_task, task.Task):
             raise ValueError(
                 """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
@@ -80,10 +80,10 @@ class Worker:
                     type(use_watchdog)
                 )
             )
-        if not isinstance(watchdog_timeout, float):
+        if not isinstance(watchdog_duration, float):
             raise ValueError(
-                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
-                    type(watchdog_timeout)
+                """`watchdog_duration` should be of type:: `float` You entered: {0}""".format(
+                    type(watchdog_duration)
                 )
             )
 
@@ -230,7 +230,7 @@ class Worker:
                 task_args = item_to_dequeue["args"]
                 task_kwargs = item_to_dequeue["kwargs"]
             except KeyError as e:
-                e = KeyError("enqueued message/object is missing required field:{}".format(str(e)))
+                e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(
                     logging.ERROR,
                     {

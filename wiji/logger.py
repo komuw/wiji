@@ -79,6 +79,8 @@ class wijiLoggingAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         if isinstance(msg, str):
             merged_msg = "{0} {1}".format(msg, self.extra)
+            if self.extra == {}:
+                merged_msg = "{0}".format(msg)
             return merged_msg, kwargs
         else:
             merged_msg = {**msg, **self.extra}

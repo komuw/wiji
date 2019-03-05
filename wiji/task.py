@@ -210,6 +210,7 @@ class Task(abc.ABC):
 
         self.task_options = TaskOptions()
 
+    # TODO: remove this
     def __or__(self, other: "Task"):
         """
         Operator Overloading is bad.
@@ -359,12 +360,32 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
-        await self.the_broker.enqueue(
-            item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
-        )
+        try:
+            await self.the_broker.enqueue(
+                item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+            )
+        except TypeError as e:
+            self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})
+            raise TypeError(
+                "All the task arguments passed into `delay` should be JSON serializable."
+            ) from e
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Task.delay",
+                    "stage": "end",
+                    "state": "task queueing error",
+                    "error": str(e),
+                },
+            )
 
     def synchronous_delay(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+
         loop.run_until_complete(self.delay(*args, **kwargs))
 
     async def retry(self, *args, **kwargs):
@@ -384,7 +405,7 @@ class Task(abc.ABC):
 
         if self.task_options.current_retries >= self.task_options.max_retries:
             raise MaxRetriesExceededError(
-                "The task:`{task_name}` has reached its max_retries count of:{max_retries}".format(
+                "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
                     task_name=self.task_name, max_retries=self.task_options.max_retries
                 )
             )
@@ -455,5 +476,5 @@ class _watchdogTask(Task):
 
 
 WatchDogTask = _watchdogTask(
-    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name
+    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name, loglevel="WARNING"
 )

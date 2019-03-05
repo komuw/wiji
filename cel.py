@@ -32,17 +32,41 @@ async def Async_req(url):
 
 # from celery.exceptions import Retry
 
+import inspect
 
-@celobj.task(name="adder", bind=True, throw=True)
-def adder(self, a, b):
+# @celobj.task(name="adder", bind=True, throw=True)
+
+FUNHEAD_TEMPLATE = """def {fun_name}({fun_args}):\n    return {fun_value}"""
+
+
+def adder(a, b):
+    func_name = adder.__name__
+    fun_args = ", ".join(inspect.getfullargspec(adder).args)
+    fun_value = 459_029
+    definition = FUNHEAD_TEMPLATE.format(fun_name=func_name, fun_args=fun_args, fun_value=fun_value)
+
+    namespace = {"__name__": adder.__module__}
+    exec(definition, namespace)
+
+    result = namespace[func_name]
+    result._source = definition
+
+    assert result(4, 89) == fun_value
+    assert result(4, 2333) == fun_value
+    assert result("PPL", "rwr") == fun_value
+    assert result("PPL", "rwr", 90, "LL") == fun_value
+
+    # inspect.getfullargspec(adder).args[0] == 'a'
     res = a + b
     print()
     print("adder: ", res)
 
-    if res == 10:
-        self.retry(a=44, b=98, countdown=2, max_retries=3)
+    return None
 
-    return res
+
+from celery.utils.functional import first, head_from_fun
+
+head_from_fun(adder, bound=False)
 
 
 @celobj.task(name="divider")
@@ -60,9 +84,9 @@ if __name__ == "__main__":
     # # for _ in range(0, 10):
     # Async_req.delay(url="https://httpbin.org/delay/7")
     # print("!!! Async messages enqueued !!!")
-
-    chain = adder.s(3, 7) | divider.s()
-    chain()
+    x = adder(45, 47)
+    # chain = adder.s(3, 7) | divider.s()
+    # chain()
     print("!!! chain enqueued !!!")
     """
     The above enques only ONE task, the adder task with a body payload like.
@@ -94,3 +118,80 @@ if __name__ == "__main__":
         }
         ]
     """
+
+
+import inspect
+
+
+FUNHEAD_TEMPLATE = """
+def {fun_name}({fun_args}):
+    return {fun_value}
+"""
+
+
+def _argsfromspec(spec, replace_defaults=True):
+    if spec.defaults:
+        split = len(spec.defaults)
+        defaults = list(range(len(spec.defaults))) if replace_defaults else spec.defaults
+        positional = spec.args[:-split]
+        optional = list(zip(spec.args[-split:], defaults))
+    else:
+        positional, optional = spec.args, []
+
+    varargs = spec.varargs
+    varkw = spec.varkw
+    if spec.kwonlydefaults:
+        split = len(spec.kwonlydefaults)
+        kwonlyargs = spec.kwonlyargs[:-split]
+        if replace_defaults:
+            kwonlyargs_optional = [(kw, i) for i, kw in enumerate(spec.kwonlyargs[-split:])]
+        else:
+            kwonlyargs_optional = list(spec.kwonlydefaults.items())
+    else:
+        kwonlyargs, kwonlyargs_optional = spec.kwonlyargs, []
+
+    return ", ".join(
+        filter(
+            None,
+            [
+                ", ".join(positional),
+                ", ".join("{0}={1}".format(k, v) for k, v in optional),
+                "*{0}".format(varargs) if varargs else None,
+                "*" if (kwonlyargs or kwonlyargs_optional) and not varargs else None,
+                ", ".join(kwonlyargs) if kwonlyargs else None,
+                ", ".join('{0}="{1}"'.format(k, v) for k, v in kwonlyargs_optional),
+                "**{0}".format(varkw) if varkw else None,
+            ],
+        )
+    )
+
+
+def head_from_fun(fun, debug=False):
+    """Generate signature function from actual function."""
+    # we could use inspect.Signature here, but that implementation
+    # is very slow since it implements the argument checking
+    # in pure-Python.  Instead we use exec to create a new function
+    # with an empty body, meaning it has the same performance as
+    # as just calling a function.
+    is_function = inspect.isfunction(fun)
+    is_callable = hasattr(fun, "__call__")
+    is_cython = fun.__class__.__name__ == "cython_function_or_method"
+    is_method = inspect.ismethod(fun)
+
+    if not is_function and is_callable and not is_method and not is_cython:
+        name, fun = fun.__class__.__name__, fun.__call__
+    else:
+        name = fun.__name__
+    definition = FUNHEAD_TEMPLATE.format(
+        fun_name=name, fun_args=_argsfromspec(getfullargspec(fun)), fun_value=1
+    )
+    if debug:  # pragma: no cover
+        print(definition)
+    namespace = {"__name__": fun.__module__}
+    # pylint: disable=exec-used
+    # Tasks are rarely, if ever, created at runtime - exec here is fine.
+    exec(definition, namespace)
+    result = namespace[name]
+    result._source = definition
+
+    return result

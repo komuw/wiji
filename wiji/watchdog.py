@@ -47,7 +47,7 @@ class BlockingWatchdog:
         {
             "event": "wiji.BlockingWatchdog.blocked",
             "stage": "end",
-            "error": "ERROR: blocked tasks Watchdog has not received any notifications in 0.1 seconds. This means the Main thread is blocked! "
+            "error": "Blocked tasks Watchdog has not received any notifications in 0.1 seconds. This means the Main thread is blocked! "
             "Hint: are you running any tasks with blocking calls? eg; using python-requests? etc? "
             "Hint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.",
             "stack_trace": [
@@ -148,7 +148,7 @@ class BlockingWatchdog:
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
                     try:
                         error_msg = (
-                            "ERROR: blocked tasks Watchdog has not received any notifications in {watchdog_timeout} seconds. "
+                            "Blocked tasks Watchdog has not received any notifications in {watchdog_timeout} seconds. "
                             "This means the Main thread is blocked! "
                             "\nHint: are you running any tasks with blocking calls? eg; using python-requests? etc? "
                             "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(

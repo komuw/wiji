@@ -204,9 +204,6 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         dequed_item = self.redis_instance.brpop(queue_name, timeout=3)
         if not dequed_item:
             return None
-        # import pdb
-
-        # pdb.set_trace()
         dequed_item = dequed_item[1]
         return dequed_item
 

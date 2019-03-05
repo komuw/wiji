@@ -56,9 +56,6 @@ def adder(a, b):
     assert result("PPL", "rwr") == fun_value
     assert result("PPL", "rwr", 90, "LL") == fun_value
 
-    # import pdb
-
-    # pdb.set_trace()
     # inspect.getfullargspec(adder).args[0] == 'a'
     res = a + b
     print()

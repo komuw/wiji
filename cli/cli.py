@@ -259,7 +259,7 @@ if __name__ == "__main__":
         python cli/cli.py
     """
 
-    MY_BROKER = wiji.broker.SimpleBroker()
+    MY_BROKER = wiji.broker.InMemoryBroker()
 
     # 1. publish task
 

@@ -143,6 +143,8 @@ class _BlockingWatchdog:
                     ]
                 },
             ]
+        From such a stack-trace, we can clearly see that we are using python requests to make network calls.
+        And since python requests is not async, this is blocking the python event loop thread and thus slowing everything down.
         """
         # we could also use: faulthandler.dump_traceback(all_threads=True)
         stack_trace_of_all_threads_during_block = []

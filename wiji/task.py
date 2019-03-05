@@ -210,6 +210,7 @@ class Task(abc.ABC):
 
         self.task_options = TaskOptions()
 
+    # TODO: remove this
     def __or__(self, other: "Task"):
         """
         Operator Overloading is bad.
@@ -359,9 +360,15 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
-        await self.the_broker.enqueue(
-            item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
-        )
+        try:
+            await self.the_broker.enqueue(
+                item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+            )
+        except TypeError as e:
+            self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})
+            raise TypeError(
+                "All the task arguments passed into `delay` should be JSON serializable."
+            ) from e
 
     def synchronous_delay(self, *args, **kwargs):
         try:

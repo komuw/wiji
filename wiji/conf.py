@@ -5,9 +5,7 @@ from . import task
 
 
 class WijiConf:
-    def __init__(
-        self, tasks: typing.List["wiji.task.Task"], watchdog_duration: float = 0.1
-    ) -> None:
+    def __init__(self, tasks: typing.List["task.Task"], watchdog_duration: float = 0.1) -> None:
         self._validate_config_args(tasks=tasks, watchdog_duration=watchdog_duration)
 
         self.tasks = tasks

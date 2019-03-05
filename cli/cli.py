@@ -73,6 +73,7 @@ def main():
         # todo: validate that config_contents hold all the required params
         kwargs = json.loads(config_contents)
 
+        watchdog_duration = kwargs.get("watchdog_duration", None)
         config_tasks = kwargs["tasks"]  # this is a mandatory param
         list_of_tasks = []
         for config_tsk in config_tasks:
@@ -85,8 +86,6 @@ def main():
                 )
                 sys.exit(77)
             list_of_tasks.append(task)
-
-        watchdog_duration = kwargs.get("watchdog_duration", None)
 
         async def async_main():
             watchdog_worker = wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)

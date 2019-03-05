@@ -40,8 +40,14 @@ class BaseBroker(abc.ABC):
         raise NotImplementedError("`dequeue` method must be implemented.")
 
 
-class SimpleBroker(BaseBroker):
+class InMemoryBroker(BaseBroker):
     """
+    This broker should only be used for:
+      (i) tests
+      (ii) demos
+      (iii) the watchdog task.
+    Do not use this broker in production or anywhere else that you care about.
+
     {
         "queue1": ["item1", "item2", "item3"],
         "queue2": ["item1", "item2", "item3"]

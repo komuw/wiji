@@ -142,7 +142,7 @@ class Task(abc.ABC):
         Task()(33,"hello", name="komu")
 
     usage:
-        broker = wiji.broker.SimpleBroker()
+        broker = wiji.broker.InMemoryBroker()
         task = Task(
                 the_broker=broker,
                 queue_name="PrintQueue",
@@ -345,7 +345,8 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        self._validate_delay_args(*args, **kwargs)
+        args, kwargs = self._validate_delay_args(*args, **kwargs)
+        self._type_check(self.run, *args, **kwargs)
 
         proto = protocol.Protocol(
             version=1,
@@ -383,8 +384,7 @@ class Task(abc.ABC):
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
-
-        self._validate_delay_args(*args, **kwargs)
+        args, kwargs = self._validate_delay_args(*args, **kwargs)
 
         if self.task_options.current_retries >= self.task_options.max_retries:
             raise MaxRetriesExceededError(
@@ -415,6 +415,22 @@ class Task(abc.ABC):
 
         self.task_options.args = args
         self.task_options.kwargs = kwargs
+        return self.task_options.args, self.task_options.kwargs
+
+    @staticmethod
+    def _type_check(func, *args, **kwargs):
+        """
+        Check that `delay` is called with right arguments/signature.
+        ie, the right arguments for the user implemented `run` method.
+
+        if you have a func like:
+            def foo(a, b, *args, c, d=10, **kwargs):
+                pass
+        you can type-check like:
+            Task._type_check(foo, 1, 4)
+        """
+        sig = inspect.signature(func)
+        return sig.bind(*args, **kwargs)
 
 
 class _watchdogTask(Task):
@@ -424,7 +440,7 @@ class _watchdogTask(Task):
     That new thread will log a stack-trace if it detects any blocking calls(IO-bound, CPU-bound or otherwise) running on the MainThread.
     That trace is meant to help users of `wiji` be able to fix their applications.
 
-    This task is always scheduled in the in-memory broker(`wiji.broker.SimpleBroker`).
+    This task is always scheduled in the in-memory broker(`wiji.broker.InMemoryBroker`).
     """
 
     queue_name = "__WatchDogTaskQueue__"
@@ -442,4 +458,6 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask(the_broker=broker.SimpleBroker(), queue_name=_watchdogTask.queue_name)
+WatchDogTask = _watchdogTask(
+    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name
+)

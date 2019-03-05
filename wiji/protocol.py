@@ -76,14 +76,12 @@ class Protocol:
                         eta
                     )
                 )
-
         if not isinstance(current_retries, int):
             raise ValueError(
                 """`current_retries` should be of type:: `int` You entered: {0}""".format(
                     type(current_retries)
                 )
             )
-
         if not isinstance(max_retries, int):
             raise ValueError(
                 """`max_retries` should be of type:: `int` You entered: {0}""".format(
@@ -100,7 +98,6 @@ class Protocol:
                     type(hook_metadata)
                 )
             )
-
         if not isinstance(argsy, tuple):
             raise ValueError(
                 """`argsy` should be of type:: `tuple` You entered: {0}""".format(type(argsy))

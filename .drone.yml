@@ -16,7 +16,8 @@ steps:
     - pip install -e .[dev,test]
     - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
     - coverage erase
-    - coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s . && bash <(curl -s https://codecov.io/bash)
+    - coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
+    - bash <(curl -s https://codecov.io/bash)
     - coverage report --show-missing --fail-under=84
   environment:
     PYTHONASYNCIODEBUG: 1

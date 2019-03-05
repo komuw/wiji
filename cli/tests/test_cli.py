@@ -16,14 +16,15 @@ logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.DEBUG
 
 
 class MockArgumentParser:
-    def __init__(self, wiji_config):
+    def __init__(self, wiji_config, dry_run=True):
         self.wiji_config = wiji_config
+        self.dry_run = dry_run
 
     def add_argument(self, *args, **kwargs):
         pass
 
     def parse_args(self, args=None, namespace=None):
-        return argparse.Namespace(config=self.wiji_config, dry_run=True, loglevel="DEBUG")
+        return argparse.Namespace(config=self.wiji_config, dry_run=self.dry_run, loglevel="DEBUG")
 
 
 class TestCli(TestCase):

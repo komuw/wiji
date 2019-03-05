@@ -27,7 +27,7 @@ def make_parser():
         description="""wiji is an async distributed task queue.
                 example usage:
                 wiji-cli \
-                --config /path/to/my_config.json
+                --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
                 """,
     )
     parser.add_argument(
@@ -39,9 +39,8 @@ def make_parser():
     parser.add_argument(
         "--config",
         required=True,
-        # type=argparse.FileType(mode="r"),
         help="The config file to use. \
-        eg: --config /path/to/my_config.json",
+        eg: --config dotted.path.to.a.wiji.conf.WijiConf.class.instance",
     )
     parser.add_argument(
         "--dry-run",
@@ -58,7 +57,7 @@ def make_parser():
 def main():
     """
     run as:
-        wiji-cli --config /path/to/my_config.json
+        wiji-cli --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
     logger = wiji.logger.SimpleBaseLogger("wiji.cli")

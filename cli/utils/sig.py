@@ -41,7 +41,7 @@ async def _signal_handling(logger, workers):
 
 async def _handle_termination_signal(logger, _signal, workers):
     logger.log(
-        logging.DEBUG,
+        logging.INFO,
         {
             "event": "wiji.cli.signals",
             "stage": "start",
@@ -72,7 +72,7 @@ async def _handle_termination_signal(logger, _signal, workers):
 
     while wait_worker_shutdown(workers=workers):
         logger.log(
-            logging.DEBUG,
+            logging.INFO,
             {
                 "event": "wiji.cli.signals",
                 "stage": "start",
@@ -82,7 +82,7 @@ async def _handle_termination_signal(logger, _signal, workers):
         await asyncio.sleep(5)
 
     logger.log(
-        logging.DEBUG,
+        logging.INFO,
         {
             "event": "wiji.cli.signals",
             "stage": "end",

@@ -405,7 +405,7 @@ class Task(abc.ABC):
 
         if self.task_options.current_retries >= self.task_options.max_retries:
             raise MaxRetriesExceededError(
-                "The task:`{task_name}` has reached its max_retries count of:{max_retries}".format(
+                "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
                     task_name=self.task_name, max_retries=self.task_options.max_retries
                 )
             )

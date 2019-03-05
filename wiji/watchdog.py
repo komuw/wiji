@@ -42,7 +42,7 @@ class BlockingWatchdog:
       For http requests, you should consider using an async client like `aiohttp <https://github.com/aio-libs/aiohttp>`_
 
     This class runs in a separate thread(away from the Main asyncio thread) so that it can monitor for any blocking calls on the Main thread.
-    When it detects a blocking - IO/CPU bound - call that lasts for longer than `X` seconds(where `X` is configurable and defaults to 0.1seconds);
+    When it detects a blocking - IO/CPU bound - call that lasts for longer than `watchdog_duration` seconds(where `watchdog_duration` is configurable and defaults to 0.1seconds);
     this class will log an event that looks like:
         {
             "event": "wiji.BlockingWatchdog.blocked",
@@ -84,11 +84,11 @@ class BlockingWatchdog:
     Your life will be much happier once you accept this and architect your operations with that in mind.
     """
 
-    def __init__(self, watchdog_timeout: float, task_name: str):
-        if not isinstance(watchdog_timeout, float):
+    def __init__(self, watchdog_duration: float, task_name: str):
+        if not isinstance(watchdog_duration, float):
             raise ValueError(
-                """`watchdog_timeout` should be of type:: `float` You entered: {0}""".format(
-                    type(watchdog_timeout)
+                """`watchdog_duration` should be of type:: `float` You entered: {0}""".format(
+                    type(watchdog_duration)
                 )
             )
         if not isinstance(task_name, str):
@@ -96,7 +96,7 @@ class BlockingWatchdog:
                 """`task_name` should be of type:: `str` You entered: {0}""".format(type(task_name))
             )
 
-        self.watchdog_timeout = watchdog_timeout
+        self.watchdog_duration = watchdog_duration
         self.task_name = task_name
 
         self._stopped = False
@@ -141,18 +141,18 @@ class BlockingWatchdog:
                 if self._stopped:
                     return
             else:
-                self._notify_event.wait(timeout=self.watchdog_timeout)
+                self._notify_event.wait(timeout=self.watchdog_duration)
                 if self._stopped:
                     return
 
                 if orig_starts == self._before_counter and orig_stops == self._after_counter:
                     try:
                         error_msg = (
-                            "Blocked tasks Watchdog has not received any notifications in {watchdog_timeout} seconds. "
+                            "Blocked tasks Watchdog has not received any notifications in {watchdog_duration} seconds. "
                             "This means the Main thread is blocked! "
                             "\nHint: are you running any tasks with blocking calls? eg; using python-requests? etc? "
                             "\nHint: look at the `stack_trace` attached to this log event to discover which calls are potentially blocking.".format(
-                                watchdog_timeout=self.watchdog_timeout
+                                watchdog_duration=self.watchdog_duration
                             )
                         )
                         raise BlockingTaskError(error_msg)

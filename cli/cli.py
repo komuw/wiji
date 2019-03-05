@@ -44,6 +44,13 @@ def make_parser():
         eg: --config /path/to/my_config.json",
     )
     parser.add_argument(
+        "--watchdog_duration",
+        required=False,
+        type=float,
+        help="The duration(seconds) to monitor the Main thread for blocking calls. \
+        eg: --watchdog_duration 0.10",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         required=False,
@@ -67,6 +74,7 @@ def main():
         parser = make_parser()
         args = parser.parse_args()
 
+        watchdog_duration = args.watchdog_duration
         dry_run = args.dry_run
         config = args.config
         config_contents = config.read()
@@ -87,7 +95,15 @@ def main():
             list_of_tasks.append(task)
 
         async def async_main():
-            workers = [wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)]
+            watchdog_worker = wiji.Worker(the_task=wiji.task.WatchDogTask, use_watchdog=True)
+            if watchdog_duration:
+                watchdog_worker = wiji.Worker(
+                    the_task=wiji.task.WatchDogTask,
+                    use_watchdog=True,
+                    watchdog_duration=watchdog_duration,
+                )
+
+            workers = [watchdog_worker]
             producers = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
             for task in list_of_tasks:

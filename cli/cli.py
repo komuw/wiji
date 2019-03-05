@@ -79,8 +79,10 @@ def main():
             task = utils.load.load_class(config_tsk)
             if inspect.isclass(task):
                 # DO NOT instantiate class instance, fail with appropriate error instead.
-                msg = "task should be a class instance."
-                logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": msg})
+                err_msg = "task should be a class instance."
+                logger.log(
+                    logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": err_msg}
+                )
                 sys.exit(77)
             list_of_tasks.append(task)
 

@@ -1,5 +1,4 @@
 {
-    "loglevel": "INFO",
     "tasks": [
         "examples.example_tasks.print_task2",
         "examples.example_tasks.multiplier",
@@ -8,5 +7,6 @@
         "examples.example_tasks.http_task1",
         "examples.example_tasks.exception_task22",
         "examples.example_tasks.BLOCKING_task"
-    ]
+    ],
+    "watchdog_duration": 0.10
 }

@@ -42,7 +42,8 @@ class BlockingWatchdog:
       For http requests, you should consider using an async client like `aiohttp <https://github.com/aio-libs/aiohttp>`_
 
     This class runs in a separate thread(away from the Main asyncio thread) so that it can monitor for any blocking calls on the Main thread.
-    When it detects a blocking - IO/CPU bound - call that lasts for longer than `watchdog_duration` seconds(where `watchdog_duration` is configurable and defaults to 0.1seconds);
+    When it detects a blocking - IO/CPU bound - call that lasts for longer than `watchdog_duration` seconds.
+    The `watchdog_duration` is configurable and defaults to 0.1seconds(0.1seconds since that is also the default value in core Python.)
     this class will log an event that looks like:
         {
             "event": "wiji.BlockingWatchdog.blocked",

@@ -369,6 +369,16 @@ class Task(abc.ABC):
             raise TypeError(
                 "All the task arguments passed into `delay` should be JSON serializable."
             ) from e
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Task.delay",
+                    "stage": "end",
+                    "state": "task queueing error",
+                    "error": str(e),
+                },
+            )
 
     def synchronous_delay(self, *args, **kwargs):
         try:

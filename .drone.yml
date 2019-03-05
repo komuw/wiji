@@ -20,6 +20,7 @@ steps:
     - bash <(curl -s https://codecov.io/bash)
     - coverage report --show-missing --fail-under=84
   environment:
+    WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1
     CODECOV_TOKEN: "ecab2529-111c-4baa-8fbb-d679aba8e1f0"
 
@@ -36,6 +37,7 @@ steps:
     - bandit -r --exclude .venv -ll .
     - mypy --show-column-numbers wiji/ #--strict
   environment:
+    WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1
 
 - name: check-releases
@@ -60,4 +62,5 @@ steps:
           esac
       fi
   environment:
+    WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1

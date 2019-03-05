@@ -92,7 +92,10 @@ def main():
             )
             return
 
-        asyncio.run(async_main(logger=logger, config_instance=config_instance), debug=True)
+        asyncio_debug = False
+        if os.environ.get("WIJI_DEBUG", None):
+            asyncio_debug = True
+        asyncio.run(async_main(logger=logger, config_instance=config_instance), debug=asyncio_debug)
     except Exception as e:
         logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": str(e)})
         sys.exit(77)

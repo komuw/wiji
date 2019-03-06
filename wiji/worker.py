@@ -195,10 +195,10 @@ class Worker:
                 continue
 
             try:
-                item_to_dequeue = await self.the_task.the_broker.dequeue(
+                dequeued_item = await self.the_task.the_broker.dequeue(
                     queue_name=self.the_task.queue_name
                 )
-                item_to_dequeue = json.loads(item_to_dequeue)
+                dequeued_item = json.loads(dequeued_item)
             except Exception as e:
                 poll_queue_interval = self._retry_after(retry_count)
                 retry_count += 1
@@ -220,15 +220,15 @@ class Worker:
             # dequeue succeded
             retry_count = 0
             try:
-                task_version = item_to_dequeue["version"]
-                task_id = item_to_dequeue["task_id"]
-                task_eta = item_to_dequeue["eta"]
-                task_current_retries = item_to_dequeue["current_retries"]
-                task_max_retries = item_to_dequeue["max_retries"]
-                task_log_id = item_to_dequeue["log_id"]
-                task_hook_metadata = item_to_dequeue["hook_metadata"]
-                task_args = item_to_dequeue["args"]
-                task_kwargs = item_to_dequeue["kwargs"]
+                task_version = dequeued_item["version"]
+                task_id = dequeued_item["task_id"]
+                task_eta = dequeued_item["eta"]
+                task_current_retries = dequeued_item["current_retries"]
+                task_max_retries = dequeued_item["max_retries"]
+                task_log_id = dequeued_item["log_id"]
+                task_hook_metadata = dequeued_item["hook_metadata"]
+                task_args = dequeued_item["args"]
+                task_kwargs = dequeued_item["kwargs"]
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(
@@ -259,7 +259,7 @@ class Worker:
             )
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop
-                return item_to_dequeue
+                return dequeued_item
 
     async def shutdown(self):
         """

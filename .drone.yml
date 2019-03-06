@@ -10,6 +10,7 @@ steps:
 
 - name: run-tests
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - apt -y update; apt-get -y install pandoc curl
@@ -17,7 +18,13 @@ steps:
     - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
     - coverage erase
     - coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
-    - bash <(curl -s https://codecov.io/bash)
+    - codecov
+    - coverage report --show-missing --fail-under=84
+
+    # branch coverage
+    - coverage erase
+    - coverage run --branch --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
+    - codecov
     - coverage report --show-missing --fail-under=84
   environment:
     WIJI_DEBUG: 1
@@ -26,6 +33,7 @@ steps:
 
 - name: static-analysis
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - apt -y update; apt-get -y install pandoc curl
@@ -40,8 +48,21 @@ steps:
     WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1
 
+- name: run
+  image: python:3.7
+  group: parallelo
+  commands:
+    - pwd
+    - wiji-cli --version
+    - wiji-cli --config tests.testdata.cli.my_config.MyConfigInstance --dry-run
+    - mypy --show-column-numbers wiji/ #--strict
+  environment:
+    WIJI_DEBUG: 1
+    PYTHONASYNCIODEBUG: 1
+
 - name: check-releases
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - apt -y update; apt-get -y install pandoc curl

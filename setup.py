@@ -100,7 +100,7 @@ setup(
             "celery==4.2.1",
             "aiohttp==3.5.4",
         ],
-        "test": ["flake8", "mock", "pylint", "black", "bandit", "mypy"],
+        "test": ["flake8", "mock", "pylint", "black", "bandit", "mypy", "codecov"],
     },
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these

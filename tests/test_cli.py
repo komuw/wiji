@@ -10,7 +10,7 @@ from unittest import TestCase
 
 import wiji
 
-from .. import cli
+import cli
 
 logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.DEBUG)
 
@@ -32,12 +32,12 @@ class TestCli(TestCase):
     run tests as:
         python -m unittest discover -v -s .
     run one testcase as:
-        python -m unittest -v cli.tests.test_cli.TestCli.test_something
+        python -m unittest -v tests.test_cli.TestCli.test_something
     """
 
     def setUp(self):
-        self.parser = cli.make_parser()
-        self.wiji_config = "cli.tests.testdata.my_config.MyConfigInstance"
+        self.parser = cli.cli.make_parser()
+        self.wiji_config = "tests.testdata.cli.my_config.MyConfigInstance"
 
     def tearDown(self):
         pass
@@ -49,4 +49,4 @@ class TestCli(TestCase):
     def test_cli_success(self):
         with mock.patch("argparse.ArgumentParser") as mock_ArgumentParser:
             mock_ArgumentParser.return_value = MockArgumentParser(wiji_config=self.wiji_config)
-            cli.main()
+            cli.cli.main()

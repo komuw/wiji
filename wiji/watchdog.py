@@ -43,9 +43,9 @@ class BlockingWatchdog:
 
     This class runs in a separate thread(away from the Main asyncio thread) so that it can monitor for any blocking calls on the Main thread.
     It does blocking detection in intervals of `watchdog_duration` seconds.
-    The `watchdog_duration` is configurable and defaults to 0.1seconds(0.1seconds since that is also the default value in core Python.)
-    We urge caution in trying to configure it to any value longer than 0.3seconds;
-      which is like the lowest theoretical `ping` duration between the two farthest points on Earth.
+    The `watchdog_duration` is configurable and defaults to 0.1 seconds(0.1 seconds since that is also the default value in core Python.)
+    We urge caution in trying to configure it to any value longer than 0.4 seconds;
+      0.4s is the approximate `ping` duration(request & response) between the two farthest points on Earth for a signal travelling through copper.
       Of course, if you are doing any interstellar communication, then we urge you to consider using tools that are better suited for those
       kind of endeavours. `wiji` is not (as yet) suitable for interstellar IO communication.
 

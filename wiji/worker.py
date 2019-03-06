@@ -45,7 +45,7 @@ class Worker:
 
         self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(
-            loglevel=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
+            level=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
         )
 
         self.use_watchdog = use_watchdog

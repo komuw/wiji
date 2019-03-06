@@ -179,6 +179,7 @@ class Task(abc.ABC):
             log_handler=log_handler,
         )
 
+        self.task_options = TaskOptions()
         self.the_broker = the_broker
         self.queue_name = queue_name
         self.task_name = task_name
@@ -196,8 +197,12 @@ class Task(abc.ABC):
 
         self.logger = log_handler
         if not self.logger:
-            self.logger = logger.SimpleBaseLogger("wiji.Task")
-        self.logger.bind(loglevel=self.loglevel, log_metadata=self.log_metadata)
+            self.logger = logger.SimpleBaseLogger(
+                "wiji.Task.task_name={0}.task_id={1}".format(
+                    self.task_name, self.task_options.task_id
+                )
+            )
+        self.logger.bind(level=self.loglevel, log_metadata=self.log_metadata)
         self._sanity_check_logger(event="task_sanity_check_logger")
 
         self.the_hook = the_hook
@@ -207,8 +212,6 @@ class Task(abc.ABC):
         self.the_ratelimiter = the_ratelimiter
         if not self.the_ratelimiter:
             self.the_ratelimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
-
-        self.task_options = TaskOptions()
 
     # TODO: remove this
     def __or__(self, other: "Task"):

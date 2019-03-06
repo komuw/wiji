@@ -80,3 +80,42 @@ class TestWorker(TestCase):
         self.assertIn(
             "`worker_id` should be of type:: `None` or `str`", str(raised_exception.exception)
         )
+
+    def test_success_instantiation(self):
+        wiji.Worker(the_task=self.myAdderTask, worker_id="myWorkerID1")
+
+    def test_retries(self):
+        res = wiji.Worker._retry_after(-110)
+        self.assertEqual(res, 30)
+
+        res = wiji.Worker._retry_after(5)
+        self.assertTrue(res > 60 * (2 ** 5))
+
+        for i in [6, 7, 34]:
+            res = wiji.Worker._retry_after(i)
+            self.assertTrue(res > 16 * 60)
+
+    def test_consume_tasks(self):
+        worker = wiji.Worker(the_task=self.myAdderTask, worker_id="myWorkerID1")
+
+        # queue task
+        kwargs = {"a": 78, "b": 101}
+        self.myAdderTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+
+        # consume
+        dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+        self.assertEqual(dequeued_item["version"], 1)
+        self.assertEqual(dequeued_item["current_retries"], 0)
+        self.assertEqual(dequeued_item["max_retries"], 0)
+        self.assertEqual(dequeued_item["args"], [])
+        self.assertEqual(dequeued_item["kwargs"], kwargs)
+
+        # queue task
+        self.myAdderTask.synchronous_delay(34, 88)
+        # consume
+        dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+        self.assertEqual(dequeued_item["version"], 1)
+        self.assertEqual(dequeued_item["current_retries"], 0)
+        self.assertEqual(dequeued_item["max_retries"], 0)
+        self.assertEqual(dequeued_item["args"], [34, 88])
+        self.assertEqual(dequeued_item["kwargs"], {})

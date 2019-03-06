@@ -38,6 +38,10 @@ class BaseRateLimiter(abc.ABC):
         execution_duration: float,
         execution_exception: typing.Union[None, Exception],
     ) -> None:
+        """
+        this method is called by the worker once it has finished executing a task.
+        implementers may choose to use the metrics provided to dynamically adjust their rate limiting policies.
+        """
         raise NotImplementedError("`execution_outcome` method must be implemented.")
 
 

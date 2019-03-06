@@ -46,6 +46,17 @@ steps:
     WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1
 
+- name: run
+  image: python:3.7
+  commands:
+    - pwd
+    - wiji-cli --version
+    - wiji-cli --config tests.testdata.cli.my_config.MyConfigInstance --dry-run
+    - mypy --show-column-numbers wiji/ #--strict
+  environment:
+    WIJI_DEBUG: 1
+    PYTHONASYNCIODEBUG: 1
+
 - name: check-releases
   image: python:3.7
   commands:

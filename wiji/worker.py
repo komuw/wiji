@@ -165,7 +165,7 @@ class Worker:
         if self.watchdog is not None:
             self.watchdog.start()
 
-        retry_count = 0
+        dequeue_retry_count = 0
         while True:
             self._log(logging.INFO, {"event": "wiji.Worker.consume_tasks", "stage": "start"})
             if self.SHOULD_SHUT_DOWN:
@@ -200,8 +200,8 @@ class Worker:
                 )
                 dequeued_item = json.loads(dequeued_item)
             except Exception as e:
-                poll_queue_interval = self._retry_after(retry_count)
-                retry_count += 1
+                poll_queue_interval = self._retry_after(dequeue_retry_count)
+                dequeue_retry_count += 1
                 self._log(
                     logging.ERROR,
                     {
@@ -210,7 +210,7 @@ class Worker:
                         "state": "consume_tasks error. sleeping for {0}minutes".format(
                             poll_queue_interval / 60
                         ),
-                        "retry_count": retry_count,
+                        "dequeue_retry_count": dequeue_retry_count,
                         "error": str(e),
                     },
                 )
@@ -218,7 +218,7 @@ class Worker:
                 continue
 
             # dequeue succeded
-            retry_count = 0
+            dequeue_retry_count = 0
             try:
                 task_version = dequeued_item["version"]
                 task_id = dequeued_item["task_id"]

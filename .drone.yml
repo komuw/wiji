@@ -17,13 +17,13 @@ steps:
     - find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
     - coverage erase
     - coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
-    - bash <(curl -s https://codecov.io/bash)
+    - codecov
     - coverage report --show-missing --fail-under=84
 
     # branch coverage
     - coverage erase
     - coverage run --branch --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
-    - bash <(curl -s https://codecov.io/bash)
+    - codecov
     - coverage report --show-missing --fail-under=84
   environment:
     WIJI_DEBUG: 1

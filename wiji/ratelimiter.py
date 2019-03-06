@@ -131,7 +131,7 @@ class SimpleRateLimiter(BaseRateLimiter):
                     "queue_name": queue_name,
                     "execution_duration": execution_duration,
                     "execution_exception": execution_exception,
-                    "return_value": return_value,
+                    "return_value": str(return_value),
                 },
             )
 

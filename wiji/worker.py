@@ -122,8 +122,13 @@ class Worker:
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
 
+        return_value = None
         execution_exception = None
-        execution_start = time.monotonic()
+
+        thread_time_start = time.thread_time()
+        perf_counter_start = time.perf_counter()
+        monotonic_start = time.monotonic()
+        process_time_start = time.process_time()
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
             if self.the_task.chain:
@@ -154,9 +159,16 @@ class Worker:
                 },
             )
         finally:
-            execution_end = time.monotonic()
-            execution_duration = execution_end - execution_start
-            execution_duration = float("{0:.4f}".format(execution_duration))
+            thread_time_end = time.thread_time()
+            perf_counter_end = time.perf_counter()
+            monotonic_end = time.monotonic()
+            process_time_end = time.process_time()
+            execution_duration = {
+                "thread_time": float("{0:.4f}".format(thread_time_end - thread_time_start)),
+                "perf_counter": float("{0:.4f}".format(perf_counter_end - perf_counter_start)),
+                "monotonic": float("{0:.4f}".format(monotonic_end - monotonic_start)),
+                "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
+            }
 
             try:
                 # inform ratelimiter of outcome
@@ -166,6 +178,7 @@ class Worker:
                     queue_name=self.the_task.queue_name,
                     execution_duration=execution_duration,
                     execution_exception=execution_exception,
+                    return_value=return_value,
                 )
             except Exception as e:
                 self._log(

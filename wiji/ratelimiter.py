@@ -35,8 +35,9 @@ class BaseRateLimiter(abc.ABC):
         task_name: str,
         task_id: str,
         queue_name: str,
-        execution_duration: float,
+        execution_duration: typing.Dict[str, float],
         execution_exception: typing.Union[None, Exception],
+        return_value: typing.Any,
     ) -> None:
         """
         this method is called by the worker once it has finished executing a task.
@@ -109,8 +110,9 @@ class SimpleRateLimiter(BaseRateLimiter):
         task_name: str,
         task_id: str,
         queue_name: str,
-        execution_duration: float,
+        execution_duration: typing.Dict[str, float],
         execution_exception: typing.Union[None, Exception],
+        return_value: typing.Any,
     ) -> None:
         """
         SimpleRateLimiter does nothing with the data/metrics it gets about execution outcome.
@@ -129,6 +131,7 @@ class SimpleRateLimiter(BaseRateLimiter):
                     "queue_name": queue_name,
                     "execution_duration": execution_duration,
                     "execution_exception": execution_exception,
+                    "return_value": return_value,
                 },
             )
 

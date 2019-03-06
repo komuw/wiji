@@ -1,8 +1,10 @@
 import abc
 import time
+import typing
 import asyncio
 import logging
 
+from . import task
 
 # TODO: rate limiting should take into account number of succesful task executions(based on whether they raised an exception or not)
 # and also the number of failures.
@@ -26,6 +28,17 @@ class BaseRateLimiter(abc.ABC):
         rate limit consumation/execution of tasks.
         """
         raise NotImplementedError("`limit` method must be implemented.")
+
+    @abc.abstractmethod
+    async def execution_outcome(
+        self,
+        task_name: str,
+        task_id: str,
+        queue_name: str,
+        execution_duration: float,
+        execution_exception: typing.Union[None, Exception],
+    ) -> None:
+        raise NotImplementedError("`execution_outcome` method must be implemented.")
 
 
 class SimpleRateLimiter(BaseRateLimiter):
@@ -84,9 +97,36 @@ class SimpleRateLimiter(BaseRateLimiter):
                     "effective_execution_rate": self.effective_execution_rate,
                 },
             )
-
         self.tasks_executed += 1
         self.tokens -= 1
+
+    async def execution_outcome(
+        self,
+        task_name: str,
+        task_id: str,
+        queue_name: str,
+        execution_duration: float,
+        execution_exception: typing.Union[None, Exception],
+    ) -> None:
+        """
+        SimpleRateLimiter does nothing with the data/metrics it gets about execution outcome.
+        However, you can imagine a smarter RateLimiter that uses these metrics to dynamically change
+        its rate-limiting methodologies; eg increase ratelimit if percentage of exceptions goes up.
+        """
+        if queue_name != task._watchdogTask.queue_name:
+            self.logger.log(
+                logging.DEBUG,
+                {
+                    "event": "wiji.SimpleRateLimiter.execution_outcome",
+                    "stage": "end",
+                    "state": "execution_outcome record",
+                    "task_name": task_name,
+                    "task_id": task_id,
+                    "queue_name": queue_name,
+                    "execution_duration": execution_duration,
+                    "execution_exception": execution_exception,
+                },
+            )
 
     def _add_new_tokens(self) -> None:
         now = time.monotonic()

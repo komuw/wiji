@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+import time
 import random
 import signal
 import string
@@ -121,6 +122,8 @@ class Worker:
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
 
+        execution_exception = None
+        execution_start = time.monotonic()
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
             if self.the_task.chain:
@@ -140,16 +143,41 @@ class Worker:
                 },
             )
         except Exception as e:
+            execution_exception = e
             self._log(
                 logging.ERROR,
                 {
-                    "event": "wiji.Worker.run",
+                    "event": "wiji.Worker.run_task",
                     "stage": "end",
                     "state": "task execution error",
                     "error": str(e),
                 },
             )
         finally:
+            execution_end = time.monotonic()
+            execution_duration = execution_end - execution_start
+            execution_duration = float("{0:.4f}".format(execution_duration))
+
+            try:
+                # inform ratelimiter of outcome
+                await self.the_task.the_ratelimiter.execution_outcome(
+                    task_name=self.the_task.task_name,
+                    task_id=self.the_task.task_options.task_id,
+                    queue_name=self.the_task.queue_name,
+                    execution_duration=execution_duration,
+                    execution_exception=execution_exception,
+                )
+            except Exception as e:
+                self._log(
+                    logging.ERROR,
+                    {
+                        "event": "wiji.Worker.run_task",
+                        "stage": "end",
+                        "state": "the_ratelimiter execution_outcome error",
+                        "error": str(e),
+                    },
+                )
+
             if self.watchdog is not None:
                 self.watchdog.notify_alive_after()
 

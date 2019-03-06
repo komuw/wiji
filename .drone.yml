@@ -10,6 +10,7 @@ steps:
 
 - name: run-tests
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - apt -y update; apt-get -y install pandoc curl
@@ -32,6 +33,7 @@ steps:
 
 - name: static-analysis
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - apt -y update; apt-get -y install pandoc curl
@@ -48,6 +50,7 @@ steps:
 
 - name: run
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - wiji-cli --version
@@ -59,6 +62,7 @@ steps:
 
 - name: check-releases
   image: python:3.7
+  group: parallelo
   commands:
     - pwd
     - apt -y update; apt-get -y install pandoc curl

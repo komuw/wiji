@@ -61,14 +61,16 @@ class SimpleBaseLogger(BaseLogger):
         handler = logging.StreamHandler()
         formatter = logging.Formatter("%(message)s")
         handler.setFormatter(formatter)
+        handler.setLevel(loglevel)
         if not self._logger.handlers:
             self._logger.addHandler(handler)
+
         self._logger.setLevel(loglevel)
         self.logger: logging.LoggerAdapter = wijiLoggingAdapter(self._logger, log_metadata)
 
     def log(self, level: int, log_data: dict) -> None:
         if not self.logger:
-            self.bind(loglevel="DEBUG", log_metadata={})
+            self.bind(loglevel=level, log_metadata={})
         if level >= logging.ERROR:
             self.logger.log(level, log_data, exc_info=True)
         else:

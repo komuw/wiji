@@ -38,7 +38,14 @@ class TestWorker(TestCase):
 
     def setUp(self):
         self.loop = asyncio.get_event_loop()
-        self.cli = wiji.Worker()
+        self.BROKER = wiji.broker.InMemoryBroker()
+
+        class AdderTask(wiji.task.Task):
+            async def run(self, a, b):
+                res = a + b
+                return res
+
+        self.myAdderTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
 
     def tearDown(self):
         pass
@@ -56,7 +63,20 @@ class TestWorker(TestCase):
         def mock_create_worker():
             wiji.Worker()
 
+        self.assertRaises(TypeError, mock_create_worker)
+        with self.assertRaises(TypeError) as raised_exception:
+            mock_create_worker()
+        self.assertIn(
+            "missing 1 required positional argument: 'the_task'", str(raised_exception.exception)
+        )
+
+    def test_bad_args(self):
+        def mock_create_worker():
+            wiji.Worker(the_task=self.myAdderTask, worker_id=92033)
+
         self.assertRaises(ValueError, mock_create_worker)
         with self.assertRaises(ValueError) as raised_exception:
             mock_create_worker()
-        self.assertIn("log_metadata should be of type", str(raised_exception.exception))
+        self.assertIn(
+            "`worker_id` should be of type:: `None` or `str`", str(raised_exception.exception)
+        )

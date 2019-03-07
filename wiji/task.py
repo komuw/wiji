@@ -353,7 +353,7 @@ class Task(abc.ABC):
         self,
         state: TaskState,
         hook_metadata: str,
-        execution_duration: typing.Dict[str, float] = None,
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
     ):
         try:
             await self.the_hook.notify(

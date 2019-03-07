@@ -5,7 +5,7 @@ import logging
 from . import logger
 
 if typing.TYPE_CHECKING:
-    import wiji  # noqa: F401
+    from . import task
 
 
 class BaseHook(abc.ABC):
@@ -13,16 +13,18 @@ class BaseHook(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def request(self, task_id: str, log_id: str, hook_metadata: str) -> None:
+    async def notify(
+        self,
+        task_name: str,
+        task_id: str,
+        queue_name: str,
+        hook_metadata: str,
+        state: "task.TaskState",
+        execution_duration: typing.Dict[str, float],
+    ) -> None:
         """
         """
-        raise NotImplementedError("`request` method must be implemented.")
-
-    @abc.abstractmethod
-    async def response(self, task_id: str, log_id: str, hook_metadata: str) -> None:
-        """
-        """
-        raise NotImplementedError("`response` method must be implemented.")
+        raise NotImplementedError("`notify` method must be implemented.")
 
 
 class SimpleHook(BaseHook):
@@ -31,31 +33,30 @@ class SimpleHook(BaseHook):
     It implements a no-op hook that does nothing when called
     """
 
-    def __init__(self, logger: typing.Union[None, logging.LoggerAdapter] = None) -> None:
-        self.logger = logger
+    def __init__(self, log_handler: typing.Union[None, logging.LoggerAdapter] = None) -> None:
+        self.logger = log_handler
         if not self.logger:
             self.logger = logger.SimpleLogger("wiji.hook.SimpleHook")
 
-    async def request(self, task_id: str, log_id: str, hook_metadata: str) -> None:
+    async def notify(
+        self,
+        task_name: str,
+        task_id: str,
+        queue_name: str,
+        hook_metadata: str,
+        state: "task.TaskState",
+        execution_duration: typing.Dict[str, float],
+    ) -> None:
         self.logger.log(
             logging.NOTSET,
             {
-                "event": "wiji.SimpleHook.request",
+                "event": "wiji.SimpleHook.notify",
                 "stage": "start",
+                "state": state,
+                "task_name": task_name,
                 "task_id": task_id,
-                "log_id": log_id,
+                "queue_name": queue_name,
                 "hook_metadata": hook_metadata,
-            },
-        )
-
-    async def response(self, task_id: str, log_id: str, hook_metadata: str) -> None:
-        self.logger.log(
-            logging.NOTSET,
-            {
-                "event": "wiji.SimpleHook.response",
-                "stage": "start",
-                "task_id": task_id,
-                "log_id": log_id,
-                "hook_metadata": hook_metadata,
+                "execution_duration": execution_duration,
             },
         )

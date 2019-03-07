@@ -5,6 +5,7 @@ import asyncio
 import logging
 
 from . import task
+from . import logger
 
 # TODO: rate limiting should take into account number of succesful task executions(based on whether they raised an exception or not)
 # and also the number of failures.
@@ -65,7 +66,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         execution_rate: float = 100_000_000,
         max_tokens: float = 100_000_000,
         delay_for_tokens: float = 1.0,
-        logger: typing.Union[None, logging.LoggerAdapter] = None,
+        log_handler: typing.Union[None, logging.LoggerAdapter] = None,
     ) -> None:
         """
         Parameters:
@@ -84,7 +85,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         self.tasks_executed: int = 0
         self.effective_execution_rate: float = 0
 
-        self.logger = logger
+        self.logger = log_handler
         if not self.logger:
             self.logger = logger.SimpleLogger("wiji.ratelimiter.SimpleRateLimiter")
 

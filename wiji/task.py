@@ -1,5 +1,6 @@
 import os
 import abc
+import enum
 import uuid
 import json
 import asyncio
@@ -38,6 +39,15 @@ class RetryError(Exception):
     """
 
     pass
+
+
+@enum.unique
+class TaskState(enum.Enum):
+    QUEUEING = 1
+    QUEUED = 2
+    DEQUEUED = 3
+    EXECUTING = 4
+    EXECUTED = 5
 
 
 class TaskOptions:
@@ -207,11 +217,11 @@ class Task(abc.ABC):
 
         self.the_hook = the_hook
         if not self.the_hook:
-            self.the_hook = hook.SimpleHook(logger=self.logger)
+            self.the_hook = hook.SimpleHook(log_handler=self.logger)
 
         self.the_ratelimiter = the_ratelimiter
         if not self.the_ratelimiter:
-            self.the_ratelimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
+            self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
     # TODO: remove this
     def __or__(self, other: "Task"):
@@ -339,6 +349,32 @@ class Task(abc.ABC):
         except Exception:
             pass
 
+    async def notify_hook(
+        self,
+        state: TaskState,
+        hook_metadata: str,
+        execution_duration: typing.Dict[str, float] = None,
+    ):
+        try:
+            await self.the_hook.notify(
+                task_name=self.task_name,
+                task_id=self.task_options.task_id,
+                queue_name=self.queue_name,
+                state=state,
+                hook_metadata=hook_metadata,
+                execution_duration=execution_duration,
+            )
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Task.notify_hook",
+                    "stage": "end",
+                    "state": "task hook error",
+                    "error": str(e),
+                },
+            )
+
     @abc.abstractmethod
     async def run(self, *args, **kwargs):
         raise NotImplementedError("`run` method must be implemented.")
@@ -363,9 +399,15 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
+        await self.notify_hook(
+            state=TaskState.QUEUEING, hook_metadata=self.task_options.hook_metadata
+        )
         try:
             await self.the_broker.enqueue(
                 item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+            )
+            await self.notify_hook(
+                state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
             )
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})

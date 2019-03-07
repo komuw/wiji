@@ -108,11 +108,11 @@ workflows:
       - static-analysis
       - run
       - check-releases:
-          filters:
-            branches:
-              only:
-                - master
           requires:
             - run-tests
             - static-analysis
             - run
+          filters:
+            branches:
+              only:
+                - master

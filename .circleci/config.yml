@@ -13,7 +13,7 @@ jobs:
           name: test & coverage
           command: |
             pwd
-            pip install -e .[dev,test]
+            pip install --user -e .[dev,test]
             find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
             coverage erase
             coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
@@ -41,7 +41,7 @@ jobs:
           name: static-analysis
           command: |
             pwd
-            pip install -e .[dev,test]
+            pip install --user -e .[dev,test]
             find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
             black --line-length=100 --check . ||  { printf "\\n\\t please use black to format your code."; exit 77; }
             flake8 .
@@ -62,6 +62,7 @@ jobs:
           name: run-wiji
           command: |
             pwd
+            pip install --user -e .[dev,test]
             wiji-cli --version
             wiji-cli --config tests.testdata.cli.my_config.MyConfigInstance --dry-run
 

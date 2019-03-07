@@ -20,9 +20,10 @@ class BaseHook(abc.ABC):
         queue_name: str,
         hook_metadata: str,
         state: "task.TaskState",
-        execution_duration: typing.Dict[str, float],
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
     ) -> None:
         """
+        called by `wiji` worker whenever a task undergoes a state change.
         """
         raise NotImplementedError("`notify` method must be implemented.")
 
@@ -45,7 +46,7 @@ class SimpleHook(BaseHook):
         queue_name: str,
         hook_metadata: str,
         state: "task.TaskState",
-        execution_duration: typing.Dict[str, float],
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
     ) -> None:
         self.logger.log(
             logging.NOTSET,

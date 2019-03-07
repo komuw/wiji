@@ -25,7 +25,7 @@ steps:
     - coverage erase
     - coverage run --branch --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
     - codecov
-    - coverage report --show-missing --fail-under=70
+    - coverage report --show-missing --fail-under=67
   environment:
     WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1

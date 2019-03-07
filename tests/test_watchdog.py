@@ -130,7 +130,7 @@ class TestWatchdog(TestCase):
         with mock.patch(
             "wiji.watchdog.BlockingWatchdog._save_stack_trace"
         ) as mock_save_stack_trace, mock.patch(
-            "wiji.watchdog.logger.SimpleBaseLogger.log"
+            "wiji.watchdog.logger.SimpleLogger.log"
         ) as mock_logging:
             MOCK_stack_trace = "MOCK_stack_trace"
             mock_save_stack_trace.return_value = [

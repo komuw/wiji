@@ -197,7 +197,7 @@ class Task(abc.ABC):
 
         self.logger = log_handler
         if not self.logger:
-            self.logger = logger.SimpleBaseLogger(
+            self.logger = logger.SimpleLogger(
                 "wiji.Task.task_name={0}.task_id={1}".format(
                     self.task_name, self.task_options.task_id
                 )

@@ -1,8 +1,10 @@
 import abc
+import typing
 import logging
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
+from . import logger
+
+if typing.TYPE_CHECKING:
     import wiji  # noqa: F401
 
 
@@ -26,15 +28,17 @@ class BaseHook(abc.ABC):
 class SimpleHook(BaseHook):
     """
     This is an implementation of BaseHook.
-    When this class is called by wiji, it just logs the request or response.
+    It implements a no-op hook that does nothing when called
     """
 
-    def __init__(self, logger) -> None:
-        self.logger: logging.Logger = logger
+    def __init__(self, logger: typing.Union[None, logging.LoggerAdapter] = None) -> None:
+        self.logger = logger
+        if not self.logger:
+            self.logger = logger.SimpleLogger("wiji.hook.SimpleHook")
 
     async def request(self, task_id: str, log_id: str, hook_metadata: str) -> None:
         self.logger.log(
-            logging.INFO,
+            logging.NOTSET,
             {
                 "event": "wiji.SimpleHook.request",
                 "stage": "start",
@@ -46,7 +50,7 @@ class SimpleHook(BaseHook):
 
     async def response(self, task_id: str, log_id: str, hook_metadata: str) -> None:
         self.logger.log(
-            logging.INFO,
+            logging.NOTSET,
             {
                 "event": "wiji.SimpleHook.response",
                 "stage": "start",

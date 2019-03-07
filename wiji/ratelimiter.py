@@ -62,10 +62,10 @@ class SimpleRateLimiter(BaseRateLimiter):
 
     def __init__(
         self,
-        logger: logging.LoggerAdapter,
         execution_rate: float = 100_000_000,
         max_tokens: float = 100_000_000,
         delay_for_tokens: float = 1.0,
+        logger: typing.Union[None, logging.LoggerAdapter] = None,
     ) -> None:
         """
         Parameters:
@@ -81,9 +81,12 @@ class SimpleRateLimiter(BaseRateLimiter):
         self.tokens: float = self.max_tokens
         self.updated_at: float = time.monotonic()
 
-        self.logger = logger
         self.tasks_executed: int = 0
         self.effective_execution_rate: float = 0
+
+        self.logger = logger
+        if not self.logger:
+            self.logger = logger.SimpleLogger("wiji.ratelimiter.SimpleRateLimiter")
 
     def _add_new_tokens(self) -> None:
         now = time.monotonic()

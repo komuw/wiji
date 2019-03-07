@@ -1,8 +1,10 @@
 import abc
 import time
+import typing
 import asyncio
 import logging
 
+from . import task
 
 # TODO: rate limiting should take into account number of succesful task executions(based on whether they raised an exception or not)
 # and also the number of failures.
@@ -27,6 +29,22 @@ class BaseRateLimiter(abc.ABC):
         """
         raise NotImplementedError("`limit` method must be implemented.")
 
+    @abc.abstractmethod
+    async def execution_outcome(
+        self,
+        task_name: str,
+        task_id: str,
+        queue_name: str,
+        execution_duration: typing.Dict[str, float],
+        execution_exception: typing.Union[None, Exception],
+        return_value: typing.Any,
+    ) -> None:
+        """
+        this method is called by the worker once it has finished executing a task.
+        implementers may choose to use the metrics provided to dynamically adjust their rate limiting policies.
+        """
+        raise NotImplementedError("`execution_outcome` method must be implemented.")
+
 
 class SimpleRateLimiter(BaseRateLimiter):
     """
@@ -47,7 +65,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         logger: logging.LoggerAdapter,
         execution_rate: float = 100_000_000,
         max_tokens: float = 100_000_000,
-        delay_for_tokens: float = 1,
+        delay_for_tokens: float = 1.0,
     ) -> None:
         """
         Parameters:
@@ -67,6 +85,16 @@ class SimpleRateLimiter(BaseRateLimiter):
         self.tasks_executed: int = 0
         self.effective_execution_rate: float = 0
 
+    def _add_new_tokens(self) -> None:
+        now = time.monotonic()
+        time_since_update = now - self.updated_at
+        self.effective_execution_rate = self.tasks_executed / time_since_update
+        new_tokens = time_since_update * self.execution_rate
+        if new_tokens > 1:
+            self.tokens = min(self.tokens + new_tokens, self.max_tokens)
+            self.updated_at = now
+            self.tasks_executed = 0
+
     async def limit(self) -> None:
         self.logger.log(logging.INFO, {"event": "wiji.SimpleRateLimiter.limit", "stage": "start"})
         while self.tokens < 1:
@@ -84,16 +112,35 @@ class SimpleRateLimiter(BaseRateLimiter):
                     "effective_execution_rate": self.effective_execution_rate,
                 },
             )
-
         self.tasks_executed += 1
         self.tokens -= 1
 
-    def _add_new_tokens(self) -> None:
-        now = time.monotonic()
-        time_since_update = now - self.updated_at
-        self.effective_execution_rate = self.tasks_executed / time_since_update
-        new_tokens = time_since_update * self.execution_rate
-        if new_tokens > 1:
-            self.tokens = min(self.tokens + new_tokens, self.max_tokens)
-            self.updated_at = now
-            self.tasks_executed = 0
+    async def execution_outcome(
+        self,
+        task_name: str,
+        task_id: str,
+        queue_name: str,
+        execution_duration: typing.Dict[str, float],
+        execution_exception: typing.Union[None, Exception],
+        return_value: typing.Any,
+    ) -> None:
+        """
+        SimpleRateLimiter does nothing with the data/metrics it gets about execution outcome.
+        However, you can imagine a smarter RateLimiter that uses these metrics to dynamically change
+        its rate-limiting methodologies; eg increase ratelimit if percentage of exceptions goes up.
+        """
+        if queue_name != task._watchdogTask.queue_name:
+            self.logger.log(
+                logging.DEBUG,
+                {
+                    "event": "wiji.SimpleRateLimiter.execution_outcome",
+                    "stage": "end",
+                    "state": "execution_outcome record",
+                    "task_name": task_name,
+                    "task_id": task_id,
+                    "queue_name": queue_name,
+                    "execution_duration": execution_duration,
+                    "execution_exception": str(execution_exception),
+                    "return_value": str(return_value),
+                },
+            )

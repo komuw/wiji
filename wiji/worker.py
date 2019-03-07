@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+import time
 import random
 import signal
 import string
@@ -18,6 +19,9 @@ from . import watchdog
 
 class Worker:
     """
+    The only time this worker coroutine should ever raise an Exception is either:
+      - during class instantiation
+      - when the worker is about to start consuming tasks
     """
 
     def __init__(
@@ -44,7 +48,7 @@ class Worker:
 
         self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(
-            loglevel=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
+            level=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
         )
 
         self.use_watchdog = use_watchdog
@@ -121,6 +125,13 @@ class Worker:
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
 
+        return_value = None
+        execution_exception = None
+
+        thread_time_start = time.thread_time()
+        perf_counter_start = time.perf_counter()
+        monotonic_start = time.monotonic()
+        process_time_start = time.process_time()
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
             if self.the_task.chain:
@@ -140,16 +151,49 @@ class Worker:
                 },
             )
         except Exception as e:
+            execution_exception = e
             self._log(
                 logging.ERROR,
                 {
-                    "event": "wiji.Worker.run",
+                    "event": "wiji.Worker.run_task",
                     "stage": "end",
                     "state": "task execution error",
                     "error": str(e),
                 },
             )
         finally:
+            thread_time_end = time.thread_time()
+            perf_counter_end = time.perf_counter()
+            monotonic_end = time.monotonic()
+            process_time_end = time.process_time()
+            execution_duration = {
+                "thread_time": float("{0:.4f}".format(thread_time_end - thread_time_start)),
+                "perf_counter": float("{0:.4f}".format(perf_counter_end - perf_counter_start)),
+                "monotonic": float("{0:.4f}".format(monotonic_end - monotonic_start)),
+                "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
+            }
+
+            try:
+                # inform ratelimiter of outcome
+                await self.the_task.the_ratelimiter.execution_outcome(
+                    task_name=self.the_task.task_name,
+                    task_id=self.the_task.task_options.task_id,
+                    queue_name=self.the_task.queue_name,
+                    execution_duration=execution_duration,
+                    execution_exception=execution_exception,
+                    return_value=return_value,
+                )
+            except Exception as e:
+                self._log(
+                    logging.ERROR,
+                    {
+                        "event": "wiji.Worker.run_task",
+                        "stage": "end",
+                        "state": "the_ratelimiter execution_outcome error",
+                        "error": str(e),
+                    },
+                )
+
             if self.watchdog is not None:
                 self.watchdog.notify_alive_after()
 
@@ -162,10 +206,27 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
+        try:
+            await self.the_task.the_broker.check(queue_name=self.the_task.queue_name)
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Worker.consume_tasks",
+                    "stage": "end",
+                    "state": "check broker failed",
+                    "error": str(e),
+                },
+            )
+            # exit with error
+            raise ValueError(
+                "The broker for task: `{0}` failed check request.".format(self.the_task.task_name)
+            ) from e
+
         if self.watchdog is not None:
             self.watchdog.start()
 
-        retry_count = 0
+        dequeue_retry_count = 0
         while True:
             self._log(logging.INFO, {"event": "wiji.Worker.consume_tasks", "stage": "start"})
             if self.SHOULD_SHUT_DOWN:
@@ -200,17 +261,17 @@ class Worker:
                 )
                 dequeued_item = json.loads(dequeued_item)
             except Exception as e:
-                poll_queue_interval = self._retry_after(retry_count)
-                retry_count += 1
+                poll_queue_interval = self._retry_after(dequeue_retry_count)
+                dequeue_retry_count += 1
                 self._log(
                     logging.ERROR,
                     {
                         "event": "wiji.Worker.consume_tasks",
                         "stage": "end",
-                        "state": "consume_tasks error. sleeping for {0}minutes".format(
+                        "state": "dequeue tasks failed. sleeping for {0}minutes".format(
                             poll_queue_interval / 60
                         ),
-                        "retry_count": retry_count,
+                        "dequeue_retry_count": dequeue_retry_count,
                         "error": str(e),
                     },
                 )
@@ -218,7 +279,7 @@ class Worker:
                 continue
 
             # dequeue succeded
-            retry_count = 0
+            dequeue_retry_count = 0
             try:
                 task_version = dequeued_item["version"]
                 task_id = dequeued_item["task_id"]

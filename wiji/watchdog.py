@@ -113,7 +113,7 @@ class BlockingWatchdog:
         self._after_counter = 0
 
         self.logger = logger.SimpleBaseLogger("wiji.BlockingWatchdog")
-        self.logger.bind(loglevel="DEBUG", log_metadata={"task_name": self.task_name})
+        self.logger.bind(level="WARNING", log_metadata={"task_name": self.task_name})
 
     def notify_alive_before(self):
         """

@@ -4,18 +4,29 @@ import asyncio
 import typing
 import json
 
-from . import task
 from . import protocol
+
+if typing.TYPE_CHECKING:
+    from . import task
 
 
 class BaseBroker(abc.ABC):
     """
     This is the interface that must be implemented to satisfy wiji's broker.
     User implementations should inherit this class and
-    implement the :func:`enqueue <BaseBroker.enqueue>` and :func:`dequeue <BaseBroker.dequeue>` methods with the type signatures shown.
+    implement the :func:`check <BaseBroker.check>`, :func:`enqueue <BaseBroker.enqueue>` and :func:`dequeue <BaseBroker.dequeue>` methods with the type signatures shown.
 
     wiji calls an implementation of this class to enqueue and/or dequeue an item.
     """
+
+    @abc.abstractmethod
+    async def check(self, queue_name: str) -> None:
+        """
+        called by `wiji` worker once, during startup so as;
+          - to check that the broker is up
+          - to inform the broker of the queue_name that the worker will be consuming from. the broker can go ahead and create this queue_name if it does not exist
+        """
+        raise NotImplementedError("`check` method must be implemented.")
 
     @abc.abstractmethod
     async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
@@ -59,7 +70,11 @@ class InMemoryBroker(BaseBroker):
         """
         """
         self.store: dict = {}
-        self._create_watchdog_queue()
+
+    async def check(self, queue_name: str) -> None:
+        if queue_name not in self.store:
+            self.store[queue_name] = []
+        await asyncio.sleep(1 / 117)
 
     async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         if self.store.get(queue_name):
@@ -79,6 +94,3 @@ class InMemoryBroker(BaseBroker):
                     await asyncio.sleep(5)
             else:
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
-
-    def _create_watchdog_queue(self):
-        self.store[task._watchdogTask.queue_name] = []

@@ -13,6 +13,7 @@ jobs:
           name: test & coverage
           command: |
             pwd
+            sudo apt -y update; sudo apt -y install pandoc
             pip install --user -e .[dev,test]
             find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
             coverage erase
@@ -41,6 +42,7 @@ jobs:
           name: static-analysis
           command: |
             pwd
+            sudo apt -y install pandoc
             pip install --user -e .[dev,test]
             find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
             black --line-length=100 --check . ||  { printf "\\n\\t please use black to format your code."; exit 77; }
@@ -62,6 +64,7 @@ jobs:
           name: run-wiji
           command: |
             pwd
+            apt -y install pandoc
             pip install --user -e .[dev,test]
             wiji-cli --version
             wiji-cli --config tests.testdata.cli.my_config.MyConfigInstance --dry-run

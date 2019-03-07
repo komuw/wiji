@@ -19,13 +19,13 @@ steps:
     - coverage erase
     - coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
     - codecov
-    - coverage report --show-missing --fail-under=84
+    - coverage report --show-missing --fail-under=70
 
     # branch coverage
     - coverage erase
     - coverage run --branch --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
     - codecov
-    - coverage report --show-missing --fail-under=84
+    - coverage report --show-missing --fail-under=70
   environment:
     WIJI_DEBUG: 1
     PYTHONASYNCIODEBUG: 1

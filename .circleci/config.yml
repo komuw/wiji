@@ -1,4 +1,4 @@
-version: 2.1
+version: 2
 jobs:
   run-tests:
     build:
@@ -101,7 +101,7 @@ jobs:
                 fi
 
 workflows:
-  version: 2.1
+  version: 2
   flow1:
     jobs:
       - run-tests

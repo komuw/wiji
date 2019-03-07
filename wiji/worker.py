@@ -19,6 +19,9 @@ from . import watchdog
 
 class Worker:
     """
+    The only time this worker coroutine should ever raise an Exception is either:
+      - during class instantiation
+      - when the worker is about to start consuming tasks
     """
 
     def __init__(
@@ -203,6 +206,23 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
+        try:
+            await self.the_task.the_broker.check(queue_name=self.the_task.queue_name)
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Worker.consume_tasks",
+                    "stage": "end",
+                    "state": "check broker failed",
+                    "error": str(e),
+                },
+            )
+            # exit with error
+            raise ValueError(
+                "The broker for task: `{0}` failed check request.".format(self.the_task.task_name)
+            ) from e
+
         if self.watchdog is not None:
             self.watchdog.start()
 
@@ -248,7 +268,7 @@ class Worker:
                     {
                         "event": "wiji.Worker.consume_tasks",
                         "stage": "end",
-                        "state": "consume_tasks error. sleeping for {0}minutes".format(
+                        "state": "dequeue tasks failed. sleeping for {0}minutes".format(
                             poll_queue_interval / 60
                         ),
                         "dequeue_retry_count": dequeue_retry_count,

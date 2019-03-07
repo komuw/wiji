@@ -74,7 +74,7 @@ class InMemoryBroker(BaseBroker):
     async def check(self, queue_name: str) -> None:
         if queue_name not in self.store:
             self.store[queue_name] = []
-        await asyncio.sleep(1 / 17)
+        await asyncio.sleep(1 / 117)
 
     async def enqueue(self, item: str, queue_name: str, task_options: "task.TaskOptions") -> None:
         if self.store.get(queue_name):

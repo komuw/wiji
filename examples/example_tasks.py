@@ -167,7 +167,7 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         self.redis_instance = redis.StrictRedis(host="localhost", port=6379, db=0)
 
     async def check(self, queue_name: str) -> None:
-        await asyncio.sleep(1 / 17)
+        await asyncio.sleep(1 / 117)
         pass
 
     async def enqueue(self, item: str, queue_name: str, task_options) -> None:

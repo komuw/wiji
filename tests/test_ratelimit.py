@@ -45,7 +45,7 @@ class TestRateLimit(TestCase):
         self.max_tokens = 1
         self.delay_for_tokens = 1
         self.rateLimiter = wiji.ratelimiter.SimpleRateLimiter(
-            logger=self.logger,
+            log_handler=self.logger,
             execution_rate=self.execution_rate,
             max_tokens=self.max_tokens,
             delay_for_tokens=self.delay_for_tokens,
@@ -75,7 +75,7 @@ class TestRateLimit(TestCase):
     def test_execution_rate(self):
         execution_rate = 3
         rLimiter = wiji.ratelimiter.SimpleRateLimiter(
-            logger=self.logger, execution_rate=execution_rate, max_tokens=3, delay_for_tokens=1
+            log_handler=self.logger, execution_rate=execution_rate, max_tokens=3, delay_for_tokens=1
         )
         msgs_delivered = []
         now = time.monotonic()

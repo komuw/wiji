@@ -13,9 +13,7 @@ jobs:
         - run:
             name: test & coverage
             command: |
-              sudo apt-get -y install pandoc && sudo pip3 install -e .[dev,test,alldns]
               pwd
-              apt -y update; apt-get -y install pandoc curl
               pip install -e .[dev,test]
               find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
               coverage erase

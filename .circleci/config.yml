@@ -107,7 +107,7 @@ workflows:
           requires:
             - run-tests
             - static-analysis
-            - run
+            - run-wiji
           filters:
             branches:
               only:

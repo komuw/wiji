@@ -51,7 +51,7 @@ class SimpleBaseLogger(BaseLogger):
     def __init__(self, logger_name: str):
         """
         Parameters:
-            logger_name: name of the logger. it should be unuque per logger.
+            logger_name: name of the logger. it should be unique per logger.
         """
         self.logger_name = logger_name
         self.logger: typing.Any = None

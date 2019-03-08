@@ -331,6 +331,26 @@ class Task(abc.ABC):
                 "The method: `run` of a class derived from: `wiji.task.Task` should be a python coroutine."
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
+        if not asyncio.iscoroutinefunction(self.delay):
+            raise ValueError(
+                "The method: `delay` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not inspect.iscoroutinefunction(self.delay):
+            raise ValueError(
+                "The method: `delay` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not asyncio.iscoroutinefunction(self.retry):
+            raise ValueError(
+                "The method: `retry` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not inspect.iscoroutinefunction(self.retry):
+            raise ValueError(
+                "The method: `retry` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
 
     def _sanity_check_logger(self, event):
         """

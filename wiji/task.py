@@ -374,6 +374,8 @@ class Task(abc.ABC):
         state: TaskState,
         hook_metadata: str,
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
     ):
         try:
             await self.the_hook.notify(
@@ -383,6 +385,8 @@ class Task(abc.ABC):
                 state=state,
                 hook_metadata=hook_metadata,
                 execution_duration=execution_duration,
+                execution_exception=execution_exception,
+                return_value=return_value,
             )
         except Exception as e:
             self._log(

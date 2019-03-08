@@ -199,6 +199,8 @@ class Worker:
                 state=task.TaskState.EXECUTED,
                 hook_metadata=self.the_task.task_options.hook_metadata,
                 execution_duration=execution_duration,
+                execution_exception=execution_exception,
+                return_value=return_value,
             )
             if self.watchdog is not None:
                 self.watchdog.notify_alive_after()

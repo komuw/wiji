@@ -47,6 +47,8 @@ class SimpleHook(BaseHook):
         hook_metadata: str,
         state: "task.TaskState",
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         self.logger.log(
             logging.NOTSET,
@@ -59,5 +61,7 @@ class SimpleHook(BaseHook):
                 "queue_name": queue_name,
                 "hook_metadata": hook_metadata,
                 "execution_duration": execution_duration,
+                "execution_exception": str(execution_exception),
+                "return_value": str(return_value),
             },
         )

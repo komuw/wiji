@@ -57,7 +57,7 @@ class SimpleRateLimiter(BaseRateLimiter):
 
     .. code-block:: python
 
-        rateLimiter = SimpleRateLimiter(logger=myLogger, execution_rate=10, max_tokens=25)
+        rateLimiter = SimpleRateLimiter(log_handler=myLogger, execution_rate=10, max_tokens=25)
         await rateLimiter.limit()
     """
 

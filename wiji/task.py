@@ -1,21 +1,18 @@
-import os
 import abc
 import enum
-import uuid
-import json
-import asyncio
-import inspect
-import datetime
 import random
 import string
-import logging
 import typing
+import asyncio
+import logging
+import inspect
 
-from . import broker
-from . import ratelimiter
 from . import hook
 from . import logger
+from . import broker
 from . import protocol
+from . import ratelimiter
+
 
 # TODO: disambiguate which attributes should be in TaskOptions class
 # and which ones should be in Task class.
@@ -158,7 +155,7 @@ class Task(abc.ABC):
                 queue_name="PrintQueue",
             )
         task.delay(33, "hello", name="komu")
-    
+
     You can also chain things as:
         task1 = wiji.task.Task()
         task2 = wiji.task.Task(chain=task1)
@@ -492,7 +489,8 @@ class Task(abc.ABC):
         for a in args:
             if isinstance(a, TaskOptions):
                 raise ValueError(
-                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
+                    """You cannot use a value of type `wiji.task.TaskOptions` as a normal argument.
+                    \nHint: instead, pass it in as a kwarg(named argument)"""
                 )
         for k, v in list(kwargs.items()):
             if isinstance(v, TaskOptions):

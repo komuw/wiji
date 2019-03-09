@@ -210,7 +210,9 @@ class BlockingWatchdog:
         # we could also use: faulthandler.dump_traceback(all_threads=True)
         stack_trace_of_all_threads_during_block = []
         for thread in threading.enumerate():
-            thread_stack_trace = traceback.format_stack(f=sys._current_frames()[thread.ident])
+            thread_stack_trace = traceback.format_stack(
+                f=sys._current_frames()[thread.ident]  # type: ignore
+            )
             thread_name = thread.name
             if thread_name == "MainThread":
                 # we are only interested in blocking ops in the asyncio thread

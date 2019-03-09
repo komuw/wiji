@@ -130,7 +130,7 @@ class Worker:
 
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
         # run the actual queued task
-        assert isinstance(self.the_task.task_options.hook_metadata, dict)
+        assert isinstance(self.the_task.task_options.hook_metadata, str)
         await self.the_task.notify_hook(
             state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
         )

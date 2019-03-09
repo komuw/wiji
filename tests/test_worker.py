@@ -1,9 +1,7 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
-import os
 import sys
-import json
 import asyncio
 import logging
 from unittest import TestCase, mock

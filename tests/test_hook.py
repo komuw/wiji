@@ -1,5 +1,4 @@
 import sys
-import time
 import asyncio
 import logging
 from unittest import TestCase, mock

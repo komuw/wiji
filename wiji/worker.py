@@ -1,9 +1,7 @@
 import os
-import uuid
 import json
 import time
 import random
-import signal
 import string
 import typing
 import logging
@@ -11,8 +9,6 @@ import asyncio
 import datetime
 
 from . import task
-from . import hook
-from . import logger
 from . import protocol
 from . import watchdog
 
@@ -289,11 +285,11 @@ class Worker:
             # dequeue succeded
             dequeue_retry_count = 0
             try:
-                task_version = dequeued_item["version"]
+                _ = dequeued_item["version"]
                 task_id = dequeued_item["task_id"]
                 task_eta = dequeued_item["eta"]
-                task_current_retries = dequeued_item["current_retries"]
-                task_max_retries = dequeued_item["max_retries"]
+                _ = dequeued_item["current_retries"]
+                _ = dequeued_item["max_retries"]
                 task_log_id = dequeued_item["log_id"]
                 task_hook_metadata = dequeued_item["hook_metadata"]
                 task_args = dequeued_item["args"]

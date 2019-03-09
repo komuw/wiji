@@ -40,11 +40,11 @@ class RetryError(Exception):
 
 @enum.unique
 class TaskState(enum.Enum):
-    QUEUEING = 1
-    QUEUED = 2
-    DEQUEUED = 3
-    EXECUTING = 4
-    EXECUTED = 5
+    QUEUEING: int = 1
+    QUEUED: int = 2
+    DEQUEUED: int = 3
+    EXECUTING: int = 4
+    EXECUTED: int = 5
 
 
 class TaskOptions:
@@ -70,7 +70,7 @@ class TaskOptions:
             self.eta = 0.00
         self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
 
-        self.current_retries = 0
+        self.current_retries: int = 0
         self.max_retries = max_retries
         if self.max_retries < 0:
             self.max_retries = 0
@@ -100,8 +100,8 @@ class TaskOptions:
         # mainly because that is also the default value of the process supervisor: `supervisord`
         self.drain_duration = drain_duration
 
-        self.args = ()
-        self.kwargs = {}
+        self.args: tuple = ()
+        self.kwargs: dict = {}
 
     def __str__(self):
         return str(self.__dict__)
@@ -374,6 +374,9 @@ class Task(abc.ABC):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ):
+        assert isinstance(self.the_hook, hook.BaseHook)  # make mypy happy
+        assert isinstance(self.task_name, str)
+        assert isinstance(self.task_options.task_id, str)
         try:
             await self.the_hook.notify(
                 task_name=self.task_name,

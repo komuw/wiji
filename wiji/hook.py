@@ -21,6 +21,8 @@ class BaseHook(abc.ABC):
         hook_metadata: str,
         state: "task.TaskState",
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         """
         called by `wiji` worker whenever a task undergoes a state change.

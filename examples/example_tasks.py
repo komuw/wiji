@@ -205,12 +205,6 @@ adder = adder_task(the_broker=MY_BROKER, chain=divider)
 adder.synchronous_delay(3, 7, task_options=wiji.task.TaskOptions(eta=4.56))
 #############################################
 
-# ALTERNATIVE way of chaining
-adder = adder_task(the_broker=MY_BROKER)
-divider = divider_task(the_broker=MY_BROKER)
-multiplier = multiplier_task(the_broker=MY_BROKER)
-adder | divider | multiplier
-
 #####################################
 http_task1 = http_task(the_broker=MY_BROKER)
 http_task1.synchronous_delay(url="http://httpbin.org/get")

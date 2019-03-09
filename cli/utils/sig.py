@@ -34,7 +34,7 @@ async def _signal_handling(logger: wiji.logger.BaseLogger, workers: list) -> Non
 
 
 async def _handle_termination_signal(
-    logger: wiji.logger.BaseLogger, _signal: signal.Signals, workers: list
+    logger: wiji.logger.BaseLogger, _signal: int, workers: list
 ) -> None:
     logger.log(
         logging.INFO,

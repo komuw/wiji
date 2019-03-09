@@ -67,7 +67,7 @@ class SimpleRateLimiter(BaseRateLimiter):
     def __init__(
         self,
         execution_rate: float = 100_000_000.0,
-        log_handler: typing.Union[None, logging.LoggerAdapter] = None,
+        log_handler: typing.Union[None, logger.BaseLogger] = None,
     ) -> None:
         """
         Parameters:
@@ -119,6 +119,7 @@ class SimpleRateLimiter(BaseRateLimiter):
             self.tasks_executed = 0
 
     async def limit(self) -> None:
+        assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
         self.logger.log(logging.INFO, {"event": "wiji.SimpleRateLimiter.limit", "stage": "start"})
         while self.tokens < 1:
             self._add_new_tokens()
@@ -152,6 +153,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         However, you can imagine a smarter RateLimiter that uses these metrics to dynamically change
         its rate-limiting methodologies; eg increase ratelimit if percentage of exceptions goes up.
         """
+        assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
         if queue_name != task._watchdogTask.queue_name:
             self.logger.log(
                 logging.DEBUG,

@@ -1,14 +1,6 @@
-import os
-import sys
-import json
-import string
 import signal
-import random
-import typing
 import asyncio
-import inspect
 import logging
-import argparse
 import functools
 
 
@@ -35,6 +27,7 @@ async def _signal_handling(logger, workers):
                 "event": "wiji.cli.signals",
                 "stage": "end",
                 "state": "this OS does not support the said signal",
+                "error": str(e),
             },
         )
 

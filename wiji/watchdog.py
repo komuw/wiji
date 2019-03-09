@@ -211,9 +211,12 @@ class BlockingWatchdog:
         stack_trace_of_all_threads_during_block = []
         for thread in threading.enumerate():
             thread_stack_trace = traceback.format_stack(f=sys._current_frames()[thread.ident])
-            stack_trace_of_all_threads_during_block.append(
-                {"thread_name": thread.name, "thread_stack_trace": thread_stack_trace}
-            )
+            thread_name = thread.name
+            if thread_name == "MainThread":
+                # we are only interested in blocking ops in the asyncio thread
+                stack_trace_of_all_threads_during_block.append(
+                    {"thread_name": thread_name, "thread_stack_trace": thread_stack_trace}
+                )
         return stack_trace_of_all_threads_during_block
 
     def start(self) -> None:

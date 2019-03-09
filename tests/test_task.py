@@ -1,17 +1,14 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
-import os
 import sys
-import json
 import asyncio
 import inspect
 import logging
 import datetime
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import wiji
-import mock
 
 
 logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.DEBUG)

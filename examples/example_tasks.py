@@ -1,17 +1,10 @@
-import os
-import sys
-import json
-import string
-import signal
-import random
-import typing
 import asyncio
-import inspect
-import logging
-import argparse
 import functools
+import concurrent
+
 
 import wiji
+import redis
 
 
 def BLOCKING_DISK_IO(the_broker) -> wiji.task.Task:
@@ -77,7 +70,6 @@ def print_task(the_broker) -> wiji.task.Task:
     return task
 
 
-################## CHAIN ##################
 def adder_task(the_broker, chain=None) -> wiji.task.Task:
     class AdderTask(wiji.task.Task):
         async def run(self, a, b):
@@ -123,9 +115,6 @@ def multiplier_task(the_broker, chain=None) -> wiji.task.Task:
     return task
 
 
-################## CHAIN ##################
-
-
 def exception_task(the_broker, chain=None) -> wiji.task.Task:
     class ExceptionTask(wiji.task.Task):
         async def run(self):
@@ -137,16 +126,6 @@ def exception_task(the_broker, chain=None) -> wiji.task.Task:
 
     task = ExceptionTask(the_broker=the_broker, queue_name="ExceptionTaskQueue", chain=chain)
     return task
-
-
-##################################################################################################
-import asyncio
-import functools
-import concurrent
-
-
-import wiji
-import redis
 
 
 class ExampleRedisBroker(wiji.broker.BaseBroker):
@@ -225,12 +204,6 @@ adder = adder_task(the_broker=MY_BROKER, chain=divider)
 
 adder.synchronous_delay(3, 7, task_options=wiji.task.TaskOptions(eta=4.56))
 #############################################
-
-# ALTERNATIVE way of chaining
-adder = adder_task(the_broker=MY_BROKER)
-divider = divider_task(the_broker=MY_BROKER)
-multiplier = multiplier_task(the_broker=MY_BROKER)
-adder | divider | multiplier
 
 #####################################
 http_task1 = http_task(the_broker=MY_BROKER)

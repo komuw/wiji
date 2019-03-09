@@ -1,10 +1,6 @@
 import abc
-import time
-import asyncio
 import typing
-import json
-
-from . import protocol
+import asyncio
 
 if typing.TYPE_CHECKING:
     from . import task
@@ -14,7 +10,8 @@ class BaseBroker(abc.ABC):
     """
     This is the interface that must be implemented to satisfy wiji's broker.
     User implementations should inherit this class and
-    implement the :func:`check <BaseBroker.check>`, :func:`enqueue <BaseBroker.enqueue>` and :func:`dequeue <BaseBroker.dequeue>` methods with the type signatures shown.
+    implement the :func:`check <BaseBroker.check>`, :func:`enqueue <BaseBroker.enqueue>` and
+    :func:`dequeue <BaseBroker.dequeue>` methods with the type signatures shown.
 
     wiji calls an implementation of this class to enqueue and/or dequeue an item.
     """
@@ -24,7 +21,8 @@ class BaseBroker(abc.ABC):
         """
         called by `wiji` worker once, during startup so as;
           - to check that the broker is up
-          - to inform the broker of the queue_name that the worker will be consuming from. the broker can go ahead and create this queue_name if it does not exist
+          - to inform the broker of the queue_name that the worker will be consuming from.
+            the broker can go ahead and create this queue_name if it does not exist
         """
         raise NotImplementedError("`check` method must be implemented.")
 

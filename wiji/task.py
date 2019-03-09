@@ -1,21 +1,18 @@
-import os
 import abc
 import enum
-import uuid
-import json
-import asyncio
-import inspect
-import datetime
 import random
 import string
-import logging
 import typing
+import asyncio
+import logging
+import inspect
 
-from . import broker
-from . import ratelimiter
 from . import hook
 from . import logger
+from . import broker
 from . import protocol
+from . import ratelimiter
+
 
 # TODO: disambiguate which attributes should be in TaskOptions class
 # and which ones should be in Task class.
@@ -43,11 +40,11 @@ class RetryError(Exception):
 
 @enum.unique
 class TaskState(enum.Enum):
-    QUEUEING = 1
-    QUEUED = 2
-    DEQUEUED = 3
-    EXECUTING = 4
-    EXECUTED = 5
+    QUEUEING: int = 1
+    QUEUED: int = 2
+    DEQUEUED: int = 3
+    EXECUTING: int = 4
+    EXECUTED: int = 5
 
 
 class TaskOptions:
@@ -73,7 +70,7 @@ class TaskOptions:
             self.eta = 0.00
         self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
 
-        self.current_retries = 0
+        self.current_retries: int = 0
         self.max_retries = max_retries
         if self.max_retries < 0:
             self.max_retries = 0
@@ -103,15 +100,21 @@ class TaskOptions:
         # mainly because that is also the default value of the process supervisor: `supervisord`
         self.drain_duration = drain_duration
 
-        self.args = ()
-        self.kwargs = {}
+        self.args: tuple = ()
+        self.kwargs: dict = {}
 
     def __str__(self):
         return str(self.__dict__)
 
     def _validate_task_options_args(
-        self, eta, max_retries, log_id, hook_metadata, task_id, drain_duration
-    ):
+        self,
+        eta: float,
+        max_retries: int,
+        log_id: str,
+        hook_metadata: typing.Union[None, str],
+        task_id: typing.Union[None, str],
+        drain_duration: float,
+    ) -> None:
         if not isinstance(eta, float):
             raise ValueError(
                 """`eta` should be of type:: `float` You entered: {0}""".format(type(eta))
@@ -158,7 +161,7 @@ class Task(abc.ABC):
                 queue_name="PrintQueue",
             )
         task.delay(33, "hello", name="komu")
-    
+
     You can also chain things as:
         task1 = wiji.task.Task()
         task2 = wiji.task.Task(chain=task1)
@@ -223,22 +226,6 @@ class Task(abc.ABC):
         if not self.the_ratelimiter:
             self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
-    # TODO: remove this
-    def __or__(self, other: "Task"):
-        """
-        Operator Overloading is bad.
-        It should die a swift death.
-
-        This allows someone to do:
-            task1 = wiji.task.Task()
-            task2 = wiji.task.Task()
-            task3 = wiji.task.Task()
-
-            task1 | task2 | task3
-        """
-        self.chain = other
-        return other
-
     async def __call__(self, *args, **kwargs):
         await self.run(*args, **kwargs)
 
@@ -255,16 +242,16 @@ class Task(abc.ABC):
 
     def _validate_task_args(
         self,
-        the_broker,
-        queue_name,
-        task_name,
-        chain,
-        the_hook,
-        the_ratelimiter,
-        loglevel,
-        log_metadata,
-        log_handler,
-    ):
+        the_broker: broker.BaseBroker,
+        queue_name: str,
+        task_name: typing.Union[None, str],
+        chain: typing.Union[None, "Task"],
+        the_hook: typing.Union[None, hook.BaseHook],
+        the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter],
+        loglevel: str,
+        log_metadata: typing.Union[None, dict],
+        log_handler: typing.Union[None, logger.BaseLogger],
+    ) -> None:
         if not isinstance(the_broker, (type(None), broker.BaseBroker)):
             raise ValueError(
                 """the_broker should be of type:: None or wiji.broker.BaseBroker You entered: {0}""".format(
@@ -352,19 +339,21 @@ class Task(abc.ABC):
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
 
-    def _sanity_check_logger(self, event):
+    def _sanity_check_logger(self, event: str) -> None:
         """
         Called when we want to make sure the supplied logger can log.
         This usually happens when we are instantiating a wiji.Task or a wiji.Worker
         """
         try:
+            assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
             self.logger.log(logging.DEBUG, {"event": event})
         except Exception as e:
             raise e
 
-    def _log(self, level, log_data):
+    def _log(self, level: typing.Union[str, int], log_data: dict) -> None:
         # if the supplied logger is unable to log; we move on
         try:
+            assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
             self.logger.log(level, log_data)
         except Exception:
             pass
@@ -376,7 +365,12 @@ class Task(abc.ABC):
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
-    ):
+    ) -> None:
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.the_hook, hook.BaseHook)
+        assert isinstance(self.task_name, str)
+        assert isinstance(self.task_options.task_id, str)
         try:
             await self.the_hook.notify(
                 task_name=self.task_name,
@@ -400,10 +394,10 @@ class Task(abc.ABC):
             )
 
     @abc.abstractmethod
-    async def run(self, *args, **kwargs):
+    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         raise NotImplementedError("`run` method must be implemented.")
 
-    async def delay(self, *args, **kwargs):
+    async def delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """
         Parameters:
             args: The positional arguments to pass on to the task.
@@ -412,6 +406,8 @@ class Task(abc.ABC):
         args, kwargs = self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
 
+        assert isinstance(self.task_options.task_id, str)  # make mypy happy
+        assert isinstance(self.task_options.hook_metadata, str)
         proto = protocol.Protocol(
             version=1,
             task_id=self.task_options.task_id,
@@ -449,7 +445,7 @@ class Task(abc.ABC):
                 },
             )
 
-    def synchronous_delay(self, *args, **kwargs):
+    def synchronous_delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -457,7 +453,7 @@ class Task(abc.ABC):
 
         loop.run_until_complete(self.delay(*args, **kwargs))
 
-    async def retry(self, *args, **kwargs):
+    async def retry(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """
         Parameters:
             args: The positional arguments to pass on to the task.
@@ -488,11 +484,14 @@ class Task(abc.ABC):
             )
         )
 
-    def _validate_delay_args(self, *args, **kwargs):
+    def _validate_delay_args(
+        self, *args: typing.Any, **kwargs: typing.Any
+    ) -> typing.Tuple[typing.Any, typing.Any]:
         for a in args:
             if isinstance(a, TaskOptions):
                 raise ValueError(
-                    "You cannot use a value of type `wiji.task.TaskOptions` as a normal argument. Hint: instead, pass it in as a kwarg(named argument)"
+                    """You cannot use a value of type `wiji.task.TaskOptions` as a normal argument.
+                    \nHint: instead, pass it in as a kwarg(named argument)"""
                 )
         for k, v in list(kwargs.items()):
             if isinstance(v, TaskOptions):
@@ -504,7 +503,7 @@ class Task(abc.ABC):
         return self.task_options.args, self.task_options.kwargs
 
     @staticmethod
-    def _type_check(func, *args, **kwargs):
+    def _type_check(func, *args: typing.Any, **kwargs: typing.Any) -> inspect.BoundArguments:
         """
         Check that `delay` is called with right arguments/signature.
         ie, the right arguments for the user implemented `run` method.
@@ -529,9 +528,9 @@ class _watchdogTask(Task):
     This task is always scheduled in the in-memory broker(`wiji.broker.InMemoryBroker`).
     """
 
-    queue_name = "__WatchDogTaskQueue__"
+    queue_name: str = "__WatchDogTaskQueue__"
 
-    async def run(self):
+    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         self._log(
             logging.DEBUG,
             {

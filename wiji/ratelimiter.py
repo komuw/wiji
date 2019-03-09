@@ -7,12 +7,15 @@ import logging
 from . import task
 from . import logger
 
+
 # TODO: rate limiting should take into account number of succesful task executions(based on whether they raised an exception or not)
 # and also the number of failures.
 # We should also pass in the task_name, and exception raised
 # This will enable users of wiji to come up with better rate limiting algos.
 # So: we need to make the BaseRateLimiter accept this more arguments.
 # We also need to make SimpleRateLimiter a bit smarter and take this new args in effect(or maybe not[probably NOT])
+
+
 class BaseRateLimiter(abc.ABC):
     """
     This is the interface that must be implemented to satisfy wiji's rate limiting.
@@ -64,7 +67,7 @@ class SimpleRateLimiter(BaseRateLimiter):
     def __init__(
         self,
         execution_rate: float = 100_000_000.0,
-        log_handler: typing.Union[None, logging.LoggerAdapter] = None,
+        log_handler: typing.Union[None, logger.BaseLogger] = None,
     ) -> None:
         """
         Parameters:
@@ -116,6 +119,9 @@ class SimpleRateLimiter(BaseRateLimiter):
             self.tasks_executed = 0
 
     async def limit(self) -> None:
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.logger, logger.BaseLogger)
         self.logger.log(logging.INFO, {"event": "wiji.SimpleRateLimiter.limit", "stage": "start"})
         while self.tokens < 1:
             self._add_new_tokens()
@@ -149,6 +155,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         However, you can imagine a smarter RateLimiter that uses these metrics to dynamically change
         its rate-limiting methodologies; eg increase ratelimit if percentage of exceptions goes up.
         """
+        assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
         if queue_name != task._watchdogTask.queue_name:
             self.logger.log(
                 logging.DEBUG,

@@ -21,6 +21,8 @@ class BaseHook(abc.ABC):
         hook_metadata: str,
         state: "task.TaskState",
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         """
         called by `wiji` worker whenever a task undergoes a state change.
@@ -34,7 +36,7 @@ class SimpleHook(BaseHook):
     It implements a no-op hook that does nothing when called
     """
 
-    def __init__(self, log_handler: typing.Union[None, logging.LoggerAdapter] = None) -> None:
+    def __init__(self, log_handler: typing.Union[None, logger.BaseLogger] = None) -> None:
         self.logger = log_handler
         if not self.logger:
             self.logger = logger.SimpleLogger("wiji.hook.SimpleHook")
@@ -50,6 +52,9 @@ class SimpleHook(BaseHook):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.logger, logger.BaseLogger)
         self.logger.log(
             logging.NOTSET,
             {

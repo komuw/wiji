@@ -1,14 +1,7 @@
-import io
-import os
 import sys
-import copy
-import mock
-import json
 import logging
 import argparse
-from unittest import TestCase
-
-import wiji
+from unittest import TestCase, mock
 
 import cli
 

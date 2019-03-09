@@ -1,5 +1,6 @@
 import os
 import abc
+import enum
 import uuid
 import json
 import asyncio
@@ -38,6 +39,15 @@ class RetryError(Exception):
     """
 
     pass
+
+
+@enum.unique
+class TaskState(enum.Enum):
+    QUEUEING = 1
+    QUEUED = 2
+    DEQUEUED = 3
+    EXECUTING = 4
+    EXECUTED = 5
 
 
 class TaskOptions:
@@ -197,7 +207,7 @@ class Task(abc.ABC):
 
         self.logger = log_handler
         if not self.logger:
-            self.logger = logger.SimpleBaseLogger(
+            self.logger = logger.SimpleLogger(
                 "wiji.Task.task_name={0}.task_id={1}".format(
                     self.task_name, self.task_options.task_id
                 )
@@ -207,11 +217,11 @@ class Task(abc.ABC):
 
         self.the_hook = the_hook
         if not self.the_hook:
-            self.the_hook = hook.SimpleHook(logger=self.logger)
+            self.the_hook = hook.SimpleHook(log_handler=self.logger)
 
         self.the_ratelimiter = the_ratelimiter
         if not self.the_ratelimiter:
-            self.the_ratelimiter = ratelimiter.SimpleRateLimiter(logger=self.logger)
+            self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
     # TODO: remove this
     def __or__(self, other: "Task"):
@@ -321,6 +331,26 @@ class Task(abc.ABC):
                 "The method: `run` of a class derived from: `wiji.task.Task` should be a python coroutine."
                 "\nHint: did you forget to define the method using `async def` syntax?"
             )
+        if not asyncio.iscoroutinefunction(self.delay):
+            raise ValueError(
+                "The method: `delay` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not inspect.iscoroutinefunction(self.delay):
+            raise ValueError(
+                "The method: `delay` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not asyncio.iscoroutinefunction(self.retry):
+            raise ValueError(
+                "The method: `retry` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
+        if not inspect.iscoroutinefunction(self.retry):
+            raise ValueError(
+                "The method: `retry` of a class derived from: `wiji.task.Task` should be a python coroutine."
+                "\nHint: did you forget to define the method using `async def` syntax?"
+            )
 
     def _sanity_check_logger(self, event):
         """
@@ -338,6 +368,36 @@ class Task(abc.ABC):
             self.logger.log(level, log_data)
         except Exception:
             pass
+
+    async def notify_hook(
+        self,
+        state: TaskState,
+        hook_metadata: str,
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
+    ):
+        try:
+            await self.the_hook.notify(
+                task_name=self.task_name,
+                task_id=self.task_options.task_id,
+                queue_name=self.queue_name,
+                state=state,
+                hook_metadata=hook_metadata,
+                execution_duration=execution_duration,
+                execution_exception=execution_exception,
+                return_value=return_value,
+            )
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Task.notify_hook",
+                    "stage": "end",
+                    "state": "task hook error",
+                    "error": str(e),
+                },
+            )
 
     @abc.abstractmethod
     async def run(self, *args, **kwargs):
@@ -363,9 +423,15 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
+        await self.notify_hook(
+            state=TaskState.QUEUEING, hook_metadata=self.task_options.hook_metadata
+        )
         try:
             await self.the_broker.enqueue(
                 item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+            )
+            await self.notify_hook(
+                state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
             )
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})

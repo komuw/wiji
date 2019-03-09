@@ -122,12 +122,14 @@ class Worker:
 
     async def run_task(self, *task_args, **task_kwargs):
         # run the actual queued task
+        await self.the_task.notify_hook(
+            state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
+        )
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
 
         return_value = None
         execution_exception = None
-
         thread_time_start = time.thread_time()
         perf_counter_start = time.perf_counter()
         monotonic_start = time.monotonic()
@@ -172,7 +174,6 @@ class Worker:
                 "monotonic": float("{0:.4f}".format(monotonic_end - monotonic_start)),
                 "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
             }
-
             try:
                 # inform ratelimiter of outcome
                 await self.the_task.the_ratelimiter.execution_outcome(
@@ -194,6 +195,13 @@ class Worker:
                     },
                 )
 
+            await self.the_task.notify_hook(
+                state=task.TaskState.EXECUTED,
+                hook_metadata=self.the_task.task_options.hook_metadata,
+                execution_duration=execution_duration,
+                execution_exception=execution_exception,
+                return_value=return_value,
+            )
             if self.watchdog is not None:
                 self.watchdog.notify_alive_after()
 
@@ -302,6 +310,10 @@ class Worker:
                     },
                 )
                 continue
+
+            await self.the_task.notify_hook(
+                state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
+            )
 
             now = datetime.datetime.now(tz=datetime.timezone.utc)
             if protocol.Protocol._from_isoformat(task_eta) <= now:

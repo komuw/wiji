@@ -32,24 +32,9 @@ class TestRateLimit(TestCase):
     """
 
     def setUp(self):
-
-        self.logger = logging.getLogger("wiji.test")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter("%(message)s")
-        handler.setFormatter(formatter)
-        if not self.logger.handlers:
-            self.logger.addHandler(handler)
-        self.logger.setLevel("DEBUG")
-
-        self.execution_rate = 1
-        self.max_tokens = 1
-        self.delay_for_tokens = 1
-        self.rateLimiter = wiji.ratelimiter.SimpleRateLimiter(
-            logger=self.logger,
-            execution_rate=self.execution_rate,
-            max_tokens=self.max_tokens,
-            delay_for_tokens=self.delay_for_tokens,
-        )
+        self.logger = wiji.logger.SimpleLogger("myTestLogger")
+        self.execution_rate = 1.00
+        self.rateLimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=self.execution_rate)
 
     def tearDown(self):
         pass
@@ -61,25 +46,25 @@ class TestRateLimit(TestCase):
 
     def test_no_rlimit(self):
         with mock.patch("wiji.ratelimiter.asyncio.sleep", new=AsyncMock()) as mock_sleep:
-            for _ in range(0, self.max_tokens):
+            for _ in range(0, int(self.execution_rate)):
                 self._run(self.rateLimiter.limit())
             self.assertFalse(mock_sleep.mock.called)
 
     def test_token_exhaustion_causes_rlimit(self):
         with mock.patch("wiji.ratelimiter.asyncio.sleep", new=AsyncMock()) as mock_sleep:
-            for _ in range(0, self.max_tokens * 2):
+            for _ in range(0, int(self.execution_rate) * 2):
                 self._run(self.rateLimiter.limit())
             self.assertTrue(mock_sleep.mock.called)
-            self.assertEqual(mock_sleep.mock.call_args[0][0], self.delay_for_tokens)
+            self.assertEqual(mock_sleep.mock.call_args[0][0], self.rateLimiter.delay_for_tokens)
 
     def test_execution_rate(self):
-        execution_rate = 3
+        execution_rate = 3.00
         rLimiter = wiji.ratelimiter.SimpleRateLimiter(
-            logger=self.logger, execution_rate=execution_rate, max_tokens=3, delay_for_tokens=1
+            log_handler=self.logger, execution_rate=execution_rate
         )
         msgs_delivered = []
         now = time.monotonic()
-        for _ in range(0, execution_rate * 4):
+        for _ in range(0, int(execution_rate) * 4):
             z = self._run(rLimiter.limit())
             msgs_delivered.append(z)
 

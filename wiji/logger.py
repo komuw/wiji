@@ -32,7 +32,7 @@ class BaseLogger(abc.ABC):
         raise NotImplementedError("`log` method must be implemented.")
 
 
-class SimpleBaseLogger(BaseLogger):
+class SimpleLogger(BaseLogger):
     """
     This is an implementation of BaseLogger.
     It implements a structured logger that renders logs in a json/dict like manner.
@@ -41,7 +41,7 @@ class SimpleBaseLogger(BaseLogger):
 
     .. code-block:: python
 
-        logger = SimpleBaseLogger("myLogger")
+        logger = SimpleLogger("myLogger")
         logger.bind(level="INFO",
                     log_metadata={"customer_id": "34541"})
         logger.log(logging.INFO,

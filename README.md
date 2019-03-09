@@ -1,6 +1,11 @@
 ## wiji          
 
-[![Build Status](https://cloud.drone.io/api/badges/komuw/wiji/status.svg)](https://cloud.drone.io/komuw/wiji)
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f0b4b7a07da24e90bdb7743d0e6b9240)](https://www.codacy.com/app/komuw/wiji)
+[![CircleCI](https://circleci.com/gh/komuw/wiji.svg?style=svg)](https://circleci.com/gh/komuw/wiji)
+[![codecov](https://codecov.io/gh/komuw/wiji/branch/master/graph/badge.svg)](https://codecov.io/gh/komuw/wiji)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/komuw/wiji)
+
 
 
 `Wiji` is an async/asyncio distributed task processor/queue.       

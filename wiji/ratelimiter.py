@@ -5,6 +5,7 @@ import asyncio
 import logging
 
 from . import task
+from . import logger
 
 # TODO: rate limiting should take into account number of succesful task executions(based on whether they raised an exception or not)
 # and also the number of failures.
@@ -56,34 +57,53 @@ class SimpleRateLimiter(BaseRateLimiter):
 
     .. code-block:: python
 
-        rateLimiter = SimpleRateLimiter(logger=myLogger, execution_rate=10, max_tokens=25)
+        rateLimiter = SimpleRateLimiter(log_handler=myLogger, execution_rate=10.0)
         await rateLimiter.limit()
     """
 
     def __init__(
         self,
-        logger: logging.LoggerAdapter,
-        execution_rate: float = 100_000_000,
-        max_tokens: float = 100_000_000,
-        delay_for_tokens: float = 1.0,
+        execution_rate: float = 100_000_000.0,
+        log_handler: typing.Union[None, logging.LoggerAdapter] = None,
     ) -> None:
         """
         Parameters:
             execution_rate: the maximum rate, in tasks/second, at which wiji can consume/execute tasks.
-            max_tokens: the total number of tasks wiji can consume/execute before rate limiting kicks in.
-            delay_for_tokens: the duration in seconds which to wait for before checking for token availability after they had finished.
-
-        execution_rate and max_tokens should generally be of equal value.
         """
-        self.execution_rate: float = execution_rate
-        self.max_tokens: float = max_tokens
-        self.delay_for_tokens: float = (delay_for_tokens)
-        self.tokens: float = self.max_tokens
-        self.updated_at: float = time.monotonic()
+        self._validate_args(execution_rate=execution_rate, log_handler=log_handler)
 
-        self.logger = logger
+        self.execution_rate: float = execution_rate
+        self.max_tokens: float = self.execution_rate
+        self.tokens: float = self.max_tokens
+
+        self.delay_for_tokens: float = 1.0
+        self.updated_at: float = time.monotonic()
         self.tasks_executed: int = 0
-        self.effective_execution_rate: float = 0
+        self.effective_execution_rate: float = 0.0
+
+        self.logger = log_handler
+        if not self.logger:
+            self.logger = logger.SimpleLogger("wiji.ratelimiter.SimpleRateLimiter")
+
+    def _validate_args(self, execution_rate, log_handler):
+        if not isinstance(execution_rate, float):
+            raise ValueError(
+                """`execution_rate` should be of type:: `float` You entered: {0}""".format(
+                    type(execution_rate)
+                )
+            )
+        if execution_rate < 1.0:
+            raise ValueError(
+                """`execution_rate` should not be less than 1.0 You entered: {0}""".format(
+                    execution_rate
+                )
+            )
+        if not isinstance(log_handler, (type(None), logger.BaseLogger)):
+            raise ValueError(
+                """`log_handler` should be of type:: `None` or `wiji.logger.BaseLogger` You entered: {0}""".format(
+                    type(log_handler)
+                )
+            )
 
     def _add_new_tokens(self) -> None:
         now = time.monotonic()

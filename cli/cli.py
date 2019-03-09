@@ -60,7 +60,7 @@ def main():
         wiji-cli --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
-    logger = wiji.logger.SimpleBaseLogger("wiji.cli")
+    logger = wiji.logger.SimpleLogger("wiji.cli")
     logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "start", "worker_id": worker_id})
     try:
         parser = make_parser()

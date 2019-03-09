@@ -12,6 +12,10 @@ class WijiConf:
         self.watchdog_duration = watchdog_duration
 
     def _validate_config_args(self, tasks, watchdog_duration):
+        if not isinstance(tasks, list):
+            raise ValueError(
+                """`tasks` should be of type:: `list` You entered: {0}""".format(type(tasks))
+            )
         for tsk in tasks:
             if not isinstance(tsk, task.Task):
                 raise ValueError(

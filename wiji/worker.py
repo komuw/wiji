@@ -9,8 +9,10 @@ import asyncio
 import datetime
 
 from . import task
+from . import logger
 from . import protocol
 from . import watchdog
+from . import ratelimiter
 
 
 class Worker:
@@ -42,6 +44,8 @@ class Worker:
         if not self.worker_id:
             self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
+        assert isinstance(self.the_task.log_metadata, dict)  # make mypy happy
+        assert isinstance(self.the_task.logger, logger.BaseLogger)
         self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(
             level=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
@@ -50,6 +54,7 @@ class Worker:
         self.use_watchdog = use_watchdog
         self.watchdog_duration = watchdog_duration
 
+        assert isinstance(self.the_task.task_name, str)
         self.watchdog = None
         if self.use_watchdog:
             self.watchdog = watchdog.BlockingWatchdog(
@@ -61,7 +66,13 @@ class Worker:
 
         self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
-    def _validate_worker_args(self, the_task, worker_id, use_watchdog, watchdog_duration):
+    def _validate_worker_args(
+        self,
+        the_task: task.Task,
+        worker_id: typing.Union[None, str],
+        use_watchdog: bool,
+        watchdog_duration: float,
+    ) -> None:
         if not isinstance(the_task, task.Task):
             raise ValueError(
                 """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
@@ -87,15 +98,16 @@ class Worker:
                 )
             )
 
-    def _log(self, level, log_data):
+    def _log(self, level: typing.Union[str, int], log_data: typing.Union[str, dict]) -> None:
         # if the supplied logger is unable to log; we move on
+        assert isinstance(self.the_task.logger, logger.BaseLogger)  # make mypy happy
         try:
             self.the_task.logger.log(level, log_data)
         except Exception:
             pass
 
     @staticmethod
-    def _retry_after(current_retries):
+    def _retry_after(current_retries: int) -> int:
         """
         returns the number of seconds to retry after.
         retries will happen in this sequence;
@@ -108,7 +120,7 @@ class Worker:
 
         jitter = random.randint(60, 180)  # 1min-3min
         if current_retries in [0, 1]:
-            return 0.5 * 60  # 0.5min
+            return int(0.5 * 60)  # 0.5min
         elif current_retries == 2:
             return 1 * 60
         elif current_retries >= 6:
@@ -116,8 +128,9 @@ class Worker:
         else:
             return (60 * (2 ** current_retries)) + jitter
 
-    async def run_task(self, *task_args, **task_kwargs):
+    async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
         # run the actual queued task
+        assert isinstance(self.the_task.task_options.hook_metadata, dict)
         await self.the_task.notify_hook(
             state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
         )
@@ -203,7 +216,7 @@ class Worker:
 
     async def consume_tasks(
         self, TESTING: bool = False
-    ) -> typing.Union[str, typing.Dict[typing.Any, typing.Any]]:
+    ) -> typing.Union[None, typing.Dict[str, typing.Any]]:
         """
         In loop; dequeues items from the :attr:`queue <Worker.queue>` and calls :func:`run <Worker.run>`.
 
@@ -242,9 +255,10 @@ class Worker:
                         "state": "cleanly shutting down worker.",
                     },
                 )
-                return
+                return None
 
             try:
+                assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
                 # rate limit ourselves
                 await self.the_task.the_ratelimiter.limit()
             except Exception as e:
@@ -260,10 +274,10 @@ class Worker:
                 continue
 
             try:
-                dequeued_item = await self.the_task.the_broker.dequeue(
+                _dequeued_item: str = await self.the_task.the_broker.dequeue(
                     queue_name=self.the_task.queue_name
                 )
-                dequeued_item = json.loads(dequeued_item)
+                dequeued_item: dict = json.loads(_dequeued_item)
             except Exception as e:
                 poll_queue_interval = self._retry_after(dequeue_retry_count)
                 dequeue_retry_count += 1
@@ -330,7 +344,7 @@ class Worker:
                 # offer escape hatch for tests to come out of endless loop
                 return dequeued_item
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """
         Cleanly shutdown this worker.
         """

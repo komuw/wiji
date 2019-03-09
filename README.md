@@ -80,7 +80,7 @@ class AdderTask(wiji.task.Task):
         return res
 
 BROKER = wiji.broker.InMemoryBroker()
-myAdderTask = AdderTask(the_broker=BROKER, queue_name="AdderTaskTestQ1")
+myAdderTask = AdderTask(the_broker=BROKER, queue_name="AdderTaskQueue")
 
 MyConfigInstance = wiji.conf.WijiConf(tasks=[myAdderTask])
 ```          

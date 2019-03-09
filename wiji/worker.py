@@ -98,7 +98,7 @@ class Worker:
                 )
             )
 
-    def _log(self, level: typing.Union[str, int], log_data: typing.Union[str, dict]) -> None:
+    def _log(self, level: typing.Union[str, int], log_data: dict) -> None:
         # if the supplied logger is unable to log; we move on
         assert isinstance(self.the_task.logger, logger.BaseLogger)  # make mypy happy
         try:

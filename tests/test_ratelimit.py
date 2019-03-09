@@ -34,9 +34,7 @@ class TestRateLimit(TestCase):
     def setUp(self):
         self.logger = wiji.logger.SimpleLogger("myTestLogger")
         self.execution_rate = 1.00
-        self.rateLimiter = wiji.ratelimiter.SimpleRateLimiter(
-            log_handler=self.logger, execution_rate=self.execution_rate
-        )
+        self.rateLimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=self.execution_rate)
 
     def tearDown(self):
         pass

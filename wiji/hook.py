@@ -52,7 +52,9 @@ class SimpleHook(BaseHook):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
-        assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.logger, logger.BaseLogger)
         self.logger.log(
             logging.NOTSET,
             {

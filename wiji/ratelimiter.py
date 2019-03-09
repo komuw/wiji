@@ -119,7 +119,9 @@ class SimpleRateLimiter(BaseRateLimiter):
             self.tasks_executed = 0
 
     async def limit(self) -> None:
-        assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.logger, logger.BaseLogger)
         self.logger.log(logging.INFO, {"event": "wiji.SimpleRateLimiter.limit", "stage": "start"})
         while self.tokens < 1:
             self._add_new_tokens()

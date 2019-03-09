@@ -44,7 +44,9 @@ class Worker:
         if not self.worker_id:
             self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
-        assert isinstance(self.the_task.log_metadata, dict)  # make mypy happy
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.the_task.log_metadata, dict)
         assert isinstance(self.the_task.logger, logger.BaseLogger)
         self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(

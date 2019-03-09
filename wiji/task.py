@@ -366,7 +366,9 @@ class Task(abc.ABC):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
-        assert isinstance(self.the_hook, hook.BaseHook)  # make mypy happy
+        # make mypy happy.
+        # issue: https://github.com/python/mypy/issues/4805
+        assert isinstance(self.the_hook, hook.BaseHook)
         assert isinstance(self.task_name, str)
         assert isinstance(self.task_options.task_id, str)
         try:

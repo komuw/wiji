@@ -223,6 +223,7 @@ class BlockingWatchdog:
         self._thread.start()
 
     def stop(self) -> None:
+        assert isinstance(self._thread, threading.Thread)  # make mypy happy
         self._stopped = True
         self._notify_event.set()
         self._thread.join()

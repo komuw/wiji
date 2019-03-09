@@ -87,20 +87,8 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        "dev": [
-            "coverage",
-            "pypandoc",
-            "twine",
-            "wheel",
-            "Sphinx==1.8.3",
-            "sphinx-autodoc-typehints==1.6.0",
-            "redis==2.10.6",
-            "pika==0.12.0",
-            "boto3==1.9.87",
-            "celery==4.2.1",
-            "aiohttp==3.5.4",
-        ],
-        "test": ["flake8", "mock", "pylint", "black", "bandit", "mypy", "codecov"],
+        "dev": ["pypandoc", "twine", "wheel", "Sphinx==1.8.3", "sphinx-autodoc-typehints==1.6.0"],
+        "test": ["coverage", "flake8", "pylint", "black", "bandit", "mypy", "codecov"],
     },
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these

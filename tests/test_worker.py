@@ -6,10 +6,9 @@ import sys
 import json
 import asyncio
 import logging
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import wiji
-import mock
 
 
 logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.DEBUG)

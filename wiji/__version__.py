@@ -1,6 +1,6 @@
 about = {
     "__title__": "wiji",
-    "__description__": "wiji is an async blah blah",
+    "__description__": "Wiji is an asyncio distributed task processor/queue.",
     "__url__": "https://github.com/komuw/wiji",
     "__version__": "v0.1.0-beta.1",
     "__author__": "komuW",

@@ -75,7 +75,7 @@ class Protocol:
                     """`eta` in string format should be a python ISO 8601-formatted string. You entered: {0}""".format(
                         eta
                     )
-                )
+                ) from e
         if not isinstance(current_retries, int):
             raise ValueError(
                 """`current_retries` should be of type:: `int` You entered: {0}""".format(

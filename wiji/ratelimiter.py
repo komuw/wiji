@@ -7,12 +7,15 @@ import logging
 from . import task
 from . import logger
 
+
 # TODO: rate limiting should take into account number of succesful task executions(based on whether they raised an exception or not)
 # and also the number of failures.
 # We should also pass in the task_name, and exception raised
 # This will enable users of wiji to come up with better rate limiting algos.
 # So: we need to make the BaseRateLimiter accept this more arguments.
 # We also need to make SimpleRateLimiter a bit smarter and take this new args in effect(or maybe not[probably NOT])
+
+
 class BaseRateLimiter(abc.ABC):
     """
     This is the interface that must be implemented to satisfy wiji's rate limiting.

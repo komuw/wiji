@@ -58,13 +58,13 @@ class TestWorker(TestCase):
 
     def test_bad_instantiation(self):
         def mock_create_worker():
-            wiji.Worker()
+            wiji.Worker(the_task="bad-task-arg")
 
-        self.assertRaises(TypeError, mock_create_worker)
-        with self.assertRaises(TypeError) as raised_exception:
+        self.assertRaises(ValueError, mock_create_worker)
+        with self.assertRaises(ValueError) as raised_exception:
             mock_create_worker()
         self.assertIn(
-            "missing 1 required positional argument: 'the_task'", str(raised_exception.exception)
+            "`the_task` should be of type:: `wiji.task.Task`", str(raised_exception.exception)
         )
 
     def test_bad_args(self):

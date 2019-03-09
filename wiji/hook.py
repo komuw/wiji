@@ -34,7 +34,7 @@ class SimpleHook(BaseHook):
     It implements a no-op hook that does nothing when called
     """
 
-    def __init__(self, log_handler: typing.Union[None, logging.LoggerAdapter] = None) -> None:
+    def __init__(self, log_handler: typing.Union[None, logger.BaseLogger] = None) -> None:
         self.logger = log_handler
         if not self.logger:
             self.logger = logger.SimpleLogger("wiji.hook.SimpleHook")
@@ -50,6 +50,7 @@ class SimpleHook(BaseHook):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
+        assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
         self.logger.log(
             logging.NOTSET,
             {

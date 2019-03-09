@@ -52,9 +52,10 @@ jobs:
       - run:
           name: static-analysis
           command: |
+            python --version
             black --line-length=100 --check . ||  { printf "\\n\\t please use black to format your code."; exit 77; }
             flake8 .
-            pylint --enable=E --disable=W,R,C --unsafe-load-any-extension=y  wiji/ cli/ tests/ examples/ documentation/
+            pylint --enable=E --disable=W,R,C --unsafe-load-any-extension=y  wiji/ cli/ tests/ documentation/
             bandit -r --exclude .venv -ll .
             mypy --show-column-numbers -p cli -p wiji #--strict
 

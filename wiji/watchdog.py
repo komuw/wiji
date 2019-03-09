@@ -7,6 +7,7 @@
 
 
 import sys
+import typing
 import logging
 import threading
 import traceback
@@ -91,7 +92,7 @@ class BlockingWatchdog:
     Your life will be much happier once you accept this and architect your operations with that in mind.
     """
 
-    def __init__(self, watchdog_duration: float, task_name: str):
+    def __init__(self, watchdog_duration: float, task_name: str) -> None:
         if not isinstance(watchdog_duration, float):
             raise ValueError(
                 """`watchdog_duration` should be of type:: `float` You entered: {0}""".format(
@@ -106,16 +107,16 @@ class BlockingWatchdog:
         self.watchdog_duration = watchdog_duration
         self.task_name = task_name
 
-        self._stopped = False
-        self._thread = None
-        self._notify_event = threading.Event()
-        self._before_counter = 0
-        self._after_counter = 0
+        self._stopped: bool = False
+        self._thread: typing.Union[None, threading.Thread] = None
+        self._notify_event: threading.Event = threading.Event()
+        self._before_counter: int = 0
+        self._after_counter: int = 0
 
-        self.logger = logger.SimpleLogger("wiji.BlockingWatchdog")
+        self.logger: logger.BaseLogger = logger.SimpleLogger("wiji.BlockingWatchdog")
         self.logger.bind(level="WARNING", log_metadata={"task_name": self.task_name})
 
-    def notify_alive_before(self):
+    def notify_alive_before(self) -> None:
         """
         Notifies the watchdog that the Worker thread(the Event loop) is alive before running
         a task.
@@ -123,14 +124,14 @@ class BlockingWatchdog:
         self._before_counter += 1
         self._notify_event.set()
 
-    def notify_alive_after(self):
+    def notify_alive_after(self) -> None:
         """
         Notifies the watchdog that the Worker thread(the Event loop) is alive after running a
         task.
         """
         self._after_counter += 1
 
-    def _main_loop(self):
+    def _main_loop(self) -> None:
         """
         Raises:
             BlockingTaskError: Exception raised when the main asyncio thread is blocked by either an IO/CPU bound task execution.
@@ -214,13 +215,13 @@ class BlockingWatchdog:
             )
             return stack_trace_of_all_threads_during_block
 
-    def start(self):
+    def start(self) -> None:
         self._thread = threading.Thread(
             target=self._main_loop, name="Thread-<wiji_watchdog>", daemon=True
         )
         self._thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         self._stopped = True
         self._notify_event.set()
         self._thread.join()

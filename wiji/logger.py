@@ -8,7 +8,7 @@ class BaseLogger(abc.ABC):
     """
 
     @abc.abstractmethod
-    def bind(self, level: str, log_metadata: dict) -> None:
+    def bind(self, level: typing.Union[str, int], log_metadata: dict) -> None:
         """
         called when a wiji worker is been instantiated so that the logger can be
         notified of level & log_metadata that a user supplied to a wiji worker.
@@ -21,7 +21,7 @@ class BaseLogger(abc.ABC):
         raise NotImplementedError("`bind` method must be implemented.")
 
     @abc.abstractmethod
-    def log(self, level: int, log_data: dict) -> None:
+    def log(self, level: typing.Union[str, int], log_data: dict) -> None:
         """
         called by wiji everytime it wants to log something.
 
@@ -56,7 +56,9 @@ class SimpleLogger(BaseLogger):
         self.logger_name = logger_name
         self.logger: typing.Any = None
 
-    def bind(self, level: str, log_metadata: dict) -> None:
+    def bind(self, level: typing.Union[str, int], log_metadata: dict) -> None:
+        level = self._nameToLevel(level=level)
+
         self._logger = logging.getLogger(self.logger_name)
         handler = logging.StreamHandler()
         formatter = logging.Formatter("%(message)s")
@@ -67,13 +69,28 @@ class SimpleLogger(BaseLogger):
         self._logger.setLevel(level)
         self.logger: logging.LoggerAdapter = wijiLoggingAdapter(self._logger, log_metadata)
 
-    def log(self, level: int, log_data: dict) -> None:
+    def log(self, level: typing.Union[str, int], log_data: dict) -> None:
+        level = self._nameToLevel(level=level)
+
         if not self.logger:
             self.bind(level=level, log_metadata={})
         if level >= logging.ERROR:
             self.logger.log(level, log_data, exc_info=True)
         else:
             self.logger.log(level, log_data)
+
+    def _nameToLevel(self, level: typing.Union[str, int]) -> int:
+        try:
+            if isinstance(level, str):
+                # please mypy
+                _level: int = logging._nameToLevel[level.upper()]
+            else:
+                _level = level
+            return _level
+        except KeyError as e:
+            raise ValueError(
+                "`level` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL', or 'CRITICAL'"
+            ) from e
 
 
 class wijiLoggingAdapter(logging.LoggerAdapter):

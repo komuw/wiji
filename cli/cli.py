@@ -13,7 +13,7 @@ from cli import utils
 os.environ["PYTHONASYNCIODEBUG"] = "1"
 
 
-def make_parser():
+def make_parser() -> argparse.ArgumentParser:
     """
     this is abstracted into its own method so that it is easier to test it.
     """
@@ -98,7 +98,7 @@ def main():
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
 
 
-async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.conf.WijiConf):
+async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.conf.WijiConf) -> None:
     """
     (i)   set signal handlers.
     (ii)  consume tasks.

@@ -3,9 +3,10 @@ import asyncio
 import logging
 import functools
 
+import wiji
 
-# TODO: this functions should live in their own file
-async def _signal_handling(logger, workers):
+
+async def _signal_handling(logger: wiji.logger.BaseLogger, workers: list) -> None:
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
@@ -32,7 +33,9 @@ async def _signal_handling(logger, workers):
         )
 
 
-async def _handle_termination_signal(logger, _signal, workers):
+async def _handle_termination_signal(
+    logger: wiji.logger.BaseLogger, _signal: signal.Signals, workers: list
+) -> None:
     logger.log(
         logging.INFO,
         {

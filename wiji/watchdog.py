@@ -143,6 +143,7 @@ class BlockingWatchdog:
             self._notify_event.clear()
             orig_starts = self._before_counter
             orig_stops = self._after_counter
+
             if orig_starts == orig_stops:
                 # main thread asleep; nothing to do until it wakes up
                 self._notify_event.wait()

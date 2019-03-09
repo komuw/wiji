@@ -185,6 +185,9 @@ class Worker:
             }
             try:
                 # inform ratelimiter of outcome
+                assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
+                assert isinstance(self.the_task.task_name, str)
+                assert isinstance(self.the_task.task_options.task_id, str)
                 await self.the_task.the_ratelimiter.execution_outcome(
                     task_name=self.the_task.task_name,
                     task_id=self.the_task.task_options.task_id,

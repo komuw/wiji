@@ -214,7 +214,7 @@ class BlockingWatchdog:
             stack_trace_of_all_threads_during_block.append(
                 {"thread_name": thread.name, "thread_stack_trace": thread_stack_trace}
             )
-            return stack_trace_of_all_threads_during_block
+        return stack_trace_of_all_threads_during_block
 
     def start(self) -> None:
         self._thread = threading.Thread(

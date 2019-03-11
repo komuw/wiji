@@ -130,10 +130,58 @@ class Worker:
         else:
             return (60 * (2 ** current_retries)) + jitter
 
+    async def _notify_ratelimiter(
+        self,
+        return_value: typing.Any,
+        execution_duration: typing.Dict[str, float],
+        execution_exception: typing.Union[None, Exception],
+    ) -> None:
+        try:
+            # inform ratelimiter of outcome
+            assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
+            assert isinstance(self.the_task.task_name, str)
+            assert isinstance(self.the_task.task_options.task_id, str)
+            await self.the_task.the_ratelimiter.execution_outcome(
+                task_name=self.the_task.task_name,
+                task_id=self.the_task.task_options.task_id,
+                queue_name=self.the_task.queue_name,
+                execution_duration=execution_duration,
+                execution_exception=execution_exception,
+                return_value=return_value,
+            )
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Worker.run_task",
+                    "stage": "end",
+                    "state": "the_ratelimiter execution_outcome error",
+                    "error": str(e),
+                },
+            )
+
+    async def _notify_broker(
+        self, item: str, queue_name: str, task_options: task.TaskOptions, state: task.TaskState
+    ) -> None:
+        try:
+            self.the_task.the_broker.done(
+                item=item, queue_name=queue_name, task_options=task_options, state=state
+            )
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Worker.consume_tasks",
+                    "stage": "end",
+                    "state": "broker done error",
+                    "error": str(e),
+                },
+            )
+
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
         # run the actual queued task
         assert isinstance(self.the_task.task_options.hook_metadata, str)
-        await self.the_task.notify_hook(
+        await self.the_task._notify_hook(
             state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
         )
         if self.watchdog is not None:
@@ -185,31 +233,12 @@ class Worker:
                 "monotonic": float("{0:.4f}".format(monotonic_end - monotonic_start)),
                 "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
             }
-            try:
-                # inform ratelimiter of outcome
-                assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
-                assert isinstance(self.the_task.task_name, str)
-                assert isinstance(self.the_task.task_options.task_id, str)
-                await self.the_task.the_ratelimiter.execution_outcome(
-                    task_name=self.the_task.task_name,
-                    task_id=self.the_task.task_options.task_id,
-                    queue_name=self.the_task.queue_name,
-                    execution_duration=execution_duration,
-                    execution_exception=execution_exception,
-                    return_value=return_value,
-                )
-            except Exception as e:
-                self._log(
-                    logging.ERROR,
-                    {
-                        "event": "wiji.Worker.run_task",
-                        "stage": "end",
-                        "state": "the_ratelimiter execution_outcome error",
-                        "error": str(e),
-                    },
-                )
-
-            await self.the_task.notify_hook(
+            await self._notify_ratelimiter(
+                return_value=return_value,
+                execution_duration=execution_duration,
+                execution_exception=execution_exception,
+            )
+            await self.the_task._notify_hook(
                 state=task.TaskState.EXECUTED,
                 hook_metadata=self.the_task.task_options.hook_metadata,
                 execution_duration=execution_duration,
@@ -326,13 +355,19 @@ class Worker:
                 )
                 continue
 
-            await self.the_task.notify_hook(
+            await self.the_task._notify_hook(
                 state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
             )
 
             now = datetime.datetime.now(tz=datetime.timezone.utc)
             if protocol.Protocol._from_isoformat(task_eta) <= now:
                 await self.run_task(*task_args, **task_kwargs)
+                await self._notify_broker(
+                    item=_dequeued_item,
+                    queue_name=self.the_task.queue_name,
+                    task_options=self.the_task.task_options,
+                    state=task.TaskState.EXECUTED,
+                )
             else:
                 # respect eta
                 await self.the_task.delay(*task_args, **task_kwargs)

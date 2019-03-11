@@ -358,7 +358,7 @@ class Task(abc.ABC):
         except Exception:
             pass
 
-    async def notify_hook(
+    async def _notify_hook(
         self,
         state: TaskState,
         hook_metadata: str,
@@ -386,7 +386,7 @@ class Task(abc.ABC):
             self._log(
                 logging.ERROR,
                 {
-                    "event": "wiji.Task.notify_hook",
+                    "event": "wiji.Task._notify_hook",
                     "stage": "end",
                     "state": "task hook error",
                     "error": str(e),
@@ -419,14 +419,14 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
-        await self.notify_hook(
+        await self._notify_hook(
             state=TaskState.QUEUEING, hook_metadata=self.task_options.hook_metadata
         )
         try:
             await self.the_broker.enqueue(
                 item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
             )
-            await self.notify_hook(
+            await self._notify_hook(
                 state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
             )
         except TypeError as e:

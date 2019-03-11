@@ -257,22 +257,8 @@ class Worker:
         Parameters:
             TESTING: indicates whether this method is been called while running tests.
         """
-        try:
-            await self.the_task.the_broker.check(queue_name=self.the_task.queue_name)
-        except Exception as e:
-            self._log(
-                logging.ERROR,
-                {
-                    "event": "wiji.Worker.consume_tasks",
-                    "stage": "end",
-                    "state": "check broker failed",
-                    "error": str(e),
-                },
-            )
-            # exit with error
-            raise ValueError(
-                "The broker for task: `{0}` failed check request.".format(self.the_task.task_name)
-            ) from e
+        # this can exit with error
+        await self.the_task._broker_check(from_worker=True)
 
         if self.watchdog is not None:
             self.watchdog.start()

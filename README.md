@@ -8,7 +8,7 @@
 
 
 
-`Wiji` is an async/asyncio distributed task processor/queue.       
+`Wiji` is an asyncio distributed task processor/queue.       
 It's name is derived from the late Kenyan hip hop artiste, Gwiji.      
 
 It is a bit like [Celery](https://github.com/celery/celery)        

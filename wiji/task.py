@@ -226,6 +226,8 @@ class Task(abc.ABC):
         if not self.the_ratelimiter:
             self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
+        self._checked_broker = False
+
     async def __call__(self, *args, **kwargs):
         await self.run(*args, **kwargs)
 
@@ -358,7 +360,27 @@ class Task(abc.ABC):
         except Exception:
             pass
 
-    async def notify_hook(
+    async def _broker_check(self, from_worker: bool) -> None:
+        try:
+            await self.the_broker.check(queue_name=self.queue_name)
+            if not from_worker:
+                self._checked_broker = True
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Task.delay",
+                    "stage": "end",
+                    "state": "check broker failed",
+                    "error": str(e),
+                },
+            )
+            # exit with error
+            raise ValueError(
+                "The broker for task: `{0}` failed check request.".format(self.task_name)
+            ) from e
+
+    async def _notify_hook(
         self,
         state: TaskState,
         hook_metadata: str,
@@ -386,7 +408,7 @@ class Task(abc.ABC):
             self._log(
                 logging.ERROR,
                 {
-                    "event": "wiji.Task.notify_hook",
+                    "event": "wiji.Task._notify_hook",
                     "stage": "end",
                     "state": "task hook error",
                     "error": str(e),
@@ -405,6 +427,8 @@ class Task(abc.ABC):
         """
         args, kwargs = self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
+        if not self._checked_broker:
+            await self._broker_check(from_worker=False)
 
         assert isinstance(self.task_options.task_id, str)  # make mypy happy
         assert isinstance(self.task_options.hook_metadata, str)
@@ -419,14 +443,14 @@ class Task(abc.ABC):
             argsy=self.task_options.args,
             kwargsy=self.task_options.kwargs,
         )
-        await self.notify_hook(
+        await self._notify_hook(
             state=TaskState.QUEUEING, hook_metadata=self.task_options.hook_metadata
         )
         try:
             await self.the_broker.enqueue(
                 item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
             )
-            await self.notify_hook(
+            await self._notify_hook(
                 state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
             )
         except TypeError as e:

@@ -164,7 +164,7 @@ class Worker:
         self, item: str, queue_name: str, task_options: task.TaskOptions, state: task.TaskState
     ) -> None:
         try:
-            self.the_task.the_broker.done(
+            await self.the_task.the_broker.done(
                 item=item, queue_name=queue_name, task_options=task_options, state=state
             )
         except Exception as e:

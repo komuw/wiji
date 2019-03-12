@@ -38,6 +38,14 @@ class RetryError(Exception):
     pass
 
 
+class TaskDelayError(Exception):
+    """
+    raised if `wiji` is unable to publish to the broker for any reason.
+    """
+
+    pass
+
+
 @enum.unique
 class TaskState(enum.Enum):
     QUEUEING: int = 1
@@ -448,6 +456,7 @@ class Task(abc.ABC):
             await self.the_broker.enqueue(
                 item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
             )
+            # this cannot raise an error since the method handles that error
             await self._notify_hook(
                 state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
             )
@@ -466,6 +475,7 @@ class Task(abc.ABC):
                     "error": str(e),
                 },
             )
+            raise TaskDelayError("publishing to the broker failed.") from e
 
     def synchronous_delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         try:

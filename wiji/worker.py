@@ -9,10 +9,8 @@ import asyncio
 import datetime
 
 from . import task
-from . import logger
 from . import protocol
 from . import watchdog
-from . import ratelimiter
 
 
 class Worker:

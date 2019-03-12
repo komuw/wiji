@@ -75,16 +75,19 @@ class TaskOptions:
         if self.max_retries < 0:
             self.max_retries = 0
 
-        self.log_id = log_id
-        if not self.log_id:
+        if log_id is not None:
+            self.log_id = log_id
+        else:
             self.log_id = ""
 
-        self.hook_metadata = hook_metadata
-        if not self.hook_metadata:
+        if hook_metadata is not None:
+            self.hook_metadata = hook_metadata
+        else:
             self.hook_metadata = ""
 
-        self.task_id = task_id
-        if not self.task_id:
+        if task_id is not None:
+            self.task_id = task_id
+        else:
             self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
 
         # `drain_duration` is the duration(in seconds) that a worker should wait
@@ -195,21 +198,23 @@ class Task(abc.ABC):
         self.task_options = TaskOptions()
         self.the_broker = the_broker
         self.queue_name = queue_name
-        self.task_name = task_name
         self.chain = chain
         self.loglevel = loglevel.upper()
 
-        self.task_name = task_name
-        if not self.task_name:
+        if task_name is not None:
+            self.task_name = task_name
+        else:
             self.task_name = self.__class__.__name__
 
-        self.log_metadata = log_metadata
-        if not self.log_metadata:
+        if log_metadata is not None:
+            self.log_metadata = log_metadata
+        else:
             self.log_metadata = {}
         self.log_metadata.update({"task_name": self.task_name, "queue_name": self.queue_name})
 
-        self.logger = log_handler
-        if not self.logger:
+        if log_handler is not None:
+            self.logger = log_handler
+        else:
             self.logger = logger.SimpleLogger(
                 "wiji.Task.task_name={0}.task_id={1}".format(
                     self.task_name, self.task_options.task_id
@@ -218,12 +223,14 @@ class Task(abc.ABC):
         self.logger.bind(level=self.loglevel, log_metadata=self.log_metadata)
         self._sanity_check_logger(event="task_sanity_check_logger")
 
-        self.the_hook = the_hook
-        if not self.the_hook:
+        if the_hook is not None:
+            self.the_hook = the_hook
+        else:
             self.the_hook = hook.SimpleHook(log_handler=self.logger)
 
-        self.the_ratelimiter = the_ratelimiter
-        if not self.the_ratelimiter:
+        if the_ratelimiter is not None:
+            self.the_ratelimiter = the_ratelimiter
+        else:
             self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
         self._checked_broker = False
@@ -347,7 +354,6 @@ class Task(abc.ABC):
         This usually happens when we are instantiating a wiji.Task or a wiji.Worker
         """
         try:
-            assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
             self.logger.log(logging.DEBUG, {"event": event})
         except Exception as e:
             raise e
@@ -355,7 +361,6 @@ class Task(abc.ABC):
     def _log(self, level: typing.Union[str, int], log_data: dict) -> None:
         # if the supplied logger is unable to log; we move on
         try:
-            assert isinstance(self.logger, logger.BaseLogger)  # make mypy happy
             self.logger.log(level, log_data)
         except Exception:
             pass
@@ -388,11 +393,6 @@ class Task(abc.ABC):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
-        # make mypy happy.
-        # issue: https://github.com/python/mypy/issues/4805
-        assert isinstance(self.the_hook, hook.BaseHook)
-        assert isinstance(self.task_name, str)
-        assert isinstance(self.task_options.task_id, str)
         try:
             await self.the_hook.notify(
                 task_name=self.task_name,
@@ -430,8 +430,6 @@ class Task(abc.ABC):
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        assert isinstance(self.task_options.task_id, str)  # make mypy happy
-        assert isinstance(self.task_options.hook_metadata, str)
         proto = protocol.Protocol(
             version=1,
             task_id=self.task_options.task_id,

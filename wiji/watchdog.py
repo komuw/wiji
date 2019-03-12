@@ -228,7 +228,10 @@ class BlockingWatchdog:
         self._thread.start()
 
     def stop(self) -> None:
-        assert isinstance(self._thread, threading.Thread)  # make mypy happy
+        if typing.TYPE_CHECKING:
+            # make mypy happy
+            # https://github.com/python/mypy/issues/4805
+            assert isinstance(self._thread, threading.Thread)
         self._stopped = True
         self._notify_event.set()
         self._thread.join()

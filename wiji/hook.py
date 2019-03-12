@@ -37,8 +37,9 @@ class SimpleHook(BaseHook):
     """
 
     def __init__(self, log_handler: typing.Union[None, logger.BaseLogger] = None) -> None:
-        self.logger = log_handler
-        if not self.logger:
+        if log_handler is not None:
+            self.logger = log_handler
+        else:
             self.logger = logger.SimpleLogger("wiji.hook.SimpleHook")
 
     async def notify(
@@ -52,9 +53,6 @@ class SimpleHook(BaseHook):
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
-        # make mypy happy.
-        # issue: https://github.com/python/mypy/issues/4805
-        assert isinstance(self.logger, logger.BaseLogger)
         self.logger.log(
             logging.NOTSET,
             {

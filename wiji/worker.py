@@ -40,14 +40,11 @@ class Worker:
 
         self._PID = os.getpid()
         self.the_task = the_task
-        self.worker_id = worker_id
-        if not self.worker_id:
+        if worker_id is not None:
+            self.worker_id = worker_id
+        else:
             self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
-        # make mypy happy.
-        # issue: https://github.com/python/mypy/issues/4805
-        assert isinstance(self.the_task.log_metadata, dict)
-        assert isinstance(self.the_task.logger, logger.BaseLogger)
         self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(
             level=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
@@ -56,7 +53,6 @@ class Worker:
         self.use_watchdog = use_watchdog
         self.watchdog_duration = watchdog_duration
 
-        assert isinstance(self.the_task.task_name, str)
         self.watchdog = None
         if self.use_watchdog:
             self.watchdog = watchdog.BlockingWatchdog(
@@ -101,8 +97,6 @@ class Worker:
             )
 
     def _log(self, level: typing.Union[str, int], log_data: dict) -> None:
-        # if the supplied logger is unable to log; we move on
-        assert isinstance(self.the_task.logger, logger.BaseLogger)  # make mypy happy
         try:
             self.the_task.logger.log(level, log_data)
         except Exception:
@@ -137,10 +131,6 @@ class Worker:
         execution_exception: typing.Union[None, Exception],
     ) -> None:
         try:
-            # inform ratelimiter of outcome
-            assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
-            assert isinstance(self.the_task.task_name, str)
-            assert isinstance(self.the_task.task_options.task_id, str)
             await self.the_task.the_ratelimiter.execution_outcome(
                 task_name=self.the_task.task_name,
                 task_id=self.the_task.task_options.task_id,
@@ -179,8 +169,6 @@ class Worker:
             )
 
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
-        # run the actual queued task
-        assert isinstance(self.the_task.task_options.hook_metadata, str)
         await self.the_task._notify_hook(
             state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
         )
@@ -278,7 +266,6 @@ class Worker:
                 return None
 
             try:
-                assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
                 # rate limit ourselves
                 await self.the_task.the_ratelimiter.limit()
             except Exception as e:

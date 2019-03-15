@@ -84,32 +84,25 @@ jobs:
             wiji-cli --version
             wiji-cli --config tests.testdata.cli.my_config.MyConfigInstance --dry-run
 
-  check-releases:
+  check-releases-notes:
     docker:
       - image: circleci/python:3.7
     environment:
       WIJI_DEBUG: 1
-      PYTHONASYNCIODEBUG: 1 
+      PYTHONASYNCIODEBUG: 1
     working_directory: ~/repo
     steps:
       - checkout
       - run:
-          name: install pre-requistes
+          name: check-releases-notes
           command: |
-            pwd
-            sudo apt -y install pandoc
-            sudo pip install -e .[dev,test]
-            find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
-      - run:
-          name: check-releases
-          command: |
-            git remote set-branches --add origin master # https://github.com/travis-ci/travis-ci/issues/6069
+            git remote set-branches --add origin master
             git fetch
-            printf "\n current branch is $TRAVIS_BRANCH \n"
-            if [ "$TRAVIS_BRANCH" == "master" ]; then
-                printf "\n $TRAVIS_BRANCH branch, ignoring check for relese notes \n"
+            printf "\n current branch is $CIRCLE_BRANCH \n"
+            if [ "$CIRCLE_BRANCH" == "master" ]; then
+                printf "\n $CIRCLE_BRANCH branch, ignoring check for relese notes \n"
             else
-                ChangedFiles=`git diff --name-only $TRAVIS_BRANCH remotes/origin/master`
+                ChangedFiles=`git diff --name-only $CIRCLE_BRANCH remotes/origin/master`
                 case "$ChangedFiles" in
                     *CHANGELOG.*)
                         printf "\n Thanks, your commits include update to release notes. \n";;
@@ -125,12 +118,4 @@ workflows:
       - run-tests
       - static-analysis
       - run-wiji
-      - check-releases:
-          requires:
-            - run-tests
-            - static-analysis
-            - run-wiji
-          filters:
-            branches:
-              only:
-                - master
+      - check-releases-notes

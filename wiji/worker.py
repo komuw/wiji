@@ -184,7 +184,7 @@ class Worker:
             if self.the_task.chain:
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.delay(return_value)
-        except task.RetryError as e:
+        except task.WijiRetryError as e:
             # task is been retried
             self._log(
                 logging.INFO,

@@ -20,7 +20,7 @@ from . import ratelimiter
 # that have to do with the task as it is been called as opposed to when it is been declared.
 
 
-class MaxRetriesExceededError(Exception):
+class WijiMaxRetriesExceededError(Exception):
     """
     The tasks max_retries count has been exceeded.
     """
@@ -28,7 +28,7 @@ class MaxRetriesExceededError(Exception):
     pass
 
 
-class RetryError(Exception):
+class WijiRetryError(Exception):
     """
     Exception that is raised so that `wiji.Worker` can know that current executing task is retrying.
     This enables `wiji.Worker` not to schedule any chained tasks of the current executing task.
@@ -492,8 +492,8 @@ class Task(abc.ABC):
             kwargs: The keyword arguments to pass on to the task.
 
         Raises:
-            MaxRetriesExceededError: the task exceeded its max_retries count.
-            RetryError: the task is been retried. User applications should not capture this Exception.
+            WijiMaxRetriesExceededError: the task exceeded its max_retries count.
+            WijiRetryError: the task is been retried. User applications should not capture this Exception.
 
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
@@ -501,7 +501,7 @@ class Task(abc.ABC):
         args, kwargs = self._validate_delay_args(*args, **kwargs)
 
         if self.task_options.current_retries >= self.task_options.max_retries:
-            raise MaxRetriesExceededError(
+            raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
                     task_name=self.task_name, max_retries=self.task_options.max_retries
                 )
@@ -510,7 +510,7 @@ class Task(abc.ABC):
         self.task_options.current_retries += 1
         await self.delay(*args, **kwargs)
 
-        raise RetryError(
+        raise WijiRetryError(
             "Task: `{task_name}` is been retried. User applications should not capture this Exception!".format(
                 task_name=self.task_name
             )

@@ -426,7 +426,7 @@ class Task(abc.ABC):
             await self._broker_check(from_worker=False)
 
         # every invocation of `my_task.delay()` is counted as unique and
-        # should have a unique task_id even it is a retry of a previous request
+        # should have a unique task_id even if it is a retry of a previous request
         self.task_options.task_id = str(uuid.uuid4())
         proto = protocol.Protocol(
             version=1,

@@ -1,9 +1,7 @@
 import asyncio
-import functools
-import concurrent
-
 
 import wiji
+
 from examples.redis_broker import ExampleRedisBroker
 
 MY_BROKER = ExampleRedisBroker()  # wiji.broker.SimpleBroker()

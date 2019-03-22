@@ -10,6 +10,10 @@ import redis
 
 class ExampleRedisBroker(wiji.broker.BaseBroker):
     """
+    DO NOT USE THIS IN PRODUCTION.
+    It will fail you, this is only used for adhoc testing
+    and for showing how easy it is to implement your own broker satisfying `wiji.broker.BaseBroker`
+
     use redis as our queue.
     This implements a basic FIFO queue using redis.
     Basically we use the redis command LPUSH to push messages onto the queue and BRPOP to pull them off.

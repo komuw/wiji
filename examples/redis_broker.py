@@ -48,10 +48,11 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
             thread_name_prefix="wiji-redis-thread-pool"
         ) as executor:
             await self.loop.run_in_executor(
-                executor, functools.partial(self.blocking_enqueue, queue_name=queue_name, item=item)
+                executor,
+                functools.partial(self._blocking_enqueue, queue_name=queue_name, item=item),
             )
 
-    def blocking_enqueue(self, queue_name, item):
+    def _blocking_enqueue(self, queue_name, item):
         self.redis_instance.lpush(queue_name, item)
 
     async def dequeue(self, queue_name: str) -> str:
@@ -65,14 +66,14 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         ) as executor:
             while True:
                 item = await self.loop.run_in_executor(
-                    executor, functools.partial(self.blocking_dequeue, queue_name=queue_name)
+                    executor, functools.partial(self._blocking_dequeue, queue_name=queue_name)
                 )
                 if item:
                     return item
                 else:
                     await asyncio.sleep(1 / 117)
 
-    def blocking_dequeue(self, queue_name: str):
+    def _blocking_dequeue(self, queue_name: str):
         dequed_item = self.redis_instance.brpop(queue_name, timeout=3)
         if not dequed_item:
             return None

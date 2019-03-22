@@ -1,5 +1,6 @@
 import abc
 import enum
+import uuid
 import random
 import string
 import typing
@@ -62,7 +63,6 @@ class TaskOptions:
         max_retries: int = 0,
         log_id: str = "",
         hook_metadata: typing.Union[None, str] = None,
-        task_id: typing.Union[None, str] = None,
         drain_duration: float = 10.0,
     ):
         self._validate_task_options_args(
@@ -70,7 +70,6 @@ class TaskOptions:
             max_retries=max_retries,
             log_id=log_id,
             hook_metadata=hook_metadata,
-            task_id=task_id,
             drain_duration=drain_duration,
         )
         self.eta = eta
@@ -93,10 +92,7 @@ class TaskOptions:
         else:
             self.hook_metadata = ""
 
-        if task_id is not None:
-            self.task_id = task_id
-        else:
-            self.task_id = "".join(random.choices(string.ascii_lowercase + string.digits, k=13))
+        self.task_id: typing.Union[None, str] = None
 
         # `drain_duration` is the duration(in seconds) that a worker should wait
         # after getting a termination signal(SIGTERM, SIGQUIT etc).
@@ -123,7 +119,6 @@ class TaskOptions:
         max_retries: int,
         log_id: str,
         hook_metadata: typing.Union[None, str],
-        task_id: typing.Union[None, str],
         drain_duration: float,
     ) -> None:
         if not isinstance(eta, float):
@@ -144,12 +139,6 @@ class TaskOptions:
             raise ValueError(
                 """`hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(hook_metadata)
-                )
-            )
-        if not isinstance(task_id, (type(None), str)):
-            raise ValueError(
-                """`task_id` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(task_id)
                 )
             )
         if not isinstance(drain_duration, float):
@@ -438,6 +427,9 @@ class Task(abc.ABC):
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
+        # every invocation of `my_task.delay()` is counted as unique and
+        # should have a unique task_id even it is a retry of a previous request
+        self.task_options.task_id = str(uuid.uuid4())
         proto = protocol.Protocol(
             version=1,
             task_id=self.task_options.task_id,

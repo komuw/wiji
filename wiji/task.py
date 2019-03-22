@@ -90,7 +90,7 @@ class TaskOptions:
         else:
             self.hook_metadata = ""
 
-        self.task_id: typing.Union[None, str] = None
+        self.task_id: str = ""
 
         # `drain_duration` is the duration(in seconds) that a worker should wait
         # after getting a termination signal(SIGTERM, SIGQUIT etc).

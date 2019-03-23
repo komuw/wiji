@@ -372,8 +372,33 @@ class Worker:
         if self.watchdog is not None:
             self.watchdog.stop()
 
+        # half spent waiting for the broker, the other half just sleeping
+        wait_duration = self.the_task.task_options.drain_duration / 2
+        try:
+            # asyncio.wait takes a python set as a first argument
+            # after expiration of timeout, asyncio.wait does not cancel the task;
+            # thus the broker shutdown can still continue on its own if it can.
+            await asyncio.wait(
+                {
+                    self.the_task.the_broker.shutdown(
+                        queue_name=self.the_task.queue_name, duration=wait_duration
+                    )
+                },
+                timeout=wait_duration,
+            )
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Worker.shutdown",
+                    "stage": "end",
+                    "state": "calling broker shutdown error",
+                    "error": str(e),
+                },
+            )
+
         # sleep so that worker can finish executing any tasks it had already dequeued.
         # we need to use asyncio.sleep so that we do not block eventloop.
         # this way, we do not prevent any other workers in the same loop from also shutting down cleanly.
-        await asyncio.sleep(self.the_task.task_options.drain_duration)
+        await asyncio.sleep(wait_duration)
         self.SUCCESFULLY_SHUT_DOWN = True

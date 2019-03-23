@@ -59,7 +59,7 @@ class BaseBroker(abc.ABC):
         raise NotImplementedError("`done` method must be implemented.")
 
     @abc.abstractmethod
-    async def shutdown(self, queue_name: str, duration: int) -> None:
+    async def shutdown(self, queue_name: str, duration: float) -> None:
         """
         called by wiji worker when it receives a shutdown signal like `SIGTERM`.
         the broker can decide to perform shutdown procedures like releasing connections/file descriptors etc.
@@ -126,5 +126,5 @@ class InMemoryBroker(BaseBroker):
         else:
             raise ValueError("queue with name: {0} does not exist.".format(queue_name))
 
-    async def shutdown(self, queue_name: str, duration: int) -> None:
+    async def shutdown(self, queue_name: str, duration: float) -> None:
         return await asyncio.sleep(delay=-1, result=None)

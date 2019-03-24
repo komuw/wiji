@@ -333,9 +333,6 @@ class Worker:
             now = datetime.datetime.now(tz=datetime.timezone.utc)
             if protocol.Protocol._from_isoformat(task_eta) <= now:
                 await self.run_task(*task_args, **task_kwargs)
-                import pdb
-
-                pdb.set_trace()
                 await self._notify_broker(
                     item=_dequeued_item,
                     queue_name=self.the_task.queue_name,

@@ -519,9 +519,10 @@ class Task(abc.ABC):
             if isinstance(v, TaskOptions):
                 self.task_options = v
                 kwargs.pop(k)
-            else:
-                # create a default task_options
-                self.task_options = TaskOptions()
+
+        if not hasattr(self, "task_options"):
+            # create a default task_options
+            self.task_options = TaskOptions()
 
         self.task_options.args = args
         self.task_options.kwargs = kwargs

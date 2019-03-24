@@ -306,4 +306,5 @@ class TestWorker(TestCase):
 
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)
+            # chain is not queued
             self.assertFalse(mock_task_delay.mock.called)

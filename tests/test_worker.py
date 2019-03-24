@@ -9,6 +9,8 @@ from unittest import TestCase, mock
 
 import wiji
 
+from .utils import ExampleRedisBroker
+
 
 logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.CRITICAL)
 
@@ -154,7 +156,7 @@ class TestWorker(TestCase):
             "kwargs": {"a": 21, "b": 535},
         }
 
-        with mock.patch("wiji.broker.InMemoryBroker.dequeue", new=AsyncMock()) as mock_dequeue:
+        with mock.patch("wiji.broker.BaseBroker.dequeue", new=AsyncMock()) as mock_dequeue:
             mock_dequeue.mock.return_value = json.dumps(item)
             worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
             # queue and consume task
@@ -200,11 +202,14 @@ class TestWorker(TestCase):
 
     def test_broker_done_called(self):
         kwargs = {"a": 263342, "b": 832429}
-        with mock.patch("wiji.broker.InMemoryBroker.done", new=AsyncMock()) as mock_broker_done:
+        with mock.patch("wiji.broker.BaseBroker.done", new=AsyncMock()) as mock_broker_done:
             worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
             self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)
+            # import pdb
+
+            # pdb.set_trace()
 
             self.assertTrue(mock_broker_done.mock.called)
             self.assertEqual(
@@ -308,3 +313,19 @@ class TestWorker(TestCase):
             self.assertEqual(dequeued_item["version"], 1)
             # chain is not queued
             self.assertFalse(mock_task_delay.mock.called)
+
+
+class TestWorkerRedisBroker(TestWorker):
+    """
+    re-run the worker tests but this time round use a redis broker.
+
+
+    run tests as:
+        python -m unittest discover -v -s .
+    run one testcase as:
+        python -m unittest -v tests.test_worker.TestWorkerRedisBroker
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.BROKER = ExampleRedisBroker()

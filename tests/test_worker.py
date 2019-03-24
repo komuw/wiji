@@ -2,6 +2,7 @@
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
 import sys
+import json
 import asyncio
 import logging
 from unittest import TestCase, mock
@@ -42,7 +43,7 @@ class TestWorker(TestCase):
                 res = a + b
                 return res
 
-        self.myAdderTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        self.myTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
 
     def tearDown(self):
         pass
@@ -69,7 +70,7 @@ class TestWorker(TestCase):
 
     def test_bad_args(self):
         def mock_create_worker():
-            wiji.Worker(the_task=self.myAdderTask, worker_id=92033)
+            wiji.Worker(the_task=self.myTask, worker_id=92033)
 
         self.assertRaises(ValueError, mock_create_worker)
         with self.assertRaises(ValueError) as raised_exception:
@@ -79,7 +80,7 @@ class TestWorker(TestCase):
         )
 
     def test_success_instantiation(self):
-        wiji.Worker(the_task=self.myAdderTask, worker_id="myWorkerID1")
+        wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
 
     def test_retries(self):
         res = wiji.Worker._retry_after(-110)
@@ -93,11 +94,11 @@ class TestWorker(TestCase):
             self.assertTrue(res > 16 * 60)
 
     def test_consume_tasks(self):
-        worker = wiji.Worker(the_task=self.myAdderTask, worker_id="myWorkerID1")
+        worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
 
         # queue task
         kwargs = {"a": 78, "b": 101}
-        self.myAdderTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+        self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
 
         # consume
         dequeued_item = self._run(worker.consume_tasks(TESTING=True))
@@ -108,7 +109,7 @@ class TestWorker(TestCase):
         self.assertEqual(dequeued_item["kwargs"], kwargs)
 
         # queue task
-        self.myAdderTask.synchronous_delay(34, 88)
+        self.myTask.synchronous_delay(34, 88)
         # consume
         dequeued_item = self._run(worker.consume_tasks(TESTING=True))
         self.assertEqual(dequeued_item["version"], 1)
@@ -116,3 +117,50 @@ class TestWorker(TestCase):
         self.assertEqual(dequeued_item["max_retries"], 0)
         self.assertEqual(dequeued_item["args"], [34, 88])
         self.assertEqual(dequeued_item["kwargs"], {})
+
+    def test_broker_check_called(self):
+        with mock.patch("wiji.task.Task._broker_check", new=AsyncMock()) as mock_broker_check:
+            worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+            # queue and consume task
+            self.myTask.synchronous_delay(a=21, b=535)
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+
+            self.assertTrue(mock_broker_check.mock.called)
+            self.assertEqual(mock_broker_check.mock.call_args[1], {"from_worker": True})
+
+    def test_ratelimit_called(self):
+        with mock.patch(
+            "wiji.ratelimiter.SimpleRateLimiter.limit", new=AsyncMock()
+        ) as mock_ratelimit:
+            worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+            # queue and consume task
+            self.myTask.synchronous_delay(a=21, b=535)
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+
+            self.assertTrue(mock_ratelimit.mock.called)
+
+    def test_broker_dequeue_called(self):
+        item = {
+            "version": 1,
+            "task_id": "f5ceee05-5e41-4fc4-8e2e-d16aa6d67bff",
+            "eta": "2019-03-24T16:00:12.247687+00:00",
+            "current_retries": 0,
+            "max_retries": 0,
+            "log_id": "",
+            "hook_metadata": "",
+            "args": [],
+            "kwargs": {"a": 21, "b": 535},
+        }
+
+        with mock.patch("wiji.broker.InMemoryBroker.dequeue", new=AsyncMock()) as mock_dequeue:
+            mock_dequeue.mock.return_value = json.dumps(item)
+            worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+            # queue and consume task
+            self.myTask.synchronous_delay(a=21, b=535)
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+
+            self.assertTrue(mock_dequeue.mock.called)
+            self.assertEqual(mock_dequeue.mock.call_args[1], {"queue_name": self.myTask.queue_name})

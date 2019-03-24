@@ -366,14 +366,12 @@ class Task(abc.ABC):
             if not from_worker:
                 self._checked_broker = True
         except Exception as e:
+            event = "wiji.Task.delay"
+            if from_worker:
+                event = "wiji.Worker.consume_tasks"
             self._log(
                 logging.ERROR,
-                {
-                    "event": "wiji.Task.delay",
-                    "stage": "end",
-                    "state": "check broker failed",
-                    "error": str(e),
-                },
+                {"event": event, "stage": "end", "state": "check broker failed", "error": str(e)},
             )
             # exit with error
             raise ValueError(

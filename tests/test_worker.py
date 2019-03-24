@@ -197,3 +197,27 @@ class TestWorker(TestCase):
 
             self.assertTrue(mock_run_task.mock.called)
             self.assertEqual(mock_run_task.mock.call_args[1], kwargs)
+
+    def test_broker_done_called(self):
+        kwargs = {"a": 263342, "b": 832429}
+        with mock.patch("wiji.broker.InMemoryBroker.done", new=AsyncMock()) as mock_broker_done:
+            worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+            self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+
+            self.assertTrue(mock_broker_done.mock.called)
+            self.assertEqual(
+                json.loads(mock_broker_done.mock.call_args[1]["item"])["kwargs"], kwargs
+            )
+            self.assertEqual(
+                mock_broker_done.mock.call_args[1]["queue_name"], self.myTask.queue_name
+            )
+            self.assertEqual(
+                mock_broker_done.mock.call_args[1]["state"], wiji.task.TaskState.EXECUTED
+            )
+
+            task_options = mock_broker_done.mock.call_args[1]["task_options"]
+            self.assertEqual(task_options.kwargs, kwargs)
+            self.assertIsNotNone(task_options.task_id)
+            self.assertEqual(len(task_options.task_id), 36)  # len of uuid4

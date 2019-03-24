@@ -221,3 +221,49 @@ class TestWorker(TestCase):
             self.assertEqual(task_options.kwargs, kwargs)
             self.assertIsNotNone(task_options.task_id)
             self.assertEqual(len(task_options.task_id), 36)  # len of uuid4
+
+    def test_task_no_chain(self):
+        """
+        test task with NO chain does not call task.delay
+        """
+        kwargs = {"a": 400, "b": 901}
+
+        worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+        self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+        with mock.patch("wiji.task.Task.delay", new=AsyncMock()) as mock_task_delay:
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+            self.assertFalse(mock_task_delay.mock.called)
+
+    def test_task_with_chain(self):
+        """
+        test task with chain CALLS task.delay
+        """
+
+        class DividerTask(wiji.task.Task):
+            async def run(self, a):
+                res = a / 3
+                print("divider res: ", res)
+                return res
+
+        MYDividerTask = DividerTask(the_broker=self.BROKER, queue_name="DividerTaskChainQueue")
+
+        class AdderTask(wiji.task.Task):
+            async def run(self, a, b):
+                res = a + b
+                return res
+
+        MYAdderTask = AdderTask(
+            the_broker=self.BROKER, queue_name="AdderTaskChainQueue", chain=MYDividerTask
+        )
+
+        kwargs = {"a": 400, "b": 603}
+        worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
+        MYAdderTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+
+        with mock.patch("wiji.task.Task.delay", new=AsyncMock()) as mock_task_delay:
+            mock_task_delay.mock.return_value = None
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+            self.assertTrue(mock_task_delay.mock.called)
+            self.assertEqual(mock_task_delay.mock.call_args[0][1], kwargs["a"] + kwargs["b"])

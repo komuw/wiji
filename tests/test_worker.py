@@ -186,3 +186,14 @@ class TestWorker(TestCase):
             self.assertEqual(dequeued_item["version"], 1)
             self.assertTrue(mock_task_delay.mock.called)
             self.assertEqual(mock_task_delay.mock.call_args[1], kwargs)
+
+    def test_run_task_called(self):
+        kwargs = {"a": 263342, "b": 832429}
+        with mock.patch("wiji.worker.Worker.run_task", new=AsyncMock()) as mock_run_task:
+            worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+            self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+
+            self.assertTrue(mock_run_task.mock.called)
+            self.assertEqual(mock_run_task.mock.call_args[1], kwargs)

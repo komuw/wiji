@@ -1,6 +1,8 @@
 import abc
 import enum
 import uuid
+import string
+import random
 import typing
 import asyncio
 import logging
@@ -61,14 +63,17 @@ class TaskOptions:
         max_retries: int = 0,
         log_id: str = "",
         hook_metadata: typing.Union[None, str] = None,
-        drain_duration: float = 10.0,
     ):
+        """
+        this are the options that you can supply when calling `task.delay`
+        ie, they are the config options that only apply to that `task.delay` invocation eg `eta`
+
+        If a config option applies to the `Task` instance itself, then it should not be in this class eg `drain_duration`
+
+        Note that a `Task` class does not have a `TaskOptions` attribute at creation time, it gets one when `task.delay` is first called.
+        """
         self._validate_task_options_args(
-            eta=eta,
-            max_retries=max_retries,
-            log_id=log_id,
-            hook_metadata=hook_metadata,
-            drain_duration=drain_duration,
+            eta=eta, max_retries=max_retries, log_id=log_id, hook_metadata=hook_metadata
         )
         self.eta = eta
         if self.eta < 0.00:
@@ -90,21 +95,6 @@ class TaskOptions:
         else:
             self.hook_metadata = ""
 
-        self.task_id: str = ""
-
-        # `drain_duration` is the duration(in seconds) that a worker should wait
-        # after getting a termination signal(SIGTERM, SIGQUIT etc).
-        # during this duration, the worker does not consumer anymore tasks from the broker,
-        # the worker will continue executing any tasks that it had already dequeued from the broker.
-        # a simple way of choosing a value to set is:
-        # drain_duration = time_taken_to_run_this_task + 1.00
-        # eg: if your task is making a network call that lasts 30seconds,
-        # thus; drain_duration = 30 + 1.00
-
-        # the default value is 10.00 seconds.
-        # mainly because that is also the default value of the process supervisor: `supervisord`
-        self.drain_duration = drain_duration
-
         self.args: tuple = ()
         self.kwargs: dict = {}
 
@@ -112,12 +102,7 @@ class TaskOptions:
         return str(self.__dict__)
 
     def _validate_task_options_args(
-        self,
-        eta: float,
-        max_retries: int,
-        log_id: str,
-        hook_metadata: typing.Union[None, str],
-        drain_duration: float,
+        self, eta: float, max_retries: int, log_id: str, hook_metadata: typing.Union[None, str]
     ) -> None:
         if not isinstance(eta, float):
             raise ValueError(
@@ -137,12 +122,6 @@ class TaskOptions:
             raise ValueError(
                 """`hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(hook_metadata)
-                )
-            )
-        if not isinstance(drain_duration, float):
-            raise ValueError(
-                """`drain_duration` should be of type:: `float` You entered: {0}""".format(
-                    type(drain_duration)
                 )
             )
 
@@ -174,6 +153,7 @@ class Task(abc.ABC):
         chain: typing.Union[None, "Task"] = None,
         the_hook: typing.Union[None, hook.BaseHook] = None,
         the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None,
+        drain_duration: float = 10.0,
         loglevel: str = "DEBUG",
         log_metadata: typing.Union[None, dict] = None,
         log_handler: typing.Union[None, logger.BaseLogger] = None,
@@ -185,16 +165,29 @@ class Task(abc.ABC):
             chain=chain,
             the_hook=the_hook,
             the_ratelimiter=the_ratelimiter,
+            drain_duration=drain_duration,
             loglevel=loglevel,
             log_metadata=log_metadata,
             log_handler=log_handler,
         )
 
-        self.task_options = TaskOptions()
         self.the_broker = the_broker
         self.queue_name = queue_name
         self.chain = chain
         self.loglevel = loglevel.upper()
+
+        # `drain_duration` is the duration(in seconds) that a worker should wait
+        # after getting a termination signal(SIGTERM, SIGQUIT etc).
+        # during this duration, the worker does not consumer anymore tasks from the broker,
+        # the worker will continue executing any tasks that it had already dequeued from the broker.
+        # a simple way of choosing a value to set is:
+        # drain_duration = time_taken_to_run_this_task + 1.00
+        # eg: if your task is making a network call that lasts 30seconds,
+        # thus; drain_duration = 30 + 1.00
+
+        # the default value is 10.00 seconds.
+        # mainly because that is also the default value of the process supervisor: `supervisord`
+        self.drain_duration = drain_duration
 
         if task_name is not None:
             self.task_name = task_name
@@ -211,8 +204,9 @@ class Task(abc.ABC):
             self.logger = log_handler
         else:
             self.logger = logger.SimpleLogger(
-                "wiji.Task.task_name={0}.task_id={1}".format(
-                    self.task_name, self.task_options.task_id
+                "wiji.Task.task_name={0}.{1}".format(
+                    self.task_name,
+                    "".join(random.choices(string.ascii_lowercase + string.digits, k=5)),
                 )
             )
         self.logger.bind(level=self.loglevel, log_metadata=self.log_metadata)
@@ -240,7 +234,6 @@ class Task(abc.ABC):
                 "the_broker": self.the_broker,
                 "queue_name": self.queue_name,
                 "chain": self.chain,
-                "task_options": self.task_options.__dict__,
             }
         )
 
@@ -252,6 +245,7 @@ class Task(abc.ABC):
         chain: typing.Union[None, "Task"],
         the_hook: typing.Union[None, hook.BaseHook],
         the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter],
+        drain_duration: float,
         loglevel: str,
         log_metadata: typing.Union[None, dict],
         log_handler: typing.Union[None, logger.BaseLogger],
@@ -291,6 +285,12 @@ class Task(abc.ABC):
             raise ValueError(
                 """`the_ratelimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
                     type(the_ratelimiter)
+                )
+            )
+        if not isinstance(drain_duration, float):
+            raise ValueError(
+                """`drain_duration` should be of type:: `float` You entered: {0}""".format(
+                    type(drain_duration)
                 )
             )
         if not isinstance(log_handler, (type(None), logger.BaseLogger)):
@@ -519,6 +519,9 @@ class Task(abc.ABC):
             if isinstance(v, TaskOptions):
                 self.task_options = v
                 kwargs.pop(k)
+            else:
+                # create a default task_options
+                self.task_options = TaskOptions()
 
         self.task_options.args = args
         self.task_options.kwargs = kwargs

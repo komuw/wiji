@@ -333,6 +333,9 @@ class Worker:
             now = datetime.datetime.now(tz=datetime.timezone.utc)
             if protocol.Protocol._from_isoformat(task_eta) <= now:
                 await self.run_task(*task_args, **task_kwargs)
+                import pdb
+
+                pdb.set_trace()
                 await self._notify_broker(
                     item=_dequeued_item,
                     queue_name=self.the_task.queue_name,
@@ -365,7 +368,7 @@ class Worker:
                 "event": "wiji.Worker.shutdown",
                 "stage": "start",
                 "state": "intiating shutdown",
-                "drain_duration": self.the_task.task_options.drain_duration,
+                "drain_duration": self.the_task.drain_duration,
             },
         )
         self.SHOULD_SHUT_DOWN = True
@@ -373,7 +376,7 @@ class Worker:
             self.watchdog.stop()
 
         # half spent waiting for the broker, the other half just sleeping
-        wait_duration = self.the_task.task_options.drain_duration / 2
+        wait_duration = self.the_task.drain_duration / 2
         try:
             # asyncio.wait takes a python set as a first argument
             # after expiration of timeout, asyncio.wait does not cancel the task;

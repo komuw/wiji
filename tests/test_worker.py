@@ -164,3 +164,25 @@ class TestWorker(TestCase):
 
             self.assertTrue(mock_dequeue.mock.called)
             self.assertEqual(mock_dequeue.mock.call_args[1], {"queue_name": self.myTask.queue_name})
+
+    def test_eta_respected(self):
+        kwargs = {"a": 21, "b": 535}
+
+        # NO re-queuing is carried out
+        worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+        self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+        with mock.patch("wiji.task.Task.delay", new=AsyncMock()) as mock_task_delay:
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+            self.assertFalse(mock_task_delay.mock.called)
+
+        # re-queuing is carried out
+        worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
+        self.myTask.synchronous_delay(
+            a=kwargs["a"], b=kwargs["b"], tas_options=wiji.task.TaskOptions(eta=788.99)
+        )
+        with mock.patch("wiji.task.Task.delay", new=AsyncMock()) as mock_task_delay:
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+            self.assertTrue(mock_task_delay.mock.called)
+            self.assertEqual(mock_task_delay.mock.call_args[1], kwargs)

@@ -138,7 +138,14 @@ class SimpleRateLimiter(BaseRateLimiter):
             )
         self.tasks_executed += 1
         self.tokens -= 1
-        self.logger.log(logging.INFO, {"event": "wiji.SimpleRateLimiter.limit", "stage": "end", "effective_execution_rate": self.effective_execution_rate})
+        self.logger.log(
+            logging.INFO,
+            {
+                "event": "wiji.SimpleRateLimiter.limit",
+                "stage": "end",
+                "effective_execution_rate": self.effective_execution_rate,
+            },
+        )
 
     async def execution_outcome(
         self,

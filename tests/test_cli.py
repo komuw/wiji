@@ -1,4 +1,3 @@
-import sys
 import argparse
 from unittest import TestCase, mock
 

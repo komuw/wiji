@@ -1,7 +1,6 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
-import sys
 import asyncio
 import inspect
 import datetime

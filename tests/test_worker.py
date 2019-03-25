@@ -1,7 +1,6 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
-import sys
 import json
 import asyncio
 from unittest import TestCase, mock
@@ -309,6 +308,7 @@ class TestWorker(TestCase):
             AdderTask, "do_work", side_effect=Exception("test_no_chaining_if_exception")
         ) as mock_do_work:
             mock_task_delay.mock.return_value = None
+            _ = mock_do_work
 
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)

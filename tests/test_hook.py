@@ -1,4 +1,3 @@
-import sys
 import asyncio
 from unittest import TestCase, mock
 

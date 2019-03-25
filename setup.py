@@ -96,6 +96,7 @@ setup(
             "bandit",
             "mypy",
             "codecov",
+            "redis==2.10.6",
             "docker==3.7.1",
         ],
     },

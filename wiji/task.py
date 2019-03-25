@@ -78,7 +78,9 @@ class TaskOptions:
         self.eta = eta
         if self.eta < 0.00:
             self.eta = 0.00
-        self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
+        # self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
+
+        self.task_id = ""
 
         self.current_retries: int = 0
         self.max_retries = max_retries
@@ -124,6 +126,31 @@ class TaskOptions:
                     type(hook_metadata)
                 )
             )
+
+    def dictsy(self):
+        return {
+            "eta": self.eta,
+            "task_id": self.task_id,
+            "current_retries": self.current_retries,
+            "max_retries": self.max_retries,
+            "log_id": self.log_id,
+            "hook_metadata": self.hook_metadata,
+            "args": self.args,
+            "kwargs": self.kwargs,
+        }
+
+    @staticmethod
+    def _create_me(
+        eta, max_retries, log_id, hook_metadata, task_id, current_retries, args, kwargs
+    ) -> "TaskOptions":
+        task_options = TaskOptions(
+            eta=eta, max_retries=max_retries, log_id=log_id, hook_metadata=hook_metadata
+        )
+        task_options.task_id = task_id
+        task_options.current_retries = current_retries
+        task_options.args = args
+        task_options.kwargs = kwargs
+        return task_options
 
 
 class Task(abc.ABC):
@@ -380,6 +407,7 @@ class Task(abc.ABC):
 
     async def _notify_hook(
         self,
+        task_id: str,
         state: TaskState,
         hook_metadata: str,
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
@@ -389,8 +417,8 @@ class Task(abc.ABC):
         try:
             await self.the_hook.notify(
                 task_name=self.task_name,
-                task_id=self.task_options.task_id,
                 queue_name=self.queue_name,
+                task_id=task_id,
                 state=state,
                 hook_metadata=hook_metadata,
                 execution_duration=execution_duration,
@@ -418,35 +446,38 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        args, kwargs = self._validate_delay_args(*args, **kwargs)
+        self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        # every invocation of `my_task.delay()` is counted as unique and
-        # should have a unique task_id even if it is a retry of a previous request
-        self.task_options.task_id = str(uuid.uuid4())
-        proto = protocol.Protocol(
-            version=1,
-            task_id=self.task_options.task_id,
-            eta=self.task_options.eta,
-            current_retries=self.task_options.current_retries,
-            max_retries=self.task_options.max_retries,
-            log_id=self.task_options.log_id,
-            hook_metadata=self.task_options.hook_metadata,
-            argsy=self.task_options.args,
-            kwargsy=self.task_options.kwargs,
-        )
+        task_options: TaskOptions = self._create_task_options(*args, **kwargs)
+
+        # TaskOptions:
+        #     eta: float = 0.00,
+        #     max_retries: int = 0,
+        #     log_id: str = "",
+        #     hook_metadata: typing.Union[None, str] = None
+        #     task_id
+        #     current_retries
+        #     args
+        #     kwargs
+
+        proto = protocol.Protocol(version=1, task_options=task_options)
         await self._notify_hook(
-            state=TaskState.QUEUEING, hook_metadata=self.task_options.hook_metadata
+            task_id=task_options.task_id,
+            state=TaskState.QUEUEING,
+            hook_metadata=task_options.hook_metadata,
         )
         try:
             await self.the_broker.enqueue(
-                item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
+                item=proto.json(), queue_name=self.queue_name, task_options=task_options
             )
             # this cannot raise an error since the method handles that error
             await self._notify_hook(
-                state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
+                task_id=task_options.task_id,
+                state=TaskState.QUEUED,
+                hook_metadata=task_options.hook_metadata,
             )
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})
@@ -486,16 +517,19 @@ class Task(abc.ABC):
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
-        args, kwargs = self._validate_delay_args(*args, **kwargs)
+        self._validate_delay_args(*args, **kwargs)
+        task_options: TaskOptions = self._create_task_options(*args, **kwargs)
 
-        if self.task_options.current_retries >= self.task_options.max_retries:
+        # TODO: fix this since it wont work.
+        # task_options is no longer an attr of Task
+        if task_options.current_retries >= task_options.max_retries:
             raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
-                    task_name=self.task_name, max_retries=self.task_options.max_retries
+                    task_name=self.task_name, max_retries=task_options.max_retries
                 )
             )
 
-        self.task_options.current_retries += 1
+        task_options.current_retries += 1
         await self.delay(*args, **kwargs)
 
         raise WijiRetryError(
@@ -504,27 +538,13 @@ class Task(abc.ABC):
             )
         )
 
-    def _validate_delay_args(
-        self, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Tuple[typing.Any, typing.Any]:
+    def _validate_delay_args(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         for a in args:
             if isinstance(a, TaskOptions):
                 raise ValueError(
                     """You cannot use a value of type `wiji.task.TaskOptions` as a normal argument.
                     \nHint: instead, pass it in as a kwarg(named argument)"""
                 )
-        for k, v in list(kwargs.items()):
-            if isinstance(v, TaskOptions):
-                self.task_options = v
-                kwargs.pop(k)
-
-        if not hasattr(self, "task_options"):
-            # create a default task_options
-            self.task_options = TaskOptions()
-
-        self.task_options.args = args
-        self.task_options.kwargs = kwargs
-        return self.task_options.args, self.task_options.kwargs
 
     @staticmethod
     def _type_check(func, *args: typing.Any, **kwargs: typing.Any) -> inspect.BoundArguments:
@@ -540,6 +560,25 @@ class Task(abc.ABC):
         """
         sig = inspect.signature(func)
         return sig.bind(*args, **kwargs)
+
+    def _create_task_options(self, *args: typing.Any, **kwargs: typing.Any) -> TaskOptions:
+        task_options = None
+        for k, v in list(kwargs.items()):
+            if isinstance(v, TaskOptions):
+                task_options = v
+                kwargs.pop(k)
+
+        if not task_options:
+            # create a default task_options
+            task_options = TaskOptions()
+
+        # every invocation of `my_task.delay()` is counted as unique and
+        # should have a unique task_id even if it is a retry of a previous request
+        task_options.task_id = str(uuid.uuid4())
+        task_options.args = args
+        task_options.kwargs = kwargs
+
+        return task_options
 
 
 class _watchdogTask(Task):
@@ -561,7 +600,6 @@ class _watchdogTask(Task):
                 "event": "wiji.WatchDogTask.run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
-                "task_id": self.task_options.task_id,
             },
         )
         await asyncio.sleep(0.1 / 1.5)

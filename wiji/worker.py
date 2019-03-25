@@ -305,14 +305,26 @@ class Worker:
             dequeue_retry_count = 0
             try:
                 _ = dequeued_item["version"]
-                task_id = dequeued_item["task_id"]
-                task_eta = dequeued_item["eta"]
-                _ = dequeued_item["current_retries"]
-                _ = dequeued_item["max_retries"]
-                task_log_id = dequeued_item["log_id"]
-                task_hook_metadata = dequeued_item["hook_metadata"]
-                task_args = dequeued_item["args"]
-                task_kwargs = dequeued_item["kwargs"]
+                _task_options = dequeued_item["task_options"]
+                task_id = _task_options["task_id"]
+                task_eta = _task_options["eta"]
+                task_current_retries = _task_options["current_retries"]
+                task_max_retries = _task_options["max_retries"]
+                task_log_id = _task_options["log_id"]
+                task_hook_metadata = _task_options["hook_metadata"]
+                task_args = _task_options["args"]
+                task_kwargs = _task_options["kwargs"]
+
+                task_options = task.TaskOptions._create_me(
+                    eta=task_eta,
+                    max_retries=task_max_retries,
+                    log_id=task_log_id,
+                    hook_metadata=task_hook_metadata,
+                    task_id=task_id,
+                    current_retries=task_current_retries,
+                    args=task_args,
+                    kwargs=task_kwargs,
+                )
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(
@@ -325,7 +337,9 @@ class Worker:
                     },
                 )
                 continue
+            import pdb
 
+            pdb.set_trace()
             await self.the_task._notify_hook(
                 state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
             )
@@ -336,7 +350,7 @@ class Worker:
                 await self._notify_broker(
                     item=_dequeued_item,
                     queue_name=self.the_task.queue_name,
-                    task_options=self.the_task.task_options,
+                    task_options=task_options,
                     state=task.TaskState.EXECUTED,
                 )
             else:

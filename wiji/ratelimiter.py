@@ -82,7 +82,7 @@ class SimpleRateLimiter(BaseRateLimiter):
         self.delay_for_tokens: float = 1.0
         self.updated_at: float = time.monotonic()
         self.tasks_executed: int = 0
-        self.effective_execution_rate: float = 0.0
+        self.effective_execution_rate: float = self.execution_rate
 
         if log_handler is not None:
             self.logger = log_handler
@@ -138,6 +138,7 @@ class SimpleRateLimiter(BaseRateLimiter):
             )
         self.tasks_executed += 1
         self.tokens -= 1
+        self.logger.log(logging.INFO, {"event": "wiji.SimpleRateLimiter.limit", "stage": "end", "effective_execution_rate": self.effective_execution_rate})
 
     async def execution_outcome(
         self,

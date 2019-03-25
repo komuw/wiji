@@ -28,6 +28,12 @@ def AsyncMock(*args, **kwargs):
     return mock_coro
 
 
+class ExampleAdderTask(wiji.task.Task):
+    async def run(self, a, b):
+        res = a + b
+        return res
+
+
 class TestWorker(TestCase):
     """
     run tests as:
@@ -39,13 +45,7 @@ class TestWorker(TestCase):
     def setUp(self):
         self.loop = asyncio.get_event_loop()
         self.BROKER = wiji.broker.InMemoryBroker()
-
-        class AdderTask(wiji.task.Task):
-            async def run(self, a, b):
-                res = a + b
-                return res
-
-        self.myTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        self.myTask = ExampleAdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
 
     def tearDown(self):
         pass
@@ -207,10 +207,6 @@ class TestWorker(TestCase):
             self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)
-            # import pdb
-
-            # pdb.set_trace()
-
             self.assertTrue(mock_broker_done.mock.called)
             self.assertEqual(
                 json.loads(mock_broker_done.mock.call_args[1]["item"])["kwargs"], kwargs
@@ -319,7 +315,6 @@ class TestWorkerRedisBroker(TestWorker):
     """
     re-run the worker tests but this time round use a redis broker.
 
-
     run tests as:
         python -m unittest discover -v -s .
     run one testcase as:
@@ -329,3 +324,4 @@ class TestWorkerRedisBroker(TestWorker):
     def setUp(self):
         super().setUp()
         self.BROKER = ExampleRedisBroker()
+        self.myTask = ExampleAdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)

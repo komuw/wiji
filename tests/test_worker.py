@@ -4,15 +4,11 @@
 import sys
 import json
 import asyncio
-import logging
 from unittest import TestCase, mock
 
 import wiji
 
 from .utils import ExampleRedisBroker
-
-
-logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.CRITICAL)
 
 
 def AsyncMock(*args, **kwargs):
@@ -49,6 +45,9 @@ class TestWorker(TestCase):
 
     def tearDown(self):
         pass
+
+    def broker_path(self):
+        return self.BROKER.__module__ + "." + self.BROKER.__class__.__name__
 
     @staticmethod
     def _run(coro):
@@ -156,7 +155,9 @@ class TestWorker(TestCase):
             "kwargs": {"a": 21, "b": 535},
         }
 
-        with mock.patch("wiji.broker.BaseBroker.dequeue", new=AsyncMock()) as mock_dequeue:
+        with mock.patch(
+            "{broker_path}.dequeue".format(broker_path=self.broker_path()), new=AsyncMock()
+        ) as mock_dequeue:
             mock_dequeue.mock.return_value = json.dumps(item)
             worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
             # queue and consume task
@@ -202,11 +203,14 @@ class TestWorker(TestCase):
 
     def test_broker_done_called(self):
         kwargs = {"a": 263342, "b": 832429}
-        with mock.patch("wiji.broker.BaseBroker.done", new=AsyncMock()) as mock_broker_done:
+        with mock.patch(
+            "{broker_path}.done".format(broker_path=self.broker_path()), new=AsyncMock()
+        ) as mock_broker_done:
             worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
             self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)
+
             self.assertTrue(mock_broker_done.mock.called)
             self.assertEqual(
                 json.loads(mock_broker_done.mock.call_args[1]["item"])["kwargs"], kwargs

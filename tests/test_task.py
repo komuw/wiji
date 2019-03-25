@@ -4,13 +4,10 @@
 import sys
 import asyncio
 import inspect
-import logging
 import datetime
 from unittest import TestCase, mock
 
 import wiji
-
-logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.CRITICAL)
 
 
 def AsyncMock(*args, **kwargs):

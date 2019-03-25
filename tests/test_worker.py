@@ -7,6 +7,7 @@ import asyncio
 from unittest import TestCase, mock
 
 import wiji
+import docker
 
 from .utils import ExampleRedisBroker
 
@@ -169,7 +170,7 @@ class TestWorker(TestCase):
             self.assertEqual(mock_dequeue.mock.call_args[1], {"queue_name": self.myTask.queue_name})
 
     def test_eta_respected(self):
-        kwargs = {"a": 21, "b": 535}
+        kwargs = {"a": 7121, "b": 6122}
 
         # NO re-queuing is carried out
         worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
@@ -329,3 +330,22 @@ class TestWorkerRedisBroker(TestWorker):
         super().setUp()
         self.BROKER = ExampleRedisBroker()
         self.myTask = ExampleAdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        self._setup_docker()
+
+    @staticmethod
+    def _setup_docker():
+        docker_client = docker.from_env()
+        running_containers = docker_client.containers.list()
+        for container in running_containers:
+            container.stop()
+
+        docker_client.containers.run(
+            "redis:3.0-alpine",
+            name="wiji_test_redis_container",
+            detach=True,
+            auto_remove=True,
+            labels={"name": "wiji_test_redis_container", "use": "running_wiji_tets"},
+            ports={"6379/tcp": 6379},
+            stdout=True,
+            stderr=True,
+        )

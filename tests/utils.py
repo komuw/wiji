@@ -87,6 +87,7 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         task_options: wiji.task.TaskOptions,
         state: wiji.task.TaskState,
     ) -> None:
+        # dequeue already removed the item
         return await asyncio.sleep(delay=0.02, result=None)
 
     async def shutdown(self, queue_name: str, duration: float) -> None:

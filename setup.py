@@ -88,7 +88,16 @@ setup(
     # $ pip install -e .[dev,test]
     extras_require={
         "dev": ["pypandoc", "twine", "wheel", "Sphinx==1.8.3", "sphinx-autodoc-typehints==1.6.0"],
-        "test": ["coverage", "flake8", "pylint", "black", "bandit", "mypy", "codecov"],
+        "test": [
+            "coverage",
+            "flake8",
+            "pylint",
+            "black",
+            "bandit",
+            "mypy",
+            "codecov",
+            "docker==3.7.1",
+        ],
     },
     # If there are data files included in your packages that need to be
     # installed, specify them here.  If using Python 2.6 or less, then these

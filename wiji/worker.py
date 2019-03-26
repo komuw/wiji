@@ -166,7 +166,9 @@ class Worker:
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
         task_options = task_kwargs.pop("task_options", {})
         await self.the_task._notify_hook(
-            state=task.TaskState.EXECUTING, hook_metadata=task_options.get("hook_metadata")
+            task_id=task_options.get("task_id"),
+            state=task.TaskState.EXECUTING,
+            hook_metadata=task_options.get("hook_metadata"),
         )
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
@@ -224,6 +226,7 @@ class Worker:
                 execution_exception=execution_exception,
             )
             await self.the_task._notify_hook(
+                task_id=task_options.get("task_id"),
                 state=task.TaskState.EXECUTED,
                 hook_metadata=task_options.get("hook_metadata"),
                 execution_duration=execution_duration,

@@ -435,6 +435,9 @@ class Task(abc.ABC):
         """
         # _get_task_options should be called first
         task_options = self._get_task_options(*args, **kwargs)
+        args = task_options.args
+        kwargs = task_options.kwargs
+
         self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
         if not self._checked_broker:

@@ -433,12 +433,12 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
+        # _get_task_options should be called first
+        task_options = self._get_task_options(*args, **kwargs)
         self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
-
-        task_options: TaskOptions = self._get_task_options(*args, **kwargs)
 
         # TaskOptions:
         #     eta: float = 0.00,

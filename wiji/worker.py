@@ -163,6 +163,9 @@ class Worker:
             )
 
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
+        import pdb
+
+        pdb.set_trace()
         await self.the_task._notify_hook(
             state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
         )
@@ -322,9 +325,7 @@ class Worker:
                     },
                 )
                 continue
-            import pdb
 
-            pdb.set_trace()
             await self.the_task._notify_hook(
                 task_id=task_id, state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
             )

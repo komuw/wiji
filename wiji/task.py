@@ -139,19 +139,6 @@ class TaskOptions:
             "kwargs": self.kwargs,
         }
 
-    @staticmethod
-    def _create_me(
-        eta, max_retries, log_id, hook_metadata, task_id, current_retries, args, kwargs
-    ) -> "TaskOptions":
-        task_options = TaskOptions(
-            eta=eta, max_retries=max_retries, log_id=log_id, hook_metadata=hook_metadata
-        )
-        task_options.task_id = task_id
-        task_options.current_retries = current_retries
-        task_options.args = args
-        task_options.kwargs = kwargs
-        return task_options
-
 
 class Task(abc.ABC):
     """
@@ -451,7 +438,7 @@ class Task(abc.ABC):
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        task_options: TaskOptions = self._create_task_options(*args, **kwargs)
+        task_options: TaskOptions = self._get_task_options(*args, **kwargs)
 
         # TaskOptions:
         #     eta: float = 0.00,
@@ -470,9 +457,10 @@ class Task(abc.ABC):
             hook_metadata=task_options.hook_metadata,
         )
         try:
-            await self.the_broker.enqueue(
-                item=proto.json(), queue_name=self.queue_name, task_options=task_options
-            )
+            import pdb
+
+            pdb.set_trace()
+            await self.the_broker.enqueue(item=proto.json(), queue_name=self.queue_name)
             # this cannot raise an error since the method handles that error
             await self._notify_hook(
                 task_id=task_options.task_id,
@@ -518,7 +506,7 @@ class Task(abc.ABC):
         It also behaves the same as `delay`
         """
         self._validate_delay_args(*args, **kwargs)
-        task_options: TaskOptions = self._create_task_options(*args, **kwargs)
+        task_options: TaskOptions = self._get_task_options(*args, **kwargs)
 
         # TODO: fix this since it wont work.
         # task_options is no longer an attr of Task
@@ -561,7 +549,7 @@ class Task(abc.ABC):
         sig = inspect.signature(func)
         return sig.bind(*args, **kwargs)
 
-    def _create_task_options(self, *args: typing.Any, **kwargs: typing.Any) -> TaskOptions:
+    def _get_task_options(self, *args: typing.Any, **kwargs: typing.Any) -> TaskOptions:
         task_options = None
         for k, v in list(kwargs.items()):
             if isinstance(v, TaskOptions):

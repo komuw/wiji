@@ -356,6 +356,7 @@ class Worker:
                 )
             else:
                 # respect eta
+                task_kwargs.pop("task_options", None)
                 await self.the_task.delay(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,

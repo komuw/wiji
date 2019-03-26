@@ -38,7 +38,7 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
     async def check(self, queue_name: str) -> None:
         await asyncio.sleep(1 / 117)
 
-    async def enqueue(self, item: str, queue_name: str, task_options) -> None:
+    async def enqueue(self, item: str, queue_name: str) -> None:
         try:
             self.loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -80,13 +80,7 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         dequed_item = dequed_item[1]
         return dequed_item
 
-    async def done(
-        self,
-        item: str,
-        queue_name: str,
-        task_options: wiji.task.TaskOptions,
-        state: wiji.task.TaskState,
-    ) -> None:
+    async def done(self, item: str, queue_name: str, state: wiji.task.TaskState) -> None:
         return await asyncio.sleep(delay=-1, result=None)
 
     async def shutdown(self, queue_name: str, duration: float) -> None:

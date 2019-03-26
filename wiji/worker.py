@@ -124,14 +124,15 @@ class Worker:
 
     async def _notify_ratelimiter(
         self,
+        task_id: str,
         return_value: typing.Any,
         execution_duration: typing.Dict[str, float],
         execution_exception: typing.Union[None, Exception],
     ) -> None:
         try:
             await self.the_task.the_ratelimiter.execution_outcome(
+                task_id=task_id,
                 task_name=self.the_task.task_name,
-                task_id=self.the_task.task_options.task_id,
                 queue_name=self.the_task.queue_name,
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
@@ -163,11 +164,9 @@ class Worker:
             )
 
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
-        import pdb
-
-        pdb.set_trace()
+        task_options = task_kwargs.pop("task_options", {})
         await self.the_task._notify_hook(
-            state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
+            state=task.TaskState.EXECUTING, hook_metadata=task_options.get("hook_metadata")
         )
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
@@ -192,8 +191,8 @@ class Worker:
                     "state": str(e),
                     "stage": "end",
                     "task_name": self.the_task.task_name,
-                    "current_retries": self.the_task.task_options.current_retries,
-                    "max_retries": self.the_task.task_options.max_retries,
+                    "current_retries": task_options.get("current_retries"),
+                    "max_retries": task_options.get("max_retries"),
                 },
             )
         except Exception as e:
@@ -219,13 +218,14 @@ class Worker:
                 "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
             }
             await self._notify_ratelimiter(
+                task_id=task_options.get("task_id"),
                 return_value=return_value,
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
             )
             await self.the_task._notify_hook(
                 state=task.TaskState.EXECUTED,
-                hook_metadata=self.the_task.task_options.hook_metadata,
+                hook_metadata=task_options.get("hook_metadata"),
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
                 return_value=return_value,
@@ -313,6 +313,19 @@ class Worker:
                 task_hook_metadata = _task_options["hook_metadata"]
                 task_args = _task_options["args"]
                 task_kwargs = _task_options["kwargs"]
+
+                task_kwargs.update(
+                    {
+                        "task_options": {
+                            "task_id": task_id,
+                            "eta": task_eta,
+                            "current_retries": task_current_retries,
+                            "max_retries": task_max_retries,
+                            "log_id": task_log_id,
+                            "hook_metadata": task_hook_metadata,
+                        }
+                    }
+                )
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(

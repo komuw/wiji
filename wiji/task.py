@@ -457,9 +457,6 @@ class Task(abc.ABC):
             hook_metadata=task_options.hook_metadata,
         )
         try:
-            import pdb
-
-            pdb.set_trace()
             await self.the_broker.enqueue(item=proto.json(), queue_name=self.queue_name)
             # this cannot raise an error since the method handles that error
             await self._notify_hook(

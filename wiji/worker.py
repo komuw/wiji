@@ -148,13 +148,9 @@ class Worker:
                 },
             )
 
-    async def _notify_broker(
-        self, item: str, queue_name: str, task_options: task.TaskOptions, state: task.TaskState
-    ) -> None:
+    async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
-            await self.the_task.the_broker.done(
-                item=item, queue_name=queue_name, task_options=task_options, state=state
-            )
+            await self.the_task.the_broker.done(item=item, queue_name=queue_name, state=state)
         except Exception as e:
             self._log(
                 logging.ERROR,
@@ -314,17 +310,6 @@ class Worker:
                 task_hook_metadata = _task_options["hook_metadata"]
                 task_args = _task_options["args"]
                 task_kwargs = _task_options["kwargs"]
-
-                task_options = task.TaskOptions._create_me(
-                    eta=task_eta,
-                    max_retries=task_max_retries,
-                    log_id=task_log_id,
-                    hook_metadata=task_hook_metadata,
-                    task_id=task_id,
-                    current_retries=task_current_retries,
-                    args=task_args,
-                    kwargs=task_kwargs,
-                )
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(
@@ -350,7 +335,6 @@ class Worker:
                 await self._notify_broker(
                     item=_dequeued_item,
                     queue_name=self.the_task.queue_name,
-                    task_options=task_options,
                     state=task.TaskState.EXECUTED,
                 )
             else:

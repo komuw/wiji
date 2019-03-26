@@ -326,7 +326,7 @@ class Worker:
 
             pdb.set_trace()
             await self.the_task._notify_hook(
-                state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
+                task_id=task_id, state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
             )
 
             now = datetime.datetime.now(tz=datetime.timezone.utc)

@@ -145,14 +145,16 @@ class TestWorker(TestCase):
     def test_broker_dequeue_called(self):
         item = {
             "version": 1,
-            "task_id": "f5ceee05-5e41-4fc4-8e2e-d16aa6d67bff",
-            "eta": "2019-03-24T16:00:12.247687+00:00",
-            "current_retries": 0,
-            "max_retries": 0,
-            "log_id": "",
-            "hook_metadata": "",
-            "args": [],
-            "kwargs": {"a": 21, "b": 535},
+            "task_options": {
+                "task_id": "f5ceee05-5e41-4fc4-8e2e-d16aa6d67bff",
+                "eta": "2019-03-24T16:00:12.247687+00:00",
+                "current_retries": 0,
+                "max_retries": 0,
+                "log_id": "",
+                "hook_metadata": "",
+                "args": [],
+                "kwargs": {"a": 21, "b": 535},
+            },
         }
 
         with mock.patch(

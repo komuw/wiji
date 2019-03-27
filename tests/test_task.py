@@ -223,3 +223,65 @@ class TestTask(TestCase):
             self.assertNotEqual(task_id3, task_id5)
             self.assertNotEqual(task_id4, task_id5)
             self.assertEqual(len(set(all_task_ids)), 5)
+
+    def test_retry(self):
+        self._run(self.my_task.delay(a=44, b=252223))
+        self.assertEqual(self.my_task.current_retries, 0)
+        self.assertEqual(self.my_task.max_retries, 0)
+
+        max_retries = 3
+
+        # retry_1
+        try:
+            self._run(
+                self.my_task.retry(
+                    a=23, b=1481, task_options=wiji.task.TaskOptions(max_retries=max_retries)
+                )
+            )
+        except wiji.task.WijiRetryError:
+            pass
+        self.assertEqual(self.my_task.current_retries, 1)
+        self.assertEqual(self.my_task.max_retries, max_retries)
+
+        # retry_2
+        try:
+            self._run(
+                self.my_task.retry(
+                    a=101, b=98, task_options=wiji.task.TaskOptions(max_retries=max_retries)
+                )
+            )
+        except wiji.task.WijiRetryError:
+            pass
+        self.assertEqual(self.my_task.current_retries, 2)
+        self.assertEqual(self.my_task.max_retries, max_retries)
+
+        # retry_3
+        try:
+            self._run(
+                self.my_task.retry(
+                    a=12, b=2, task_options=wiji.task.TaskOptions(max_retries=max_retries)
+                )
+            )
+        except wiji.task.WijiRetryError:
+            pass
+        self.assertEqual(self.my_task.current_retries, 3)
+        self.assertEqual(self.my_task.max_retries, max_retries)
+
+        # retry_4
+        def retrial_4():
+            try:
+                self._run(
+                    self.my_task.retry(
+                        a=1513, b=783, task_options=wiji.task.TaskOptions(max_retries=max_retries)
+                    )
+                )
+            except wiji.task.WijiRetryError:
+                pass
+
+        self.assertRaises(wiji.task.WijiMaxRetriesExceededError, retrial_4)
+        with self.assertRaises(wiji.task.WijiMaxRetriesExceededError) as raised_exception:
+            retrial_4()
+        self.assertIn(
+            "has reached its max_retries count of: {max_retries}".format(max_retries=max_retries),
+            str(raised_exception.exception),
+        )

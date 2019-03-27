@@ -505,19 +505,20 @@ class Task(abc.ABC):
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
+        # _get_task_options should be called first
+        self._get_task_options(*args, **kwargs)
         self._validate_delay_args(*args, **kwargs)
-        task_options: TaskOptions = self._get_task_options(*args, **kwargs)
 
         # TODO: fix this since it wont work.
         # task_options is no longer an attr of Task
-        if task_options.current_retries >= task_options.max_retries:
+        if self.current_retries >= self.max_retries:
             raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
-                    task_name=self.task_name, max_retries=task_options.max_retries
+                    task_name=self.task_name, max_retries=self.max_retries
                 )
             )
 
-        task_options.current_retries += 1
+        self.current_retries += 1
         await self.delay(*args, **kwargs)
 
         raise WijiRetryError(
@@ -565,6 +566,12 @@ class Task(abc.ABC):
         task_options.task_id = str(uuid.uuid4())
         task_options.args = args
         task_options.kwargs = kwargs
+
+        # set retries
+        self.max_retries = task_options.max_retries
+        if not hasattr(self, "current_retries"):
+            # if `current_retries` exists, don't ovveride it
+            self.current_retries = task_options.current_retries
 
         return task_options
 

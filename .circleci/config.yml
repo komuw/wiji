@@ -3,12 +3,13 @@ jobs:
   run-tests:
     docker:
       - image: circleci/python:3.7
+      - image: 'redis:3.0-alpine' #see: https://circleci.com/docs/2.0/executor-types/#using-multiple-docker-images
     environment:
       WIJI_DEBUG: 1
       PYTHONASYNCIODEBUG: 1 
       IN_DOCKER: "Yes"
       WIJI_TEST_REDIS_CONTAINER_NAME: "wiji_test_redis_container"
-      REDIS_HOST: "wiji_test_redis_container"
+      REDIS_HOST: "localhost"
       REDIS_PORT: 6379
     working_directory: ~/repo
     steps:

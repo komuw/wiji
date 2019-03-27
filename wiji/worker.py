@@ -151,7 +151,7 @@ class Worker:
 
     async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
-            await self.the_task.the_broker.done(item=item, queue_name=queue_name, state=state)
+            await self.the_task.the_broker.done(queue_name=queue_name, item=item, state=state)
         except Exception as e:
             self._log(
                 logging.ERROR,

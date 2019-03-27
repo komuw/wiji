@@ -460,7 +460,7 @@ class Task(abc.ABC):
             hook_metadata=task_options.hook_metadata,
         )
         try:
-            await self.the_broker.enqueue(item=proto.json(), queue_name=self.queue_name)
+            await self.the_broker.enqueue(queue_name=self.queue_name, item=proto.json())
             # this cannot raise an error since the method handles that error
             await self._notify_hook(
                 task_id=task_options.task_id,

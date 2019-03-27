@@ -27,7 +27,7 @@ class BaseBroker(abc.ABC):
         raise NotImplementedError("`check` method must be implemented.")
 
     @abc.abstractmethod
-    async def enqueue(self, item: str, queue_name: str) -> None:
+    async def enqueue(self, queue_name: str, item: str) -> None:
         """
         enqueue/save an item.
 
@@ -62,7 +62,7 @@ class BaseBroker(abc.ABC):
         raise NotImplementedError("`dequeue` method must be implemented.")
 
     @abc.abstractmethod
-    async def done(self, item: str, queue_name: str, state: "task.TaskState") -> None:
+    async def done(self, queue_name: str, item: str, state: "task.TaskState") -> None:
         """
         called by wiji worker once it is done executing a task.
         the broker can then decide to do any clean up actions like removing that task from the queue etc.
@@ -107,7 +107,7 @@ class InMemoryBroker(BaseBroker):
             self.store[queue_name] = []
         await asyncio.sleep(1 / 117)
 
-    async def enqueue(self, item: str, queue_name: str) -> None:
+    async def enqueue(self, queue_name: str, item: str) -> None:
         if self.store.get(queue_name):
             self.store[queue_name].append(item)
             await asyncio.sleep(delay=-1)
@@ -126,7 +126,7 @@ class InMemoryBroker(BaseBroker):
             else:
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
 
-    async def done(self, item: str, queue_name: str, state: "task.TaskState") -> None:
+    async def done(self, queue_name: str, item: str, state: "task.TaskState") -> None:
         """
         for this broker, this method is not needed, since `dequeue` uses .pop() which deletes the item.
         """

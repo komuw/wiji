@@ -3,7 +3,11 @@ jobs:
   run-tests:
     docker:
       - image: circleci/python:3.7
-      - image: 'redis:3.0-alpine' #see: https://circleci.com/docs/2.0/executor-types/#using-multiple-docker-images
+      # Specify multiple images if, for example, you need to use a database for your tests or for some other required service.
+      # In a multi-image configuration job, all steps are executed in the container created by the first image listed(primary container).
+      # All containers run in a common network and every exposed port will be available on localhost from a primary container.
+      # see: https://circleci.com/docs/2.0/executor-types/#using-multiple-docker-images
+      - image: 'redis:3.0-alpine'
     environment:
       WIJI_DEBUG: 1
       PYTHONASYNCIODEBUG: 1 

@@ -338,6 +338,10 @@ class TestWorkerRedisBroker(TestWorker):
 
     @staticmethod
     def _setup_docker():
+        if os.environ.get("IN_DOCKER"):
+            # will utilise an already existing redis docker container
+            return
+
         docker_client = docker.from_env()
         running_containers = docker_client.containers.list()
         for container in running_containers:

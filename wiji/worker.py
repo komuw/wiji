@@ -312,7 +312,6 @@ class Worker:
                 task_eta = _task_options["eta"]
                 task_current_retries = _task_options["current_retries"]
                 task_max_retries = _task_options["max_retries"]
-                task_log_id = _task_options["log_id"]
                 task_hook_metadata = _task_options["hook_metadata"]
                 task_args = _task_options["args"]
                 task_kwargs = _task_options["kwargs"]
@@ -324,7 +323,6 @@ class Worker:
                             "eta": task_eta,
                             "current_retries": task_current_retries,
                             "max_retries": task_max_retries,
-                            "log_id": task_log_id,
                             "hook_metadata": task_hook_metadata,
                         }
                     }
@@ -360,12 +358,7 @@ class Worker:
                 await self.the_task.delay(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,
-                {
-                    "event": "wiji.Worker.consume_tasks",
-                    "stage": "end",
-                    "log_id": task_log_id,
-                    "task_id": task_id,
-                },
+                {"event": "wiji.Worker.consume_tasks", "stage": "end", "task_id": task_id},
             )
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop

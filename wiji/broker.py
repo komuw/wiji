@@ -41,7 +41,6 @@ class BaseBroker(abc.ABC):
                                 "task_id": "some-uuid4",
                                 "current_retries": 0,
                                 "max_retries": 0,
-                                "log_id": "",
                                 "hook_metadata": "",
                                 "args": [],
                                 "kwargs": {},

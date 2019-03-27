@@ -8,16 +8,6 @@ if typing.TYPE_CHECKING:
 
 class Protocol:
     def __init__(self, version: int, task_options: "task.TaskOptions"):
-        # TaskOptions:
-        #     eta: float = 0.00,
-        #     max_retries: int = 0,
-        #     log_id: str = "",
-        #     hook_metadata: typing.Union[None, str] = None
-        #     task_id
-        #     current_retries
-        #     args
-        #     kwargs
-
         self._validate_protocol_args(version=version, task_options=task_options)
         self.version = version
 
@@ -70,12 +60,6 @@ class Protocol:
             raise ValueError(
                 """`task.TaskOptions.max_retries` should be of type:: `int` You entered: {0}""".format(
                     type(task_options.max_retries)
-                )
-            )
-        if not isinstance(task_options.log_id, str):
-            raise ValueError(
-                """`task.TaskOptions.log_id` should be of type:: `str` You entered: {0}""".format(
-                    type(task_options.log_id)
                 )
             )
         if not isinstance(task_options.hook_metadata, (type(None), str)):

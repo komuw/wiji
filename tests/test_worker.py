@@ -150,7 +150,6 @@ class TestWorker(TestCase):
                 "eta": "2019-03-24T16:00:12.247687+00:00",
                 "current_retries": 0,
                 "max_retries": 0,
-                "log_id": "",
                 "hook_metadata": "",
                 "args": [],
                 "kwargs": {"a": 21, "b": 535},

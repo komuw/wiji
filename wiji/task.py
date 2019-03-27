@@ -58,11 +58,7 @@ class TaskState(enum.Enum):
 
 class TaskOptions:
     def __init__(
-        self,
-        eta: float = 0.00,
-        max_retries: int = 0,
-        log_id: str = "",
-        hook_metadata: typing.Union[None, str] = None,
+        self, eta: float = 0.00, max_retries: int = 0, hook_metadata: typing.Union[None, str] = None
     ):
         """
         this are the options that you can supply when calling `task.delay`
@@ -73,24 +69,17 @@ class TaskOptions:
         Note that a `Task` class does not have a `TaskOptions` attribute at creation time, it gets one when `task.delay` is first called.
         """
         self._validate_task_options_args(
-            eta=eta, max_retries=max_retries, log_id=log_id, hook_metadata=hook_metadata
+            eta=eta, max_retries=max_retries, hook_metadata=hook_metadata
         )
         self.eta = eta
         if self.eta < 0.00:
             self.eta = 0.00
-        # self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
-
         self.task_id = ""
 
         self.current_retries: int = 0
         self.max_retries = max_retries
         if self.max_retries < 0:
             self.max_retries = 0
-
-        if log_id is not None:
-            self.log_id = log_id
-        else:
-            self.log_id = ""
 
         if hook_metadata is not None:
             self.hook_metadata = hook_metadata
@@ -104,7 +93,7 @@ class TaskOptions:
         return str(self.__dict__)
 
     def _validate_task_options_args(
-        self, eta: float, max_retries: int, log_id: str, hook_metadata: typing.Union[None, str]
+        self, eta: float, max_retries: int, hook_metadata: typing.Union[None, str]
     ) -> None:
         if not isinstance(eta, float):
             raise ValueError(
@@ -115,10 +104,6 @@ class TaskOptions:
                 """`max_retries` should be of type:: `int` You entered: {0}""".format(
                     type(max_retries)
                 )
-            )
-        if not isinstance(log_id, str):
-            raise ValueError(
-                """`log_id` should be of type:: `str` You entered: {0}""".format(type(log_id))
             )
         if not isinstance(hook_metadata, (type(None), str)):
             raise ValueError(
@@ -133,7 +118,6 @@ class TaskOptions:
             "task_id": self.task_id,
             "current_retries": self.current_retries,
             "max_retries": self.max_retries,
-            "log_id": self.log_id,
             "hook_metadata": self.hook_metadata,
             "args": self.args,
             "kwargs": self.kwargs,
@@ -443,16 +427,6 @@ class Task(abc.ABC):
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        # TaskOptions:
-        #     eta: float = 0.00,
-        #     max_retries: int = 0,
-        #     log_id: str = "",
-        #     hook_metadata: typing.Union[None, str] = None
-        #     task_id
-        #     current_retries
-        #     args
-        #     kwargs
-
         proto = protocol.Protocol(version=1, task_options=task_options)
         await self._notify_hook(
             task_id=task_options.task_id,
@@ -509,8 +483,6 @@ class Task(abc.ABC):
         self._get_task_options(*args, **kwargs)
         self._validate_delay_args(*args, **kwargs)
 
-        # TODO: fix this since it wont work.
-        # task_options is no longer an attr of Task
         if self.current_retries >= self.max_retries:
             raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(

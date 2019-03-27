@@ -1,6 +1,7 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
+import json
 import asyncio
 import inspect
 import datetime
@@ -173,47 +174,52 @@ class TestTask(TestCase):
         )
 
     def test_task_id_uniqueness(self):
-        all_task_ids = []
-        self._run(self.my_task.delay(a=44, b=252223))
-        task_id1 = self.my_task.task_options.task_id
-        all_task_ids.append(task_id1)
-        self._run(self.my_task.delay(a=44, b=252223))
-        task_id2 = self.my_task.task_options.task_id
-        all_task_ids.append(task_id2)
-        self.assertNotEqual(task_id1, task_id2)
-        self.assertEqual(len(set(all_task_ids)), 2)
+        with mock.patch("wiji.broker.InMemoryBroker.enqueue", new=AsyncMock()) as mock_enqueue:
+            all_task_ids = []
 
-        self._run(self.my_task.delay(a=856324, b=141))
-        task_id3 = self.my_task.task_options.task_id
-        all_task_ids.append(task_id3)
-        self.assertNotEqual(task_id1, task_id3)
-        self.assertEqual(len(set(all_task_ids)), 3)
+            self._run(self.my_task.delay(a=44, b=252223))
+            self.assertTrue(mock_enqueue.mock.called)
+            task_id1 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
+            all_task_ids.append(task_id1)
 
-        try:
-            self._run(
-                self.my_task.retry(
-                    a=856324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
+            self._run(self.my_task.delay(a=44, b=252223))
+            task_id2 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
+            all_task_ids.append(task_id2)
+
+            self.assertNotEqual(task_id1, task_id2)
+            self.assertEqual(len(set(all_task_ids)), 2)
+
+            self._run(self.my_task.delay(a=856324, b=141))
+            task_id3 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
+            all_task_ids.append(task_id3)
+            self.assertNotEqual(task_id1, task_id3)
+            self.assertEqual(len(set(all_task_ids)), 3)
+
+            try:
+                self._run(
+                    self.my_task.retry(
+                        a=856324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
+                    )
                 )
-            )
-        except wiji.task.WijiRetryError:
-            pass
+            except wiji.task.WijiRetryError:
+                pass
 
-        task_id4 = self.my_task.task_options.task_id
-        all_task_ids.append(task_id4)
-        self.assertNotEqual(task_id3, task_id4)
-        self.assertEqual(len(set(all_task_ids)), 4)
+            task_id4 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
+            all_task_ids.append(task_id4)
+            self.assertNotEqual(task_id3, task_id4)
+            self.assertEqual(len(set(all_task_ids)), 4)
 
-        try:
-            self._run(
-                self.my_task.retry(
-                    a=856324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
+            try:
+                self._run(
+                    self.my_task.retry(
+                        a=856324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
+                    )
                 )
-            )
-        except wiji.task.WijiRetryError:
-            pass
+            except wiji.task.WijiRetryError:
+                pass
 
-        task_id5 = self.my_task.task_options.task_id
-        all_task_ids.append(task_id5)
-        self.assertNotEqual(task_id3, task_id5)
-        self.assertNotEqual(task_id4, task_id5)
-        self.assertEqual(len(set(all_task_ids)), 5)
+            task_id5 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
+            all_task_ids.append(task_id5)
+            self.assertNotEqual(task_id3, task_id5)
+            self.assertNotEqual(task_id4, task_id5)
+            self.assertEqual(len(set(all_task_ids)), 5)

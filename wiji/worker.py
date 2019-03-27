@@ -369,6 +369,7 @@ class Worker:
             )
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop
+                task_kwargs.pop("task_options", None)
                 return dequeued_item
 
     async def shutdown(self) -> None:

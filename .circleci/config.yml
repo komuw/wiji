@@ -26,18 +26,22 @@ jobs:
       - run:
           name: test & coverage
           command: |
-            coverage erase
-            coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
-            codecov
-            coverage report --show-missing --fail-under=70
-      - run:
-          name: test & branch coverage
-          command: |
-            # branch coverage
-            coverage erase
-            coverage run --branch --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
-            codecov
-            coverage report --show-missing --fail-under=67
+            python -m unittest -v tests.test_worker.TestWorkerRedisBroker.test_bad_instantiation
+      # - run:
+      #     name: test & coverage
+      #     command: |
+      #       coverage erase
+      #       coverage run --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
+      #       codecov
+      #       coverage report --show-missing --fail-under=70
+      # - run:
+      #     name: test & branch coverage
+      #     command: |
+      #       # branch coverage
+      #       coverage erase
+      #       coverage run --branch --omit="*tests*,*cli/test_*,*examples/*,*.virtualenvs/*,*virtualenv/*,*.venv/*,*__init__*" -m unittest discover -v -s .
+      #       codecov
+      #       coverage report --show-missing --fail-under=67
 
   static-analysis:
     docker:

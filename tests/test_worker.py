@@ -351,6 +351,28 @@ class TestWorkerRedisBroker(TestWorker):
             auto_remove=True,
             labels={"name": name, "use": "running_wiji_tets"},
             ports={"6379/tcp": 6379},
+            publish_all_ports=True,
             stdout=True,
             stderr=True,
         )
+
+        running_containers = docker_client.containers.list()
+        for container in running_containers:
+            print()
+            print()
+            print(".name: ", container.name)
+            print(".labels: ", container.labels)
+            print(
+                ".attrs['HostConfig']['PortBindings']: ",
+                container.attrs["HostConfig"]["PortBindings"],
+            )
+            print(".attrs['Config']['ExposedPorts]: ", container.attrs["Config"]["ExposedPorts"])
+            print()
+            print()
+
+            print()
+            print()
+
+            print("container.attrs: ", container.attrs)
+            print()
+            print()

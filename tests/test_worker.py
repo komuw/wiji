@@ -104,20 +104,20 @@ class TestWorker(TestCase):
         # consume
         dequeued_item = self._run(worker.consume_tasks(TESTING=True))
         self.assertEqual(dequeued_item["version"], 1)
-        self.assertEqual(dequeued_item["current_retries"], 0)
-        self.assertEqual(dequeued_item["max_retries"], 0)
-        self.assertEqual(dequeued_item["args"], [])
-        self.assertEqual(dequeued_item["kwargs"], kwargs)
+        self.assertEqual(dequeued_item["task_options"]["current_retries"], 0)
+        self.assertEqual(dequeued_item["task_options"]["max_retries"], 0)
+        self.assertEqual(dequeued_item["task_options"]["args"], [])
+        self.assertEqual(dequeued_item["task_options"]["kwargs"], kwargs)
 
         # queue task
         self.myTask.synchronous_delay(34, 88)
         # consume
         dequeued_item = self._run(worker.consume_tasks(TESTING=True))
         self.assertEqual(dequeued_item["version"], 1)
-        self.assertEqual(dequeued_item["current_retries"], 0)
-        self.assertEqual(dequeued_item["max_retries"], 0)
-        self.assertEqual(dequeued_item["args"], [34, 88])
-        self.assertEqual(dequeued_item["kwargs"], {})
+        self.assertEqual(dequeued_item["task_options"]["current_retries"], 0)
+        self.assertEqual(dequeued_item["task_options"]["max_retries"], 0)
+        self.assertEqual(dequeued_item["task_options"]["args"], [34, 88])
+        self.assertEqual(dequeued_item["task_options"]["kwargs"], {})
 
     def test_broker_check_called(self):
         with mock.patch("wiji.task.Task._broker_check", new=AsyncMock()) as mock_broker_check:

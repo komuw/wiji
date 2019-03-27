@@ -7,6 +7,9 @@ jobs:
       WIJI_DEBUG: 1
       PYTHONASYNCIODEBUG: 1 
       IN_DOCKER: "Yes"
+      WIJI_TEST_REDIS_CONTAINER_NAME: "wiji_test_redis_container"
+      REDIS_HOST: "wiji_test_redis_container"
+      REDIS_PORT: 6379
     working_directory: ~/repo
     steps:
       - checkout

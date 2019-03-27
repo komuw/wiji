@@ -1,6 +1,7 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
+import os
 import json
 import asyncio
 from unittest import TestCase, mock
@@ -342,12 +343,13 @@ class TestWorkerRedisBroker(TestWorker):
         for container in running_containers:
             container.stop()
 
+        name = os.environ.get("WIJI_TEST_REDIS_CONTAINER_NAME", "wiji_test_redis_container")
         docker_client.containers.run(
             "redis:3.0-alpine",
-            name="wiji_test_redis_container",
+            name=name,
             detach=True,
             auto_remove=True,
-            labels={"name": "wiji_test_redis_container", "use": "running_wiji_tets"},
+            labels={"name": name, "use": "running_wiji_tets"},
             ports={"6379/tcp": 6379},
             stdout=True,
             stderr=True,

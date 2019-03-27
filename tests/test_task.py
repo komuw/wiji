@@ -225,11 +225,11 @@ class TestTask(TestCase):
             self.assertEqual(len(set(all_task_ids)), 5)
 
     def test_retry(self):
+        max_retries = 3
+
         self._run(self.my_task.delay(a=44, b=252223))
         self.assertEqual(self.my_task.current_retries, 0)
         self.assertEqual(self.my_task.max_retries, 0)
-
-        max_retries = 3
 
         # retry_1
         try:

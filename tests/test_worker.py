@@ -201,7 +201,8 @@ class TestWorker(TestCase):
             self.assertEqual(dequeued_item["version"], 1)
 
             self.assertTrue(mock_run_task.mock.called)
-            self.assertEqual(mock_run_task.mock.call_args[1], kwargs)
+            self.assertEqual(mock_run_task.mock.call_args[1]["a"], kwargs["a"])
+            self.assertEqual(mock_run_task.mock.call_args[1]["b"], kwargs["b"])
 
     def test_broker_done_called(self):
         kwargs = {"a": 263342, "b": 832429}
@@ -215,7 +216,8 @@ class TestWorker(TestCase):
 
             self.assertTrue(mock_broker_done.mock.called)
             self.assertEqual(
-                json.loads(mock_broker_done.mock.call_args[1]["item"])["kwargs"], kwargs
+                json.loads(mock_broker_done.mock.call_args[1]["item"])["task_options"]["kwargs"],
+                kwargs,
             )
             self.assertEqual(
                 mock_broker_done.mock.call_args[1]["queue_name"], self.myTask.queue_name
@@ -224,10 +226,10 @@ class TestWorker(TestCase):
                 mock_broker_done.mock.call_args[1]["state"], wiji.task.TaskState.EXECUTED
             )
 
-            task_options = mock_broker_done.mock.call_args[1]["task_options"]
-            self.assertEqual(task_options.kwargs, kwargs)
-            self.assertIsNotNone(task_options.task_id)
-            self.assertEqual(len(task_options.task_id), 36)  # len of uuid4
+            task_options = json.loads(mock_broker_done.mock.call_args[1]["item"])["task_options"]
+            self.assertEqual(task_options["kwargs"], kwargs)
+            self.assertIsNotNone(task_options["task_id"])
+            self.assertEqual(len(task_options["task_id"]), 36)  # len of uuid4
 
     def test_task_no_chain(self):
         """

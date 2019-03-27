@@ -336,6 +336,9 @@ class TestWorkerRedisBroker(TestWorker):
         self.myTask = ExampleAdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
         self._setup_docker()
 
+        # ensure each testcase starts off with a fresh DB
+        self.BROKER._flushdb()
+
     @staticmethod
     def _setup_docker():
         if os.environ.get("IN_DOCKER"):
@@ -359,24 +362,3 @@ class TestWorkerRedisBroker(TestWorker):
             stdout=True,
             stderr=True,
         )
-
-        running_containers = docker_client.containers.list()
-        for container in running_containers:
-            print()
-            print()
-            print(".name: ", container.name)
-            print(".labels: ", container.labels)
-            print(
-                ".attrs['HostConfig']['PortBindings']: ",
-                container.attrs["HostConfig"]["PortBindings"],
-            )
-            print(".attrs['Config']['ExposedPorts]: ", container.attrs["Config"]["ExposedPorts"])
-            print()
-            print()
-
-            print()
-            print()
-
-            print("container.attrs: ", container.attrs)
-            print()
-            print()

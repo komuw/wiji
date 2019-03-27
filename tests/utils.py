@@ -90,3 +90,10 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
 
     async def shutdown(self, queue_name: str, duration: float) -> None:
         return await asyncio.sleep(delay=-1, result=None)
+
+    def _flushdb(self):
+        """
+        delete all keys in the current database.
+        Only used in tests to ensure each testcase starts off with a fresh DB
+        """
+        self.redis_instance.flushdb()

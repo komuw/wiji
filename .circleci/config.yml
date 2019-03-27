@@ -24,10 +24,6 @@ jobs:
             sudo apt -y install pandoc
             sudo pip install -e .[dev,test]
             find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
-      # - run:
-      #     name: test & coverage
-      #     command: |
-      #       python -m unittest -v tests.test_worker.TestWorkerRedisBroker.test_bad_instantiation
       - run:
           name: test & coverage
           command: |

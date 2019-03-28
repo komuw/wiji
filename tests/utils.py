@@ -97,3 +97,10 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         Only used in tests to ensure each testcase starts off with a fresh DB
         """
         self.redis_instance.flushdb()
+
+    def _llen(self, queue_name: str):
+        """
+        find the length/size/number of queued items in the given queue.
+        Only used in tests.
+        """
+        return self.redis_instance.llen(queue_name)

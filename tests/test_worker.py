@@ -319,6 +319,50 @@ class TestWorker(TestCase):
             # chain is not queued
             self.assertFalse(mock_task_delay.mock.called)
 
+    def test_shutdown(self):
+        class AdderTask(wiji.task.Task):
+            async def run(self, a, b):
+                res = a + b
+                return res
+
+        # we want this task to be processed slowly
+        the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
+        queue_name = "TestWorker.test_shutdown"
+        _myTask = AdderTask(
+            the_broker=self.BROKER,
+            queue_name=queue_name,
+            the_ratelimiter=the_ratelimiter,
+            drain_duration=1.0,
+        )
+        worker = wiji.Worker(the_task=_myTask, worker_id="myWorkerID1")
+        self.assertFalse(worker.SUCCESFULLY_SHUT_DOWN)
+
+        # queue a lot of tasks
+        queued = []
+        for i in range(1, 20):
+            _myTask.synchronous_delay(a=9001, b=i)
+            queued.append(i)
+
+        async def call_worker_shutdown():
+            """
+            sleep for a few seconds so that some tasks can be consumed,
+            then shutdown worker
+            """
+            await asyncio.sleep(5)
+            await worker.shutdown()
+
+        loop = asyncio.get_event_loop()
+        tasks = asyncio.gather(
+            worker.consume_tasks(TESTING=False), call_worker_shutdown(), loop=loop
+        )
+        loop.run_until_complete(tasks)
+
+        # assert that some tasks have been consumed and also
+        # that not all were consumed.
+        self.assertTrue(_myTask.the_broker._llen(queue_name) > 10)
+        self.assertTrue(_myTask.the_broker._llen(queue_name) < len(queued))
+        self.assertTrue(worker.SUCCESFULLY_SHUT_DOWN)
+
 
 class TestWorkerRedisBroker(TestWorker):
     """

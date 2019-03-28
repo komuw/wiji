@@ -136,3 +136,10 @@ class InMemoryBroker(BaseBroker):
 
     async def shutdown(self, queue_name: str, duration: float) -> None:
         return await asyncio.sleep(delay=-1, result=None)
+
+    def _llen(self, queue_name: str):
+        """
+        find the length/size/number of queued items in the given queue.
+        Only used in tests.
+        """
+        return len(self.store[queue_name])

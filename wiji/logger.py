@@ -129,4 +129,3 @@ class wijiLoggingAdapter(logging.LoggerAdapter):
         t = time.strftime(self._formatter.default_time_format, ct)
         s = self._formatter.default_msec_format % (t, msecs)
         return s
-

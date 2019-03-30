@@ -29,11 +29,15 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
     def __init__(self):
         host = "localhost"
         port = 6379
+        password = None
         if os.environ.get("IN_DOCKER"):
             host = os.environ["REDIS_HOST"]
             port = os.environ["REDIS_PORT"]
-
-        self.redis_instance = redis.StrictRedis(host=host, port=port, db=0)
+            password = os.environ.get("REDIS_PASSWORD", None)
+        port = int(port)
+        self.redis_instance = redis.StrictRedis(
+            host=host, port=port, password=password, db=0, socket_timeout=3.0
+        )
 
     async def check(self, queue_name: str) -> None:
         await asyncio.sleep(1 / 117)
@@ -81,7 +85,22 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
         return dequed_item
 
     async def done(self, item: str, queue_name: str, state: wiji.task.TaskState) -> None:
-        return await asyncio.sleep(delay=-1, result=None)
+        # dequeue already removed the item
+        return await asyncio.sleep(delay=0.02, result=None)
 
     async def shutdown(self, queue_name: str, duration: float) -> None:
         return await asyncio.sleep(delay=-1, result=None)
+
+    def _flushdb(self):
+        """
+        delete all keys in the current database.
+        Only used in tests to ensure each testcase starts off with a fresh DB
+        """
+        self.redis_instance.flushdb()
+
+    def _llen(self, queue_name: str):
+        """
+        find the length/size/number of queued items in the given queue.
+        Only used in tests.
+        """
+        return self.redis_instance.llen(queue_name)

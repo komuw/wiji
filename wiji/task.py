@@ -474,6 +474,7 @@ class Task(abc.ABC):
         self._validate_delay_args(*args, **kwargs)
 
         if self.current_retries >= self.max_retries:
+            self._RETRYING = False
             raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
                     task_name=self.task_name, max_retries=self.max_retries

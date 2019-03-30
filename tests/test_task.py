@@ -222,6 +222,7 @@ class TestTask(TestCase):
         self._run(self.my_task.delay(a=44, b=252_223))
         self.assertEqual(self.my_task.current_retries, 0)
         self.assertEqual(self.my_task.max_retries, 0)
+        self.assertEqual(self.my_task._RETRYING, False)
 
         # retry_1
         self._run(
@@ -231,6 +232,7 @@ class TestTask(TestCase):
         )
         self.assertEqual(self.my_task.current_retries, 1)
         self.assertEqual(self.my_task.max_retries, max_retries)
+        self.assertEqual(self.my_task._RETRYING, True)
 
         # retry_2
         self._run(
@@ -240,6 +242,7 @@ class TestTask(TestCase):
         )
         self.assertEqual(self.my_task.current_retries, 2)
         self.assertEqual(self.my_task.max_retries, max_retries)
+        self.assertEqual(self.my_task._RETRYING, True)
 
         # retry_3
         self._run(
@@ -250,6 +253,7 @@ class TestTask(TestCase):
 
         self.assertEqual(self.my_task.current_retries, 3)
         self.assertEqual(self.my_task.max_retries, max_retries)
+        self.assertEqual(self.my_task._RETRYING, True)
 
         # retry_4
         def retrial_4():
@@ -266,3 +270,4 @@ class TestTask(TestCase):
             "has reached its max_retries count of: {max_retries}".format(max_retries=max_retries),
             str(raised_exception.exception),
         )
+        self.assertEqual(self.my_task._RETRYING, False)

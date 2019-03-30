@@ -1,7 +1,7 @@
 ## `wiji` changelog:
 most recent version is listed first.
 
-## **version:** v0.1.6-beta.1
+## **version:** v0.1.6-beta.3
 - bugfix, `task.task_options is stale`    
   We had a case where `broker.done` would get called with `task_id`==`''`(empty string) : https://github.com/komuw/wiji/pull/39
 - add timestamp to log events: https://github.com/komuw/wiji/pull/45

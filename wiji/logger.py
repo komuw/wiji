@@ -1,4 +1,5 @@
 import abc
+import time
 import typing
 import logging
 
@@ -94,12 +95,37 @@ class SimpleLogger(BaseLogger):
 
 
 class wijiLoggingAdapter(logging.LoggerAdapter):
+    _converter = time.localtime
+    _formatter = logging.Formatter()
+
     def process(self, msg, kwargs):
+        timestamp = self.formatTime()
+
         if isinstance(msg, str):
-            merged_msg = "{0} {1}".format(msg, self.extra)
+            merged_msg = "{0} {1} {2}".format(timestamp, self.extra, msg)
             if self.extra == {}:
-                merged_msg = "{0}".format(msg)
+                merged_msg = "{0} {1}".format(timestamp, msg)
             return merged_msg, kwargs
         else:
-            merged_msg = {**msg, **self.extra}
+            _timestamp = {"timestamp": timestamp}
+            # _timestamp should appear first in resulting dict
+            merged_msg = {**_timestamp, **self.extra, **msg}
             return "{0}".format(merged_msg), kwargs
+
+    def formatTime(self):
+        """
+        Return the creation time of the specified log event as formatted text.
+
+        This code is borrowed from:
+        https://docs.python.org/3/library/logging.html#logging.Formatter.formatTime
+
+        The basic behaviour is as follows: an ISO8601-like (or RFC 3339-like) format is used.
+        This function uses `time.localtime()` to convert the creation time to a tuple.
+        """
+        now = time.time()
+        msecs = (now - int(now)) * 1000
+
+        ct = self._converter(now)
+        t = time.strftime(self._formatter.default_time_format, ct)
+        s = self._formatter.default_msec_format % (t, msecs)
+        return s

@@ -22,6 +22,7 @@ class Worker:
 
     def __init__(
         self,
+        the_broker,
         the_task: task.Task,
         worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
@@ -35,7 +36,7 @@ class Worker:
             use_watchdog=use_watchdog,
             watchdog_duration=watchdog_duration,
         )
-
+        self.the_broker = the_broker
         self._PID = os.getpid()
         self.the_task = the_task
         if worker_id is not None:
@@ -60,7 +61,7 @@ class Worker:
         self.SHOULD_SHUT_DOWN: bool = False
         self.SUCCESFULLY_SHUT_DOWN: bool = False
 
-        self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
+        # self.the_task._sanity_check_logger(event="worker_sanity_check_logger")
 
     def _validate_worker_args(
         self,
@@ -69,12 +70,18 @@ class Worker:
         use_watchdog: bool,
         watchdog_duration: float,
     ) -> None:
-        if not isinstance(the_task, task.Task):
-            raise ValueError(
-                """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
-                    type(the_task)
-                )
-            )
+        # import pdb
+
+        # pdb.set_trace()
+        if not issubclass(the_task, task.Task):
+            raise ValueError("""`the_task` should be a subclass of:: `wiji.task.Task`""")
+
+        # if not isinstance(the_task, task.Task):
+        #     raise ValueError(
+        #         """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
+        #             type(the_task)
+        #         )
+        #     )
         if not isinstance(worker_id, (type(None), str)):
             raise ValueError(
                 """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
@@ -151,7 +158,7 @@ class Worker:
 
     async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
-            await self.the_task.the_broker.done(queue_name=queue_name, item=item, state=state)
+            await self.the_broker.done(queue_name=queue_name, item=item, state=state)
         except Exception as e:
             self._log(
                 logging.ERROR,
@@ -246,7 +253,8 @@ class Worker:
             TESTING: indicates whether this method is been called while running tests.
         """
         # this can exit with error
-        await self.the_task._broker_check(from_worker=True)
+
+        # await self.the_task._broker_check(from_worker=True)
 
         if self.watchdog is not None:
             self.watchdog.start()
@@ -281,7 +289,7 @@ class Worker:
                 continue
 
             try:
-                _dequeued_item: str = await self.the_task.the_broker.dequeue(
+                _dequeued_item: str = await self.the_broker.dequeue(
                     queue_name=self.the_task.queue_name
                 )
                 dequeued_item: dict = json.loads(_dequeued_item)
@@ -390,7 +398,7 @@ class Worker:
             # thus the broker shutdown can still continue on its own if it can.
             await asyncio.wait(
                 {
-                    self.the_task.the_broker.shutdown(
+                    self.the_broker.shutdown(
                         queue_name=self.the_task.queue_name, duration=wait_duration
                     )
                 },

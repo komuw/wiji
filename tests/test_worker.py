@@ -461,6 +461,34 @@ class TestWorker(TestCase):
             self.assertTrue(mock_broker_shutdown.mock.called)
             self.assertEqual(mock_broker_shutdown.mock.call_args[1]["queue_name"], queue_name)
 
+    def test_cool(self):
+        class AdderTask(wiji.task.Task):
+            queue_name = "AdderTaskNewConfnQueue"
+            loglevel = "DEBUG"
+            drain_duration = 10.0
+            task_name = "my_task_name"
+            log_metadata = {}
+
+            logger = wiji.logger.SimpleLogger("wiji.Task.task_name")
+            the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(log_handler=logger)
+            _checked_broker: bool = False
+            _RETRYING: bool = False
+
+            async def run(self, a, b):
+                res = a + b
+                return res
+
+        AdderTask_instance = AdderTask(the_broker=self.BROKER, queue_name="AdderTaskNewConfnQueue")
+
+        kwargs = {"a": 400, "b": 603}
+        worker = wiji.Worker(the_task=AdderTask, worker_id="myWorkerID1", the_broker=self.BROKER)
+        AdderTask_instance.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+
+        dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+        self.assertEqual(dequeued_item["version"], 1)
+        print()
+        print()
+
 
 class TestWorkerRedisBroker(TestWorker):
     """

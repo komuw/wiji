@@ -172,11 +172,11 @@ class Worker:
 
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
         task_options = task_kwargs.pop("task_options", {})
-        await self.the_task._notify_hook(
-            task_id=task_options.get("task_id"),
-            state=task.TaskState.EXECUTING,
-            hook_metadata=task_options.get("hook_metadata"),
-        )
+        # await self.the_task._notify_hook(
+        #     task_id=task_options.get("task_id"),
+        #     state=task.TaskState.EXECUTING,
+        #     hook_metadata=task_options.get("hook_metadata"),
+        # )
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
 
@@ -187,7 +187,13 @@ class Worker:
         monotonic_start = time.monotonic()
         process_time_start = time.process_time()
         try:
-            return_value = await self.the_task.run(*task_args, **task_kwargs)
+            # import pdb
+
+            # pdb.set_trace()
+            # return_value = await self.the_task.run(*task_args, **task_kwargs)
+            return_value = await self.the_task(
+                self.the_broker, queue_name="AdderTaskNewConfnQueue"
+            )(*task_args, **task_kwargs)
             if self.the_task.chain and not self.the_task._RETRYING:
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.delay(return_value)
@@ -232,14 +238,14 @@ class Worker:
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
             )
-            await self.the_task._notify_hook(
-                task_id=task_options.get("task_id"),
-                state=task.TaskState.EXECUTED,
-                hook_metadata=task_options.get("hook_metadata"),
-                execution_duration=execution_duration,
-                execution_exception=execution_exception,
-                return_value=return_value,
-            )
+            # await self.the_task._notify_hook(
+            #     task_id=task_options.get("task_id"),
+            #     state=task.TaskState.EXECUTED,
+            #     hook_metadata=task_options.get("hook_metadata"),
+            #     execution_duration=execution_duration,
+            #     execution_exception=execution_exception,
+            #     return_value=return_value,
+            # )
             if self.watchdog is not None:
                 self.watchdog.notify_alive_after()
 
@@ -348,9 +354,9 @@ class Worker:
                 )
                 continue
 
-            await self.the_task._notify_hook(
-                task_id=task_id, state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
-            )
+            # await self.the_task._notify_hook(
+            #     task_id=task_id, state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
+            # )
 
             now = datetime.datetime.now(tz=datetime.timezone.utc)
             if protocol.Protocol._from_isoformat(task_eta) <= now:

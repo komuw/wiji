@@ -473,9 +473,13 @@ class TestWorker(TestCase):
             the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(log_handler=logger)
             _checked_broker: bool = False
             _RETRYING: bool = False
+            chain = None
 
             async def run(self, a, b):
                 res = a + b
+                print()
+                print("RES:: ", res)
+                print()
                 return res
 
         AdderTask_instance = AdderTask(the_broker=self.BROKER, queue_name="AdderTaskNewConfnQueue")

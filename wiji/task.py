@@ -214,7 +214,7 @@ class Task(abc.ABC):
         self._RETRYING: bool = False
 
     async def __call__(self, *args, **kwargs):
-        await self.run(*args, **kwargs)
+        return await self.run(*args, **kwargs)
 
     def __str__(self):
         return str(

@@ -177,47 +177,39 @@ class TestTask(TestCase):
         with mock.patch("wiji.broker.InMemoryBroker.enqueue", new=AsyncMock()) as mock_enqueue:
             all_task_ids = []
 
-            self._run(self.my_task.delay(a=44, b=252223))
+            self._run(self.my_task.delay(a=44, b=252_223))
             self.assertTrue(mock_enqueue.mock.called)
             task_id1 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
             all_task_ids.append(task_id1)
 
-            self._run(self.my_task.delay(a=44, b=252223))
+            self._run(self.my_task.delay(a=44, b=252_223))
             task_id2 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
             all_task_ids.append(task_id2)
 
             self.assertNotEqual(task_id1, task_id2)
             self.assertEqual(len(set(all_task_ids)), 2)
 
-            self._run(self.my_task.delay(a=856324, b=141))
+            self._run(self.my_task.delay(a=856_324, b=141))
             task_id3 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
             all_task_ids.append(task_id3)
             self.assertNotEqual(task_id1, task_id3)
             self.assertEqual(len(set(all_task_ids)), 3)
 
-            try:
-                self._run(
-                    self.my_task.retry(
-                        a=856324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
-                    )
+            self._run(
+                self.my_task.retry(
+                    a=856_324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
                 )
-            except wiji.task.WijiRetryError:
-                pass
-
+            )
             task_id4 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
             all_task_ids.append(task_id4)
             self.assertNotEqual(task_id3, task_id4)
             self.assertEqual(len(set(all_task_ids)), 4)
 
-            try:
-                self._run(
-                    self.my_task.retry(
-                        a=856324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
-                    )
+            self._run(
+                self.my_task.retry(
+                    a=856_324, b=141, task_options=wiji.task.TaskOptions(max_retries=5)
                 )
-            except wiji.task.WijiRetryError:
-                pass
-
+            )
             task_id5 = json.loads(mock_enqueue.mock.call_args[1]["item"])["task_options"]["task_id"]
             all_task_ids.append(task_id5)
             self.assertNotEqual(task_id3, task_id5)
@@ -227,56 +219,45 @@ class TestTask(TestCase):
     def test_retry(self):
         max_retries = 3
 
-        self._run(self.my_task.delay(a=44, b=252223))
+        self._run(self.my_task.delay(a=44, b=252_223))
         self.assertEqual(self.my_task.current_retries, 0)
         self.assertEqual(self.my_task.max_retries, 0)
 
         # retry_1
-        try:
-            self._run(
-                self.my_task.retry(
-                    a=23, b=1481, task_options=wiji.task.TaskOptions(max_retries=max_retries)
-                )
+        self._run(
+            self.my_task.retry(
+                a=23, b=1481, task_options=wiji.task.TaskOptions(max_retries=max_retries)
             )
-        except wiji.task.WijiRetryError:
-            pass
+        )
         self.assertEqual(self.my_task.current_retries, 1)
         self.assertEqual(self.my_task.max_retries, max_retries)
 
         # retry_2
-        try:
-            self._run(
-                self.my_task.retry(
-                    a=101, b=98, task_options=wiji.task.TaskOptions(max_retries=max_retries)
-                )
+        self._run(
+            self.my_task.retry(
+                a=101, b=98, task_options=wiji.task.TaskOptions(max_retries=max_retries)
             )
-        except wiji.task.WijiRetryError:
-            pass
+        )
         self.assertEqual(self.my_task.current_retries, 2)
         self.assertEqual(self.my_task.max_retries, max_retries)
 
         # retry_3
-        try:
-            self._run(
-                self.my_task.retry(
-                    a=12, b=2, task_options=wiji.task.TaskOptions(max_retries=max_retries)
-                )
+        self._run(
+            self.my_task.retry(
+                a=12, b=2, task_options=wiji.task.TaskOptions(max_retries=max_retries)
             )
-        except wiji.task.WijiRetryError:
-            pass
+        )
+
         self.assertEqual(self.my_task.current_retries, 3)
         self.assertEqual(self.my_task.max_retries, max_retries)
 
         # retry_4
         def retrial_4():
-            try:
-                self._run(
-                    self.my_task.retry(
-                        a=1513, b=783, task_options=wiji.task.TaskOptions(max_retries=max_retries)
-                    )
+            self._run(
+                self.my_task.retry(
+                    a=1513, b=783, task_options=wiji.task.TaskOptions(max_retries=max_retries)
                 )
-            except wiji.task.WijiRetryError:
-                pass
+            )
 
         self.assertRaises(wiji.task.WijiMaxRetriesExceededError, retrial_4)
         with self.assertRaises(wiji.task.WijiMaxRetriesExceededError) as raised_exception:

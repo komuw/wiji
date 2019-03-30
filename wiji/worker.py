@@ -181,22 +181,22 @@ class Worker:
         process_time_start = time.process_time()
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
-            if self.the_task.chain:
+            if self.the_task.chain and not self.the_task._RETRYING:
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.delay(return_value)
-        except task.WijiRetryError as e:
-            # task is been retried
-            self._log(
-                logging.INFO,
-                {
-                    "event": "wiji.Worker.run_task",
-                    "state": str(e),
-                    "stage": "end",
-                    "task_name": self.the_task.task_name,
-                    "current_retries": task_options.get("current_retries"),
-                    "max_retries": task_options.get("max_retries"),
-                },
-            )
+            if self.the_task._RETRYING:
+                # task is been retried
+                self._log(
+                    logging.INFO,
+                    {
+                        "event": "wiji.Worker.run_task",
+                        "state": "Task is been retried.",
+                        "stage": "end",
+                        "task_name": self.the_task.task_name,
+                        "current_retries": task_options.get("current_retries"),
+                        "max_retries": task_options.get("max_retries"),
+                    },
+                )
         except Exception as e:
             execution_exception = e
             self._log(

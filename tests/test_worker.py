@@ -270,12 +270,22 @@ class TestWorker(TestCase):
         worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
         MYAdderTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
 
-        with mock.patch("wiji.task.Task.delay", new=AsyncMock()) as mock_task_delay:
-            mock_task_delay.mock.return_value = None
+        with mock.patch.object(
+            AdderTask, "delay", new=AsyncMock()
+        ) as mock_adder_delay, mock.patch.object(
+            DividerTask, "delay", new=AsyncMock()
+        ) as mock_divider_delay:
+            mock_adder_delay.mock.return_value = None
+            mock_divider_delay.return_value = None
+
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)
-            self.assertTrue(mock_task_delay.mock.called)
-            self.assertEqual(mock_task_delay.mock.call_args[0][1], kwargs["a"] + kwargs["b"])
+
+            # adder task is not queued
+            self.assertFalse(mock_adder_delay.mock.called)
+            # but divider task(the chain) is queued
+            self.assertTrue(mock_divider_delay.mock.called)
+            self.assertEqual(mock_divider_delay.mock.call_args[0][1], kwargs["a"] + kwargs["b"])
 
     def test_no_chaining_if_exception(self):
         """

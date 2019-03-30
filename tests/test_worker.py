@@ -463,17 +463,19 @@ class TestWorker(TestCase):
 
     def test_cool(self):
         class AdderTask(wiji.task.Task):
-            queue_name = "AdderTaskNewConfnQueue"
-            loglevel = "DEBUG"
-            drain_duration = 10.0
-            task_name = "my_task_name"
-            log_metadata = {}
+            # @staticmethod
+            # def koala():
+            #     queue_name = "AdderTaskNewConfnQueue"
+            #     loglevel = "DEBUG"
+            #     drain_duration = 10.0
+            #     task_name = "my_task_name"
+            #     log_metadata = {}
 
-            logger = wiji.logger.SimpleLogger("wiji.Task.task_name")
-            the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(log_handler=logger)
-            _checked_broker: bool = False
-            _RETRYING: bool = False
-            chain = None
+            #     logger = wiji.logger.SimpleLogger("wiji.Task.task_name")
+            #     the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(log_handler=logger)
+            #     _checked_broker: bool = False
+            #     _RETRYING: bool = False
+            #     chain = None
 
             async def run(self, a, b):
                 res = a + b
@@ -485,7 +487,12 @@ class TestWorker(TestCase):
         AdderTask_instance = AdderTask(the_broker=self.BROKER, queue_name="AdderTaskNewConfnQueue")
 
         kwargs = {"a": 400, "b": 603}
-        worker = wiji.Worker(the_task=AdderTask, worker_id="myWorkerID1", the_broker=self.BROKER)
+        worker = wiji.Worker(
+            the_task=AdderTask,
+            worker_id="myWorkerID1",
+            the_broker=self.BROKER,
+            queue_name="AdderTaskNewConfnQueue",
+        )
         AdderTask_instance.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
 
         dequeued_item = self._run(worker.consume_tasks(TESTING=True))

@@ -245,7 +245,6 @@ class Worker:
             TESTING: indicates whether this method is been called while running tests.
         """
         # this can exit with error
-
         await self.the_task._broker_check(from_worker=True)
 
         if self.watchdog is not None:

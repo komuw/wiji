@@ -239,9 +239,9 @@ class Task(abc.ABC):
         log_metadata: typing.Union[None, dict],
         log_handler: typing.Union[None, logger.BaseLogger],
     ) -> None:
-        if not isinstance(the_broker, (type(None), broker.BaseBroker)):
+        if not isinstance(the_broker, broker.BaseBroker):
             raise ValueError(
-                """the_broker should be of type:: None or wiji.broker.BaseBroker You entered: {0}""".format(
+                """the_broker should be of type:: `wiji.broker.BaseBroker` You entered: {0}""".format(
                     type(the_broker)
                 )
             )

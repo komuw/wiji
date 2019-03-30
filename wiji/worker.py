@@ -4,6 +4,7 @@ import time
 import random
 import string
 import typing
+import inspect
 import logging
 import asyncio
 import datetime
@@ -76,6 +77,8 @@ class Worker:
         # import pdb
 
         # pdb.set_trace()
+        if not inspect.isclass(the_task):
+            raise ValueError("""`the_task` should be a class NOT a class instance""")
         if not issubclass(the_task, task.Task):
             raise ValueError("""`the_task` should be a subclass of:: `wiji.task.Task`""")
 

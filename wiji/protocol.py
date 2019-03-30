@@ -2,109 +2,83 @@ import json
 import typing
 import datetime
 
+if typing.TYPE_CHECKING:
+    from . import task
+
 
 class Protocol:
-    def __init__(
-        self,
-        version: int,
-        task_id: str,
-        eta: typing.Union[float, str],
-        current_retries: int,
-        max_retries: int,
-        log_id: str,
-        hook_metadata: str,
-        argsy: tuple,
-        kwargsy: dict,
-    ):
-        self._validate_protocol_args(
-            version=version,
-            task_id=task_id,
-            eta=eta,
-            current_retries=current_retries,
-            max_retries=max_retries,
-            log_id=log_id,
-            hook_metadata=hook_metadata,
-            argsy=argsy,
-            kwargsy=kwargsy,
-        )
-
+    def __init__(self, version: int, task_options: "task.TaskOptions"):
+        self._validate_protocol_args(version=version, task_options=task_options)
         self.version = version
-        self.task_id = task_id
-        self.current_retries = current_retries
-        self.max_retries = max_retries
-        self.log_id = log_id
-        self.hook_metadata = hook_metadata
-        self.argsy = argsy
-        self.kwargsy = kwargsy
 
-        if isinstance(eta, float):
-            self.eta = self._eta_to_isoformat(eta=eta)
+        if isinstance(task_options.eta, float):
+            eta = self._eta_to_isoformat(eta=task_options.eta)
         else:
-            self.eta = eta
+            eta = task_options.eta
 
-    def _validate_protocol_args(
-        self,
-        version,
-        task_id,
-        eta,
-        current_retries,
-        max_retries,
-        log_id,
-        hook_metadata,
-        argsy,
-        kwargsy,
-    ):
+        task_options.eta = eta
+        self.task_options = task_options
+
+    def _validate_protocol_args(self, version: int, task_options: "task.TaskOptions"):
         if not isinstance(version, int):
             raise ValueError(
                 """`version` should be of type:: `int` You entered: {0}""".format(type(version))
             )
-        if not isinstance(task_id, str):
+
+        from . import task
+
+        if not isinstance(task_options, task.TaskOptions):
             raise ValueError(
-                """`task_id` should be of type:: `str` You entered: {0}""".format(type(task_id))
+                """`task_options` should be of type:: `wiji.task.TaskOptions` You entered: {0}""".format(
+                    type(task_options)
+                )
             )
-        if not isinstance(eta, (str, float)):
+
+        if not isinstance(task_options.eta, (str, float)):
             raise ValueError(
-                """`eta` should be of type:: `str` or `float` You entered: {0}""".format(type(eta))
+                """`eta` should be of type:: `str` or `float` You entered: {0}""".format(
+                    type(task_options.eta)
+                )
             )
-        if isinstance(eta, str):
+        if isinstance(task_options.eta, str):
             try:
                 # type-check that string eta is ISO 8601-formatted
-                self._from_isoformat(eta)
+                self._from_isoformat(task_options.eta)
             except Exception as e:
                 raise ValueError(
-                    """`eta` in string format should be a python ISO 8601-formatted string. You entered: {0}""".format(
-                        eta
+                    """`task.TaskOptions.eta` in string format should be a python ISO 8601-formatted string. You entered: {0}""".format(
+                        task_options.eta
                     )
                 ) from e
-        if not isinstance(current_retries, int):
+        if not isinstance(task_options.current_retries, int):
             raise ValueError(
-                """`current_retries` should be of type:: `int` You entered: {0}""".format(
-                    type(current_retries)
+                """`task.TaskOptions.current_retries` should be of type:: `int` You entered: {0}""".format(
+                    type(task_options.current_retries)
                 )
             )
-        if not isinstance(max_retries, int):
+        if not isinstance(task_options.max_retries, int):
             raise ValueError(
-                """`max_retries` should be of type:: `int` You entered: {0}""".format(
-                    type(max_retries)
+                """`task.TaskOptions.max_retries` should be of type:: `int` You entered: {0}""".format(
+                    type(task_options.max_retries)
                 )
             )
-        if not isinstance(log_id, str):
+        if not isinstance(task_options.hook_metadata, (type(None), str)):
             raise ValueError(
-                """`log_id` should be of type:: `str` You entered: {0}""".format(type(log_id))
-            )
-        if not isinstance(hook_metadata, (type(None), str)):
-            raise ValueError(
-                """`hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(hook_metadata)
+                """`task.TaskOptions.hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
+                    type(task_options.hook_metadata)
                 )
             )
-        if not isinstance(argsy, tuple):
+        if not isinstance(task_options.args, tuple):
             raise ValueError(
-                """`argsy` should be of type:: `tuple` You entered: {0}""".format(type(argsy))
+                """`task.TaskOptions.args` should be of type:: `tuple` You entered: {0}""".format(
+                    type(task_options.args)
+                )
             )
-        if not isinstance(kwargsy, dict):
+        if not isinstance(task_options.kwargs, dict):
             raise ValueError(
-                """`kwargsy` should be of type:: `dict` You entered: {0}""".format(type(kwargsy))
+                """`task.TaskOptions.kwargs` should be of type:: `dict` You entered: {0}""".format(
+                    type(task_options.kwargs)
+                )
             )
 
     @staticmethod
@@ -127,16 +101,4 @@ class Protocol:
         return dt
 
     def json(self):
-        return json.dumps(
-            {
-                "version": self.version,
-                "task_id": self.task_id,
-                "eta": self.eta,
-                "current_retries": self.current_retries,
-                "max_retries": self.max_retries,
-                "log_id": self.log_id,
-                "hook_metadata": self.hook_metadata,
-                "args": self.argsy,
-                "kwargs": self.kwargsy,
-            }
-        )
+        return json.dumps({"version": self.version, "task_options": self.task_options.dictsy()})

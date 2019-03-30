@@ -124,14 +124,15 @@ class Worker:
 
     async def _notify_ratelimiter(
         self,
+        task_id: str,
         return_value: typing.Any,
         execution_duration: typing.Dict[str, float],
         execution_exception: typing.Union[None, Exception],
     ) -> None:
         try:
             await self.the_task.the_ratelimiter.execution_outcome(
+                task_id=task_id,
                 task_name=self.the_task.task_name,
-                task_id=self.the_task.task_options.task_id,
                 queue_name=self.the_task.queue_name,
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
@@ -148,13 +149,9 @@ class Worker:
                 },
             )
 
-    async def _notify_broker(
-        self, item: str, queue_name: str, task_options: task.TaskOptions, state: task.TaskState
-    ) -> None:
+    async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
-            await self.the_task.the_broker.done(
-                item=item, queue_name=queue_name, task_options=task_options, state=state
-            )
+            await self.the_task.the_broker.done(queue_name=queue_name, item=item, state=state)
         except Exception as e:
             self._log(
                 logging.ERROR,
@@ -167,8 +164,11 @@ class Worker:
             )
 
     async def run_task(self, *task_args: typing.Any, **task_kwargs: typing.Any) -> None:
+        task_options = task_kwargs.pop("task_options", {})
         await self.the_task._notify_hook(
-            state=task.TaskState.EXECUTING, hook_metadata=self.the_task.task_options.hook_metadata
+            task_id=task_options.get("task_id"),
+            state=task.TaskState.EXECUTING,
+            hook_metadata=task_options.get("hook_metadata"),
         )
         if self.watchdog is not None:
             self.watchdog.notify_alive_before()
@@ -193,8 +193,8 @@ class Worker:
                     "state": str(e),
                     "stage": "end",
                     "task_name": self.the_task.task_name,
-                    "current_retries": self.the_task.task_options.current_retries,
-                    "max_retries": self.the_task.task_options.max_retries,
+                    "current_retries": task_options.get("current_retries"),
+                    "max_retries": task_options.get("max_retries"),
                 },
             )
         except Exception as e:
@@ -220,13 +220,15 @@ class Worker:
                 "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
             }
             await self._notify_ratelimiter(
+                task_id=task_options.get("task_id"),
                 return_value=return_value,
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
             )
             await self.the_task._notify_hook(
+                task_id=task_options.get("task_id"),
                 state=task.TaskState.EXECUTED,
-                hook_metadata=self.the_task.task_options.hook_metadata,
+                hook_metadata=task_options.get("hook_metadata"),
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
                 return_value=return_value,
@@ -305,14 +307,26 @@ class Worker:
             dequeue_retry_count = 0
             try:
                 _ = dequeued_item["version"]
-                task_id = dequeued_item["task_id"]
-                task_eta = dequeued_item["eta"]
-                _ = dequeued_item["current_retries"]
-                _ = dequeued_item["max_retries"]
-                task_log_id = dequeued_item["log_id"]
-                task_hook_metadata = dequeued_item["hook_metadata"]
-                task_args = dequeued_item["args"]
-                task_kwargs = dequeued_item["kwargs"]
+                _task_options = dequeued_item["task_options"]
+                task_id = _task_options["task_id"]
+                task_eta = _task_options["eta"]
+                task_current_retries = _task_options["current_retries"]
+                task_max_retries = _task_options["max_retries"]
+                task_hook_metadata = _task_options["hook_metadata"]
+                task_args = _task_options["args"]
+                task_kwargs = _task_options["kwargs"]
+
+                task_kwargs.update(
+                    {
+                        "task_options": {
+                            "task_id": task_id,
+                            "eta": task_eta,
+                            "current_retries": task_current_retries,
+                            "max_retries": task_max_retries,
+                            "hook_metadata": task_hook_metadata,
+                        }
+                    }
+                )
             except KeyError as e:
                 e = KeyError("enqueued message/object is missing required field: {}".format(str(e)))
                 self._log(
@@ -327,7 +341,7 @@ class Worker:
                 continue
 
             await self.the_task._notify_hook(
-                state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
+                task_id=task_id, state=task.TaskState.DEQUEUED, hook_metadata=task_hook_metadata
             )
 
             now = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -336,23 +350,19 @@ class Worker:
                 await self._notify_broker(
                     item=_dequeued_item,
                     queue_name=self.the_task.queue_name,
-                    task_options=self.the_task.task_options,
                     state=task.TaskState.EXECUTED,
                 )
             else:
                 # respect eta
+                task_kwargs.pop("task_options", None)
                 await self.the_task.delay(*task_args, **task_kwargs)
             self._log(
                 logging.INFO,
-                {
-                    "event": "wiji.Worker.consume_tasks",
-                    "stage": "end",
-                    "log_id": task_log_id,
-                    "task_id": task_id,
-                },
+                {"event": "wiji.Worker.consume_tasks", "stage": "end", "task_id": task_id},
             )
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop
+                task_kwargs.pop("task_options", None)
                 return dequeued_item
 
     async def shutdown(self) -> None:
@@ -365,7 +375,7 @@ class Worker:
                 "event": "wiji.Worker.shutdown",
                 "stage": "start",
                 "state": "intiating shutdown",
-                "drain_duration": self.the_task.task_options.drain_duration,
+                "drain_duration": self.the_task.drain_duration,
             },
         )
         self.SHOULD_SHUT_DOWN = True
@@ -373,7 +383,7 @@ class Worker:
             self.watchdog.stop()
 
         # half spent waiting for the broker, the other half just sleeping
-        wait_duration = self.the_task.task_options.drain_duration / 2
+        wait_duration = self.the_task.drain_duration / 2
         try:
             # asyncio.wait takes a python set as a first argument
             # after expiration of timeout, asyncio.wait does not cancel the task;

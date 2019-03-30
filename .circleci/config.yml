@@ -3,12 +3,24 @@ jobs:
   run-tests:
     docker:
       - image: circleci/python:3.7
+      # Specify multiple images if, for example, you need to use a database for your tests or for some other required service.
+      # In a multi-image configuration job, all steps are executed in the container created by the first image listed(primary container).
+      # All containers run in a common network and every exposed port will be available on localhost from a primary container.
+      # see: https://circleci.com/docs/2.0/executor-types/#using-multiple-docker-images
+      - image: 'redis:3.0-alpine'
     environment:
       WIJI_DEBUG: 1
       PYTHONASYNCIODEBUG: 1 
+      IN_DOCKER: "Yes"
+      WIJI_TEST_REDIS_CONTAINER_NAME: "wiji_test_redis_container"
+      REDIS_HOST: "localhost"
+      REDIS_PORT: 6379
     working_directory: ~/repo
     steps:
       - checkout
+      - setup_remote_docker:
+          version: 18.06.0-ce
+          docker_layer_caching: true
       - run:
           name: install pre-requistes
           command: |
@@ -16,7 +28,6 @@ jobs:
             sudo apt -y install pandoc
             sudo pip install -e .[dev,test]
             find . -name '*.pyc' -delete;find . -name '__pycache__' -delete | xargs echo
-      
       - run:
           name: test & coverage
           command: |

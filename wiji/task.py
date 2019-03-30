@@ -1,6 +1,8 @@
 import abc
 import enum
 import uuid
+import string
+import random
 import typing
 import asyncio
 import logging
@@ -56,54 +58,33 @@ class TaskState(enum.Enum):
 
 class TaskOptions:
     def __init__(
-        self,
-        eta: float = 0.00,
-        max_retries: int = 0,
-        log_id: str = "",
-        hook_metadata: typing.Union[None, str] = None,
-        drain_duration: float = 10.0,
+        self, eta: float = 0.00, max_retries: int = 0, hook_metadata: typing.Union[None, str] = None
     ):
+        """
+        this are the options that you can supply when calling `task.delay`
+        ie, they are the config options that only apply to that `task.delay` invocation eg `eta`
+
+        If a config option applies to the `Task` instance itself, then it should not be in this class eg `drain_duration`
+
+        Note that a `Task` class does not have a `TaskOptions` attribute at creation time, it gets one when `task.delay` is first called.
+        """
         self._validate_task_options_args(
-            eta=eta,
-            max_retries=max_retries,
-            log_id=log_id,
-            hook_metadata=hook_metadata,
-            drain_duration=drain_duration,
+            eta=eta, max_retries=max_retries, hook_metadata=hook_metadata
         )
         self.eta = eta
         if self.eta < 0.00:
             self.eta = 0.00
-        self.eta = protocol.Protocol._eta_to_isoformat(eta=self.eta)
+        self.task_id = ""
 
         self.current_retries: int = 0
         self.max_retries = max_retries
         if self.max_retries < 0:
             self.max_retries = 0
 
-        if log_id is not None:
-            self.log_id = log_id
-        else:
-            self.log_id = ""
-
         if hook_metadata is not None:
             self.hook_metadata = hook_metadata
         else:
             self.hook_metadata = ""
-
-        self.task_id: str = ""
-
-        # `drain_duration` is the duration(in seconds) that a worker should wait
-        # after getting a termination signal(SIGTERM, SIGQUIT etc).
-        # during this duration, the worker does not consumer anymore tasks from the broker,
-        # the worker will continue executing any tasks that it had already dequeued from the broker.
-        # a simple way of choosing a value to set is:
-        # drain_duration = time_taken_to_run_this_task + 1.00
-        # eg: if your task is making a network call that lasts 30seconds,
-        # thus; drain_duration = 30 + 1.00
-
-        # the default value is 10.00 seconds.
-        # mainly because that is also the default value of the process supervisor: `supervisord`
-        self.drain_duration = drain_duration
 
         self.args: tuple = ()
         self.kwargs: dict = {}
@@ -112,12 +93,7 @@ class TaskOptions:
         return str(self.__dict__)
 
     def _validate_task_options_args(
-        self,
-        eta: float,
-        max_retries: int,
-        log_id: str,
-        hook_metadata: typing.Union[None, str],
-        drain_duration: float,
+        self, eta: float, max_retries: int, hook_metadata: typing.Union[None, str]
     ) -> None:
         if not isinstance(eta, float):
             raise ValueError(
@@ -129,22 +105,23 @@ class TaskOptions:
                     type(max_retries)
                 )
             )
-        if not isinstance(log_id, str):
-            raise ValueError(
-                """`log_id` should be of type:: `str` You entered: {0}""".format(type(log_id))
-            )
         if not isinstance(hook_metadata, (type(None), str)):
             raise ValueError(
                 """`hook_metadata` should be of type:: `None` or `str` You entered: {0}""".format(
                     type(hook_metadata)
                 )
             )
-        if not isinstance(drain_duration, float):
-            raise ValueError(
-                """`drain_duration` should be of type:: `float` You entered: {0}""".format(
-                    type(drain_duration)
-                )
-            )
+
+    def dictsy(self):
+        return {
+            "eta": self.eta,
+            "task_id": self.task_id,
+            "current_retries": self.current_retries,
+            "max_retries": self.max_retries,
+            "hook_metadata": self.hook_metadata,
+            "args": self.args,
+            "kwargs": self.kwargs,
+        }
 
 
 class Task(abc.ABC):
@@ -174,6 +151,7 @@ class Task(abc.ABC):
         chain: typing.Union[None, "Task"] = None,
         the_hook: typing.Union[None, hook.BaseHook] = None,
         the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None,
+        drain_duration: float = 10.0,
         loglevel: str = "DEBUG",
         log_metadata: typing.Union[None, dict] = None,
         log_handler: typing.Union[None, logger.BaseLogger] = None,
@@ -185,16 +163,29 @@ class Task(abc.ABC):
             chain=chain,
             the_hook=the_hook,
             the_ratelimiter=the_ratelimiter,
+            drain_duration=drain_duration,
             loglevel=loglevel,
             log_metadata=log_metadata,
             log_handler=log_handler,
         )
 
-        self.task_options = TaskOptions()
         self.the_broker = the_broker
         self.queue_name = queue_name
         self.chain = chain
         self.loglevel = loglevel.upper()
+
+        # `drain_duration` is the duration(in seconds) that a worker should wait
+        # after getting a termination signal(SIGTERM, SIGQUIT etc).
+        # during this duration, the worker does not consumer anymore tasks from the broker,
+        # the worker will continue executing any tasks that it had already dequeued from the broker.
+        # a simple way of choosing a value to set is:
+        # drain_duration = time_taken_to_run_this_task + 1.00
+        # eg: if your task is making a network call that lasts 30seconds,
+        # thus; drain_duration = 30 + 1.00
+
+        # the default value is 10.00 seconds.
+        # mainly because that is also the default value of the process supervisor: `supervisord`
+        self.drain_duration = drain_duration
 
         if task_name is not None:
             self.task_name = task_name
@@ -211,8 +202,9 @@ class Task(abc.ABC):
             self.logger = log_handler
         else:
             self.logger = logger.SimpleLogger(
-                "wiji.Task.task_name={0}.task_id={1}".format(
-                    self.task_name, self.task_options.task_id
+                "wiji.Task.task_name={0}.{1}".format(
+                    self.task_name,
+                    "".join(random.choices(string.ascii_lowercase + string.digits, k=5)),
                 )
             )
         self.logger.bind(level=self.loglevel, log_metadata=self.log_metadata)
@@ -240,7 +232,6 @@ class Task(abc.ABC):
                 "the_broker": self.the_broker,
                 "queue_name": self.queue_name,
                 "chain": self.chain,
-                "task_options": self.task_options.__dict__,
             }
         )
 
@@ -252,6 +243,7 @@ class Task(abc.ABC):
         chain: typing.Union[None, "Task"],
         the_hook: typing.Union[None, hook.BaseHook],
         the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter],
+        drain_duration: float,
         loglevel: str,
         log_metadata: typing.Union[None, dict],
         log_handler: typing.Union[None, logger.BaseLogger],
@@ -291,6 +283,12 @@ class Task(abc.ABC):
             raise ValueError(
                 """`the_ratelimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
                     type(the_ratelimiter)
+                )
+            )
+        if not isinstance(drain_duration, float):
+            raise ValueError(
+                """`drain_duration` should be of type:: `float` You entered: {0}""".format(
+                    type(drain_duration)
                 )
             )
         if not isinstance(log_handler, (type(None), logger.BaseLogger)):
@@ -366,14 +364,12 @@ class Task(abc.ABC):
             if not from_worker:
                 self._checked_broker = True
         except Exception as e:
+            event = "wiji.Task.delay"
+            if from_worker:
+                event = "wiji.Worker.consume_tasks"
             self._log(
                 logging.ERROR,
-                {
-                    "event": "wiji.Task.delay",
-                    "stage": "end",
-                    "state": "check broker failed",
-                    "error": str(e),
-                },
+                {"event": event, "stage": "end", "state": "check broker failed", "error": str(e)},
             )
             # exit with error
             raise ValueError(
@@ -382,6 +378,7 @@ class Task(abc.ABC):
 
     async def _notify_hook(
         self,
+        task_id: str,
         state: TaskState,
         hook_metadata: str,
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
@@ -391,8 +388,8 @@ class Task(abc.ABC):
         try:
             await self.the_hook.notify(
                 task_name=self.task_name,
-                task_id=self.task_options.task_id,
                 queue_name=self.queue_name,
+                task_id=task_id,
                 state=state,
                 hook_metadata=hook_metadata,
                 execution_duration=execution_duration,
@@ -420,35 +417,29 @@ class Task(abc.ABC):
             args: The positional arguments to pass on to the task.
             kwargs: The keyword arguments to pass on to the task.
         """
-        args, kwargs = self._validate_delay_args(*args, **kwargs)
+        # _get_task_options should be called first
+        task_options = self._get_task_options(*args, **kwargs)
+        args = task_options.args
+        kwargs = task_options.kwargs
+
+        self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        # every invocation of `my_task.delay()` is counted as unique and
-        # should have a unique task_id even if it is a retry of a previous request
-        self.task_options.task_id = str(uuid.uuid4())
-        proto = protocol.Protocol(
-            version=1,
-            task_id=self.task_options.task_id,
-            eta=self.task_options.eta,
-            current_retries=self.task_options.current_retries,
-            max_retries=self.task_options.max_retries,
-            log_id=self.task_options.log_id,
-            hook_metadata=self.task_options.hook_metadata,
-            argsy=self.task_options.args,
-            kwargsy=self.task_options.kwargs,
-        )
+        proto = protocol.Protocol(version=1, task_options=task_options)
         await self._notify_hook(
-            state=TaskState.QUEUEING, hook_metadata=self.task_options.hook_metadata
+            task_id=task_options.task_id,
+            state=TaskState.QUEUEING,
+            hook_metadata=task_options.hook_metadata,
         )
         try:
-            await self.the_broker.enqueue(
-                item=proto.json(), queue_name=self.queue_name, task_options=self.task_options
-            )
+            await self.the_broker.enqueue(queue_name=self.queue_name, item=proto.json())
             # this cannot raise an error since the method handles that error
             await self._notify_hook(
-                state=TaskState.QUEUED, hook_metadata=self.task_options.hook_metadata
+                task_id=task_options.task_id,
+                state=TaskState.QUEUED,
+                hook_metadata=task_options.hook_metadata,
             )
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})
@@ -488,16 +479,18 @@ class Task(abc.ABC):
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
         """
-        args, kwargs = self._validate_delay_args(*args, **kwargs)
+        # _get_task_options should be called first
+        self._get_task_options(*args, **kwargs)
+        self._validate_delay_args(*args, **kwargs)
 
-        if self.task_options.current_retries >= self.task_options.max_retries:
+        if self.current_retries >= self.max_retries:
             raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
-                    task_name=self.task_name, max_retries=self.task_options.max_retries
+                    task_name=self.task_name, max_retries=self.max_retries
                 )
             )
 
-        self.task_options.current_retries += 1
+        self.current_retries += 1
         await self.delay(*args, **kwargs)
 
         raise WijiRetryError(
@@ -506,23 +499,13 @@ class Task(abc.ABC):
             )
         )
 
-    def _validate_delay_args(
-        self, *args: typing.Any, **kwargs: typing.Any
-    ) -> typing.Tuple[typing.Any, typing.Any]:
+    def _validate_delay_args(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         for a in args:
             if isinstance(a, TaskOptions):
                 raise ValueError(
                     """You cannot use a value of type `wiji.task.TaskOptions` as a normal argument.
                     \nHint: instead, pass it in as a kwarg(named argument)"""
                 )
-        for k, v in list(kwargs.items()):
-            if isinstance(v, TaskOptions):
-                self.task_options = v
-                kwargs.pop(k)
-
-        self.task_options.args = args
-        self.task_options.kwargs = kwargs
-        return self.task_options.args, self.task_options.kwargs
 
     @staticmethod
     def _type_check(func, *args: typing.Any, **kwargs: typing.Any) -> inspect.BoundArguments:
@@ -538,6 +521,31 @@ class Task(abc.ABC):
         """
         sig = inspect.signature(func)
         return sig.bind(*args, **kwargs)
+
+    def _get_task_options(self, *args: typing.Any, **kwargs: typing.Any) -> TaskOptions:
+        task_options = None
+        for k, v in list(kwargs.items()):
+            if isinstance(v, TaskOptions):
+                task_options = v
+                kwargs.pop(k)
+
+        if not task_options:
+            # create a default task_options
+            task_options = TaskOptions()
+
+        # every invocation of `my_task.delay()` is counted as unique and
+        # should have a unique task_id even if it is a retry of a previous request
+        task_options.task_id = str(uuid.uuid4())
+        task_options.args = args
+        task_options.kwargs = kwargs
+
+        # set retries
+        self.max_retries = task_options.max_retries
+        if not hasattr(self, "current_retries"):
+            # if `current_retries` exists, don't ovveride it
+            self.current_retries = task_options.current_retries
+
+        return task_options
 
 
 class _watchdogTask(Task):
@@ -559,7 +567,6 @@ class _watchdogTask(Task):
                 "event": "wiji.WatchDogTask.run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
-                "task_id": self.task_options.task_id,
             },
         )
         await asyncio.sleep(0.1 / 1.5)

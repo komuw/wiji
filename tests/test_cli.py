@@ -1,11 +1,7 @@
-import sys
-import logging
 import argparse
 from unittest import TestCase, mock
 
 import cli
-
-logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.CRITICAL)
 
 
 class MockArgumentParser:

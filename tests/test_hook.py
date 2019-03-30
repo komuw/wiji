@@ -1,12 +1,7 @@
-import sys
 import asyncio
-import logging
 from unittest import TestCase, mock
 
 import wiji
-
-
-logging.basicConfig(format="%(message)s", stream=sys.stdout, level=logging.CRITICAL)
 
 
 def AsyncMock(*args, **kwargs):
@@ -59,7 +54,7 @@ class TestHook(TestCase):
 
             # consume
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
-            self.assertEqual(dequeued_item["kwargs"], kwargs)
+            self.assertEqual(dequeued_item["task_options"]["kwargs"], kwargs)
             self.assertTrue(mock_hook_notify.mock.called)
             self.assertEqual(
                 mock_hook_notify.mock.call_args[1]["return_value"], kwargs["a"] + kwargs["b"]

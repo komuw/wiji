@@ -186,10 +186,10 @@ class Worker:
         perf_counter_start = time.perf_counter()
         monotonic_start = time.monotonic()
         process_time_start = time.process_time()
-        try:
-            # import pdb
+        # import pdb
 
-            # pdb.set_trace()
+        # pdb.set_trace()
+        try:
             # return_value = await self.the_task.run(*task_args, **task_kwargs)
             return_value = await self.the_task(
                 self.the_broker, queue_name="AdderTaskNewConfnQueue"

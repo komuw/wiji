@@ -98,7 +98,7 @@ class wijiLoggingAdapter(logging.LoggerAdapter):
     _converter = time.localtime
     _formatter = logging.Formatter()
 
-    def process(self, msg, kwargs) -> typing.Tuple[str, dict]:
+    def process(self, msg, kwargs):
         timestamp = self.formatTime()
 
         if isinstance(msg, str):
@@ -112,7 +112,7 @@ class wijiLoggingAdapter(logging.LoggerAdapter):
             merged_msg = {**_timestamp, **self.extra, **msg}
             return "{0}".format(merged_msg), kwargs
 
-    def formatTime(self) -> str:
+    def formatTime(self):
         """
         Return the creation time of the specified log event as formatted text.
 

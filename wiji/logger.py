@@ -102,14 +102,14 @@ class wijiLoggingAdapter(logging.LoggerAdapter):
         timestamp = self.formatTime()
 
         if isinstance(msg, str):
-            merged_msg = "{0} {1} {2}".format(timestamp, self.extra, msg)
+            merged_msg = "{0} {1} {2}".format(timestamp, msg, self.extra)
             if self.extra == {}:
                 merged_msg = "{0} {1}".format(timestamp, msg)
             return merged_msg, kwargs
         else:
             _timestamp = {"timestamp": timestamp}
             # _timestamp should appear first in resulting dict
-            merged_msg = {**_timestamp, **self.extra, **msg}
+            merged_msg = {**_timestamp, **msg, **self.extra}
             return "{0}".format(merged_msg), kwargs
 
     def formatTime(self):

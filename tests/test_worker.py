@@ -462,6 +462,8 @@ class TestWorker(TestCase):
             self.assertEqual(mock_broker_shutdown.mock.call_args[1]["queue_name"], queue_name)
 
     def test_cool(self):
+        BROKER = self.BROKER
+
         class AdderTask(wiji.task.Task):
             # @staticmethod
             # def koala():
@@ -476,6 +478,8 @@ class TestWorker(TestCase):
             #     _checked_broker: bool = False
             #     _RETRYING: bool = False
             #     chain = None
+            def __init__(self, the_broker=BROKER, queue_name="AdderTaskNewConfnQueue"):
+                super().__init__(the_broker, queue_name)
 
             async def run(self, a, b):
                 res = a + b
@@ -487,12 +491,7 @@ class TestWorker(TestCase):
         AdderTask_instance = AdderTask(the_broker=self.BROKER, queue_name="AdderTaskNewConfnQueue")
 
         kwargs = {"a": 400, "b": 603}
-        worker = wiji.Worker(
-            the_task=AdderTask,
-            worker_id="myWorkerID1",
-            the_broker=self.BROKER,
-            queue_name="AdderTaskNewConfnQueue",
-        )
+        worker = wiji.Worker(the_task=AdderTask, worker_id="myWorkerID1")
         AdderTask_instance.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
 
         dequeued_item = self._run(worker.consume_tasks(TESTING=True))

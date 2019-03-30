@@ -22,8 +22,8 @@ class Worker:
 
     def __init__(
         self,
-        the_broker,
-        queue_name,
+        # the_broker,
+        # queue_name,
         the_task: task.Task,
         worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
@@ -37,10 +37,10 @@ class Worker:
             use_watchdog=use_watchdog,
             watchdog_duration=watchdog_duration,
         )
-        self.the_broker = the_broker
-        self.queue_name = queue_name
+        # self.the_broker = the_broker
+        # self.queue_name = queue_name
         self._PID = os.getpid()
-        self.the_task = the_task(the_broker=self.the_broker, queue_name=self.queue_name)
+        self.the_task = the_task()
 
         if worker_id is not None:
             self.worker_id = worker_id
@@ -161,7 +161,7 @@ class Worker:
 
     async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
-            await self.the_broker.done(queue_name=queue_name, item=item, state=state)
+            await self.the_task.the_broker.done(queue_name=queue_name, item=item, state=state)
         except Exception as e:
             self._log(
                 logging.ERROR,
@@ -298,7 +298,7 @@ class Worker:
                 continue
 
             try:
-                _dequeued_item: str = await self.the_broker.dequeue(
+                _dequeued_item: str = await self.the_task.the_broker.dequeue(
                     queue_name=self.the_task.queue_name
                 )
                 dequeued_item: dict = json.loads(_dequeued_item)
@@ -407,7 +407,7 @@ class Worker:
             # thus the broker shutdown can still continue on its own if it can.
             await asyncio.wait(
                 {
-                    self.the_broker.shutdown(
+                    self.the_task.the_broker.shutdown(
                         queue_name=self.the_task.queue_name, duration=wait_duration
                     )
                 },

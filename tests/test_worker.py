@@ -193,7 +193,7 @@ class TestWorker(TestCase):
             self.assertEqual(mock_task_delay.mock.call_args[1], kwargs)
 
     def test_run_task_called(self):
-        kwargs = {"a": 263342, "b": 832429}
+        kwargs = {"a": 263_342, "b": 832_429}
         with mock.patch("wiji.worker.Worker.run_task", new=AsyncMock()) as mock_run_task:
             worker = wiji.Worker(the_task=self.myTask, worker_id="myWorkerID1")
             self.myTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
@@ -205,7 +205,7 @@ class TestWorker(TestCase):
             self.assertEqual(mock_run_task.mock.call_args[1]["b"], kwargs["b"])
 
     def test_broker_done_called(self):
-        kwargs = {"a": 263342, "b": 832429}
+        kwargs = {"a": 263_342, "b": 832_429}
         with mock.patch(
             "{broker_path}.done".format(broker_path=self.broker_path()), new=AsyncMock()
         ) as mock_broker_done:
@@ -270,12 +270,22 @@ class TestWorker(TestCase):
         worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
         MYAdderTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
 
-        with mock.patch("wiji.task.Task.delay", new=AsyncMock()) as mock_task_delay:
-            mock_task_delay.mock.return_value = None
+        with mock.patch.object(
+            AdderTask, "delay", new=AsyncMock()
+        ) as mock_adder_delay, mock.patch.object(
+            DividerTask, "delay", new=AsyncMock()
+        ) as mock_divider_delay:
+            mock_adder_delay.mock.return_value = None
+            mock_divider_delay.return_value = None
+
             dequeued_item = self._run(worker.consume_tasks(TESTING=True))
             self.assertEqual(dequeued_item["version"], 1)
-            self.assertTrue(mock_task_delay.mock.called)
-            self.assertEqual(mock_task_delay.mock.call_args[0][1], kwargs["a"] + kwargs["b"])
+
+            # adder task is not queued
+            self.assertFalse(mock_adder_delay.mock.called)
+            # but divider task(the chain) is queued
+            self.assertTrue(mock_divider_delay.mock.called)
+            self.assertEqual(mock_divider_delay.mock.call_args[0][1], kwargs["a"] + kwargs["b"])
 
     def test_no_chaining_if_exception(self):
         """
@@ -318,6 +328,49 @@ class TestWorker(TestCase):
             self.assertEqual(dequeued_item["version"], 1)
             # chain is not queued
             self.assertFalse(mock_task_delay.mock.called)
+
+    def test_no_chaining_if_retrying(self):
+        """
+        test that if parent task is been retried, the chained task is not queued
+        """
+
+        class DividerTask(wiji.task.Task):
+            async def run(self, a):
+                res = a / 3
+                print("divider res: ", res)
+                return res
+
+        MYDividerTask = DividerTask(the_broker=self.BROKER, queue_name="DividerTaskChainQueue")
+
+        class AdderTask(wiji.task.Task):
+            async def run(self, a, b):
+                res = a + b
+                await self.retry(a=221, b=555, task_options=wiji.task.TaskOptions(max_retries=2))
+                return res
+
+        MYAdderTask = AdderTask(
+            the_broker=self.BROKER, queue_name="AdderTaskChainQueue", chain=MYDividerTask
+        )
+
+        kwargs = {"a": 400, "b": 603}
+        worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
+        MYAdderTask.synchronous_delay(a=kwargs["a"], b=kwargs["b"])
+
+        with mock.patch.object(
+            AdderTask, "delay", new=AsyncMock()
+        ) as mock_adder_delay, mock.patch.object(
+            DividerTask, "delay", new=AsyncMock()
+        ) as mock_divider_delay:
+            mock_adder_delay.mock.return_value = None
+            mock_divider_delay.return_value = None
+
+            dequeued_item = self._run(worker.consume_tasks(TESTING=True))
+            self.assertEqual(dequeued_item["version"], 1)
+
+            # divider chain is not queued
+            self.assertFalse(mock_divider_delay.mock.called)
+            # but adder task is queued again
+            self.assertTrue(mock_adder_delay.mock.called)
 
     def test_shutdown(self):
         class AdderTask(wiji.task.Task):

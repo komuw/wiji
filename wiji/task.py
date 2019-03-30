@@ -29,16 +29,6 @@ class WijiMaxRetriesExceededError(Exception):
     pass
 
 
-class WijiRetryError(Exception):
-    """
-    Exception that is raised so that `wiji.Worker` can know that current executing task is retrying.
-    This enables `wiji.Worker` not to schedule any chained tasks of the current executing task.
-    User applications should not capture this Exception!
-    """
-
-    pass
-
-
 class TaskDelayError(Exception):
     """
     raised if `wiji` is unable to publish to the broker for any reason.
@@ -220,7 +210,8 @@ class Task(abc.ABC):
         else:
             self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
-        self._checked_broker = False
+        self._checked_broker: bool = False
+        self._RETRYING: bool = False
 
     async def __call__(self, *args, **kwargs):
         await self.run(*args, **kwargs)
@@ -474,7 +465,6 @@ class Task(abc.ABC):
 
         Raises:
             WijiMaxRetriesExceededError: the task exceeded its max_retries count.
-            WijiRetryError: the task is been retried. User applications should not capture this Exception.
 
         This method takes the same parameters as the `delay` method.
         It also behaves the same as `delay`
@@ -484,6 +474,7 @@ class Task(abc.ABC):
         self._validate_delay_args(*args, **kwargs)
 
         if self.current_retries >= self.max_retries:
+            self._RETRYING = False
             raise WijiMaxRetriesExceededError(
                 "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
                     task_name=self.task_name, max_retries=self.max_retries
@@ -493,11 +484,7 @@ class Task(abc.ABC):
         self.current_retries += 1
         await self.delay(*args, **kwargs)
 
-        raise WijiRetryError(
-            "Task: `{task_name}` is been retried. User applications should not capture this Exception!".format(
-                task_name=self.task_name
-            )
-        )
+        self._RETRYING = True
 
     def _validate_delay_args(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         for a in args:

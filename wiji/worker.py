@@ -23,8 +23,6 @@ class Worker:
 
     def __init__(
         self,
-        # the_broker,
-        # queue_name,
         the_task: task.Task,
         worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
@@ -38,8 +36,6 @@ class Worker:
             use_watchdog=use_watchdog,
             watchdog_duration=watchdog_duration,
         )
-        # self.the_broker = the_broker
-        # self.queue_name = queue_name
         self._PID = os.getpid()
         self.the_task = the_task()
 
@@ -74,20 +70,10 @@ class Worker:
         use_watchdog: bool,
         watchdog_duration: float,
     ) -> None:
-        # import pdb
-
-        # pdb.set_trace()
         if not inspect.isclass(the_task):
             raise ValueError("""`the_task` should be a class NOT a class instance""")
         if not issubclass(the_task, task.Task):
             raise ValueError("""`the_task` should be a subclass of:: `wiji.task.Task`""")
-
-        # if not isinstance(the_task, task.Task):
-        #     raise ValueError(
-        #         """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
-        #             type(the_task)
-        #         )
-        #     )
         if not isinstance(worker_id, (type(None), str)):
             raise ValueError(
                 """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
@@ -192,14 +178,8 @@ class Worker:
         perf_counter_start = time.perf_counter()
         monotonic_start = time.monotonic()
         process_time_start = time.process_time()
-        # import pdb
-
-        # pdb.set_trace()
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
-            # return_value = await self.the_task(
-            #     self.the_broker, queue_name="AdderTaskNewConfnQueue"
-            # )(*task_args, **task_kwargs)
             if self.the_task.chain and not self.the_task._RETRYING:
                 # enqueue the chained task using the return_value
                 await self.the_task.chain.delay(return_value)

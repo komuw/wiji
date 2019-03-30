@@ -346,6 +346,7 @@ class TestWorker(TestCase):
             async def run(self, a, b):
                 res = a + b
                 await self.retry(a=221, b=555, task_options=wiji.task.TaskOptions(max_retries=2))
+                return res
 
         MYAdderTask = AdderTask(
             the_broker=self.BROKER, queue_name="AdderTaskChainQueue", chain=MYDividerTask

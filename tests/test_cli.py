@@ -26,7 +26,7 @@ class TestCli(TestCase):
 
     def setUp(self):
         self.parser = cli.cli.make_parser()
-        self.wiji_config = "tests.testdata.cli.my_config.MyConfigInstance"
+        self.wiji_config = "tests.testdata.cli.my_app.MyAppInstance"
 
     def tearDown(self):
         pass

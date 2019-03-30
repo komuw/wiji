@@ -22,7 +22,7 @@ def make_parser() -> argparse.ArgumentParser:
         description="""wiji is an async distributed task queue.
                 example usage:
                 wiji-cli \
-                --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
+                --config dotted.path.to.a.wiji.app.App.class.instance
                 """,
     )
     parser.add_argument(
@@ -35,7 +35,7 @@ def make_parser() -> argparse.ArgumentParser:
         "--config",
         required=True,
         help="The config file to use. \
-        eg: --config dotted.path.to.a.wiji.conf.WijiConf.class.instance",
+        eg: --config dotted.path.to.a.wiji.app.App.class.instance",
     )
     parser.add_argument(
         "--dry-run",
@@ -52,7 +52,7 @@ def make_parser() -> argparse.ArgumentParser:
 def main():
     """
     run as:
-        wiji-cli --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
+        wiji-cli --config dotted.path.to.a.wiji.app.App.class.instance
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
     logger = wiji.logger.SimpleLogger("wiji.cli")
@@ -72,9 +72,9 @@ def main():
             )
 
         config_instance = utils.load.load_class(config)
-        if not isinstance(config_instance, wiji.conf.WijiConf):
+        if not isinstance(config_instance, wiji.app.App):
             err = ValueError(
-                """`config_instance` should be of type:: `wiji.conf.WijiConf` You entered: {0}""".format(
+                """`config_instance` should be of type:: `wiji.app.App` You entered: {0}""".format(
                     type(config_instance)
                 )
             )
@@ -98,7 +98,7 @@ def main():
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
 
 
-async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.conf.WijiConf) -> None:
+async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.app.App) -> None:
     """
     (i)   set signal handlers.
     (ii)  consume tasks.

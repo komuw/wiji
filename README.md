@@ -69,8 +69,8 @@ asyncio.run(worker.consume_tasks())
 #### 2. As a cli app
 `wiji` also ships with a commandline interface app called `wiji-cli`.             
                 
-create a `wiji` config file(which is just any python file that has a class instance of `wiji.conf.WijiConf`), eg;             
-`examples/my_config.py`                 
+create a `wiji` config file(which is just any python file that has a class instance of `wiji.app.App`), eg;             
+`examples/my_app.py`                 
 ```python
 import wiji
 
@@ -82,11 +82,11 @@ class AdderTask(wiji.task.Task):
 BROKER = wiji.broker.InMemoryBroker()
 myAdderTask = AdderTask(the_broker=BROKER, queue_name="AdderTaskQueue")
 
-MyConfigInstance = wiji.conf.WijiConf(tasks=[myAdderTask])
+MyAppInstance = wiji.app.App(tasks=[myAdderTask])
 ```          
 **NB:** the directory where your place that file(in this case; `examples/`) ought to be in your `PYTHONPATH`               
-then run `wiji-cli` pointing it to the dotted path of the `wiji.conf.WijiConf` instance:     
+then run `wiji-cli` pointing it to the dotted path of the `wiji.app.App` instance:     
 
 ```bash
-wiji-cli --config examples.my_config.MyConfigInstance
+wiji-cli --config examples.my_app.MyAppInstance
 ```

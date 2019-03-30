@@ -10,4 +10,4 @@ class AdderTask(wiji.task.Task):
 BROKER = wiji.broker.InMemoryBroker()
 myAdderTask = AdderTask(the_broker=BROKER, queue_name="AdderTaskTestQ1")
 
-MyConfigInstance = wiji.conf.WijiConf(tasks=[myAdderTask])
+MyAppInstance = wiji.app.App(tasks=[myAdderTask])

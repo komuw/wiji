@@ -35,9 +35,9 @@ class BlockinHttpTask(wiji.task.Task):
         print("resp: ", resp)
 
 
-class HttpTask(wiji.task.Task):
+class AsyncHttpTask(wiji.task.Task):
     the_broker = MY_BROKER
-    queue_name = "HttpTaskQueue"
+    queue_name = "AsyncHttpTaskQueue"
 
     async def run(self, *args, **kwargs):
         url = kwargs["url"]
@@ -141,7 +141,7 @@ if __name__ == "__main__":
         gather_tasks = asyncio.gather(
             task_producer(task_class=PrintTask, my_KWARGS={"name": "Jay-Z", "age": 4040}),
             task_producer(task_class=AdderTask, a=23, b=67),
-            task_producer(task_class=HttpTask, url="https://httpbin.org/delay/45"),
+            task_producer(task_class=AsyncHttpTask, url="https://httpbin.org/delay/45"),
             task_producer(task_class=ExceptionTask, task_options=wiji.task.TaskOptions(eta=-34.99)),
             task_producer(
                 task_class=BlockinHttpTask,

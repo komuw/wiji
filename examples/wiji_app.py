@@ -3,7 +3,7 @@ import wiji
 from examples.example_tasks import (
     BlockingDiskIOTask,
     BlockinHttpTask,
-    HttpTask,
+    AsyncHttpTask,
     PrintTask,
     AdderTask,
     DividerTask,
@@ -17,7 +17,7 @@ yolo = wiji.app.App(
     task_classes=[
         BlockingDiskIOTask,
         BlockinHttpTask,
-        HttpTask,
+        AsyncHttpTask,
         PrintTask,
         AdderTask,
         DividerTask,

@@ -22,7 +22,7 @@ def make_parser() -> argparse.ArgumentParser:
         description="""wiji is an async distributed task queue.
                 example usage:
                 wiji-cli \
-                --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
+                --config dotted.path.to.a.wiji.app.App.class.instance
                 """,
     )
     parser.add_argument(
@@ -35,7 +35,7 @@ def make_parser() -> argparse.ArgumentParser:
         "--config",
         required=True,
         help="The config file to use. \
-        eg: --config dotted.path.to.a.wiji.conf.WijiConf.class.instance",
+        eg: --config dotted.path.to.a.wiji.app.App.class.instance",
     )
     parser.add_argument(
         "--dry-run",
@@ -52,7 +52,7 @@ def make_parser() -> argparse.ArgumentParser:
 def main():
     """
     run as:
-        wiji-cli --config dotted.path.to.a.wiji.conf.WijiConf.class.instance
+        wiji-cli --config dotted.path.to.a.wiji.app.App.class.instance
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
     logger = wiji.logger.SimpleLogger("wiji.cli")
@@ -71,11 +71,11 @@ def main():
                 ),
             )
 
-        config_instance = utils.load.load_class(config)
-        if not isinstance(config_instance, wiji.conf.WijiConf):
+        app_instance = utils.load.load_class(config)
+        if not isinstance(app_instance, wiji.app.App):
             err = ValueError(
-                """`config_instance` should be of type:: `wiji.conf.WijiConf` You entered: {0}""".format(
-                    type(config_instance)
+                """`app_instance` should be of type:: `wiji.app.App` You entered: {0}""".format(
+                    type(app_instance)
                 )
             )
             logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": str(err)})
@@ -90,7 +90,7 @@ def main():
         asyncio_debug = False
         if os.environ.get("WIJI_DEBUG", None):
             asyncio_debug = True
-        asyncio.run(async_main(logger=logger, config_instance=config_instance), debug=asyncio_debug)
+        asyncio.run(async_main(logger=logger, app_instance=app_instance), debug=asyncio_debug)
     except Exception as e:
         logger.log(logging.ERROR, {"event": "wiji.cli.main", "stage": "end", "error": str(e)})
         sys.exit(77)
@@ -98,7 +98,7 @@ def main():
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
 
 
-async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.conf.WijiConf) -> None:
+async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App) -> None:
     """
     (i)   set signal handlers.
     (ii)  consume tasks.
@@ -107,12 +107,12 @@ async def async_main(logger: wiji.logger.BaseLogger, config_instance: wiji.conf.
     watchdog_worker = wiji.Worker(
         the_task=wiji.task.WatchDogTask,
         use_watchdog=True,
-        watchdog_duration=config_instance.watchdog_duration,
+        watchdog_duration=app_instance.watchdog_duration,
     )
     workers = [watchdog_worker]
     watch_dog_producer = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
-    for task in config_instance.tasks:
+    for task in app_instance.tasks:
         _worker = wiji.Worker(the_task=task)
         workers.append(_worker)
 

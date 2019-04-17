@@ -3,14 +3,14 @@ import typing
 from . import task
 
 
-class WijiConf:
+class App:
     def __init__(self, tasks: typing.List["task.Task"], watchdog_duration: float = 0.1) -> None:
-        self._validate_config_args(tasks=tasks, watchdog_duration=watchdog_duration)
+        self._validate_app_args(tasks=tasks, watchdog_duration=watchdog_duration)
 
         self.tasks = tasks
         self.watchdog_duration = watchdog_duration
 
-    def _validate_config_args(self, tasks, watchdog_duration):
+    def _validate_app_args(self, tasks, watchdog_duration):
         if not isinstance(tasks, list):
             raise ValueError(
                 """`tasks` should be of type:: `list` You entered: {0}""".format(type(tasks))

@@ -1,12 +1,13 @@
 ## `wiji` changelog:
 most recent version is listed first.
 
-## **version:** v0.1.6-beta.1
+## **version:** v0.1.6-beta.3
 - bugfix, `task.task_options is stale`    
   We had a case where `broker.done` would get called with `task_id`==`''`(empty string) : https://github.com/komuw/wiji/pull/39
 - add timestamp to log events: https://github.com/komuw/wiji/pull/45
 - remove `wiji.task.WijiRetryError`.   
   we replace it with a `wiji.task.Task._RETRYING` boolean.: https://github.com/komuw/wiji/pull/46
+- rename wiji conf file: https://github.com/komuw/wiji/pull/47
 
 ## **version:** v0.1.5
 - fix examples broker which was broken by last PR: https://github.com/komuw/wiji/pull/35

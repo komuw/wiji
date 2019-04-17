@@ -4,7 +4,7 @@ import sys
 import wiji
 
 
-def load_class(dotted_path: str) -> wiji.conf.WijiConf:
+def load_class(dotted_path: str) -> wiji.app.App:
     """
     taken from: https://github.com/coleifer/huey/blob/4138d454cc6fd4d252c9350dbd88d74dd3c67dcb/huey/utils.py#L44
     huey is released under MIT license a copy of which can be found at: https://github.com/coleifer/huey/blob/master/LICENSE

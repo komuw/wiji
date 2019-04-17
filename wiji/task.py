@@ -214,7 +214,7 @@ class Task(abc.ABC):
         self._RETRYING: bool = False
 
     async def __call__(self, *args, **kwargs):
-        await self.run(*args, **kwargs)
+        return await self.run(*args, **kwargs)
 
     def __str__(self):
         return str(
@@ -239,9 +239,9 @@ class Task(abc.ABC):
         log_metadata: typing.Union[None, dict],
         log_handler: typing.Union[None, logger.BaseLogger],
     ) -> None:
-        if not isinstance(the_broker, (type(None), broker.BaseBroker)):
+        if not isinstance(the_broker, broker.BaseBroker):
             raise ValueError(
-                """the_broker should be of type:: None or wiji.broker.BaseBroker You entered: {0}""".format(
+                """the_broker should be of type:: `wiji.broker.BaseBroker` You entered: {0}""".format(
                     type(the_broker)
                 )
             )
@@ -399,7 +399,7 @@ class Task(abc.ABC):
             )
 
     @abc.abstractmethod
-    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         raise NotImplementedError("`run` method must be implemented.")
 
     async def delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:

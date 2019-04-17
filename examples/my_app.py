@@ -19,5 +19,6 @@ class AdderTask(wiji.task.Task):
 MyAppInstance = wiji.app.App(task_classes=[AdderTask])
 
 
-myAdderTask = AdderTask()
-myAdderTask.synchronous_delay(67, 887)
+if __name__ == "__main__":
+    myAdderTask = AdderTask()
+    myAdderTask.synchronous_delay(67, 887)

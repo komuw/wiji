@@ -263,12 +263,10 @@ class TestWorker(TestCase):
                 print("divider res: ", res)
                 return res
 
-        MYDividerTask = DividerTask()
-
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
             queue_name = "AdderTaskQueue"
-            chain = MYDividerTask
+            chain = DividerTask
 
             async def run(self, a, b):
                 res = a + b
@@ -310,8 +308,6 @@ class TestWorker(TestCase):
                 res = a / 3
                 print("divider res: ", res)
                 return res
-
-        MYDividerTask = DividerTask()
 
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
@@ -357,12 +353,10 @@ class TestWorker(TestCase):
                 print("divider res: ", res)
                 return res
 
-        MYDividerTask = DividerTask()
-
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
             queue_name = "AdderTaskQueue"
-            chain = MYDividerTask
+            chain = DividerTask
 
             async def run(self, a, b):
                 res = a + b

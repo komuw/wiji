@@ -136,7 +136,10 @@ class Task(abc.ABC):
     the_broker: broker.BaseBroker
     queue_name: str
     task_name: typing.Union[None, str] = None
+
+    # TODO: we should able to use a class instead of instance as chain
     chain: typing.Union[None, "Task"] = None
+
     the_hook: typing.Union[None, hook.BaseHook] = None
     the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None
 

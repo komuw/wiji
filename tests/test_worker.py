@@ -268,7 +268,7 @@ class TestWorker(TestCase):
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
             queue_name = "AdderTaskQueue"
-            chain = MYDividerTask()
+            chain = MYDividerTask
 
             async def run(self, a, b):
                 res = a + b
@@ -362,7 +362,7 @@ class TestWorker(TestCase):
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
             queue_name = "AdderTaskQueue"
-            chain = MYDividerTask()
+            chain = MYDividerTask
 
             async def run(self, a, b):
                 res = a + b

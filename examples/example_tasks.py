@@ -10,7 +10,7 @@ import requests
 from examples.redis_broker import ExampleRedisBroker
 
 
-MY_BROKER = ExampleRedisBroker()  # wiji.broker.SimpleBroker()
+MY_BROKER = ExampleRedisBroker()  # wiji.broker.InMemoryBroker()
 
 
 class BlockingDiskIOTask(wiji.task.Task):

@@ -162,6 +162,8 @@ class Task(abc.ABC):
     def __init__(self,) -> None:
         self._validate_task_args()
         self.loglevel = self.loglevel.upper()
+        if self.chain:
+            self.chain = self.chain()
 
         if self.task_name is not None:
             self.task_name = self.task_name
@@ -241,14 +243,15 @@ class Task(abc.ABC):
                 )
             )
 
+        ##################################
         if not hasattr(self, "chain"):
             raise ValueError("{0} should have attribute `chain`".format(_task_name))
-        if not isinstance(self.chain, (type(None), Task)):
-            raise ValueError(
-                """`chain` should be of type:: `None` or `wiji.task.Task` You entered: {0}""".format(
-                    type(self.chain)
-                )
-            )
+        if self.chain:
+            if not inspect.isclass(self.chain):
+                raise ValueError("""`chain` should be a class and NOT a class instance""")
+            if not issubclass(self.chain, Task):
+                raise ValueError("""`chain` should be a subclass of:: `wiji.task.Task`""")
+        #########################################
 
         if not hasattr(self, "the_hook"):
             raise ValueError("{0} should have attribute `the_hook`".format(_task_name))

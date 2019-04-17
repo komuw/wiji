@@ -114,9 +114,6 @@ class TaskOptions:
         }
 
 
-TASK_REGISTRY = {}
-
-
 class Task(abc.ABC):
     """
     call it as:
@@ -136,63 +133,46 @@ class Task(abc.ABC):
         task3 = wiji.task.Task(chain=task2)
     """
 
-    def __init__(
-        self,
-        the_broker: broker.BaseBroker,
-        queue_name: str,
-        task_name: typing.Union[None, str] = None,
-        chain: typing.Union[None, "Task"] = None,
-        the_hook: typing.Union[None, hook.BaseHook] = None,
-        the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None,
-        drain_duration: float = 10.0,
-        loglevel: str = "DEBUG",
-        log_metadata: typing.Union[None, dict] = None,
-        log_handler: typing.Union[None, logger.BaseLogger] = None,
-    ) -> None:
-        self._validate_task_args(
-            the_broker=the_broker,
-            queue_name=queue_name,
-            task_name=task_name,
-            chain=chain,
-            the_hook=the_hook,
-            the_ratelimiter=the_ratelimiter,
-            drain_duration=drain_duration,
-            loglevel=loglevel,
-            log_metadata=log_metadata,
-            log_handler=log_handler,
-        )
+    the_broker: broker.BaseBroker
+    queue_name: str
+    task_name: typing.Union[None, str] = None
+    chain: typing.Union[None, "Task"] = None
+    the_hook: typing.Union[None, hook.BaseHook] = None
+    the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None
 
-        self.the_broker = the_broker
-        self.queue_name = queue_name
-        self.chain = chain
-        self.loglevel = loglevel.upper()
+    # `drain_duration` is the duration(in seconds) that a worker should wait
+    # after getting a termination signal(SIGTERM, SIGQUIT etc).
+    # during this duration, the worker does not consumer anymore tasks from the broker,
+    # the worker will continue executing any tasks that it had already dequeued from the broker.
+    # a simple way of choosing a value to set is:
+    # drain_duration = time_taken_to_run_this_task + 1.00
+    # eg: if your task is making a network call that lasts 30seconds,
+    # thus; drain_duration = 30 + 1.00
+    # the default value is 10.00 seconds.
+    # mainly because that is also the default value of the process supervisor: `supervisord`
+    drain_duration: float = 10.0
 
-        # `drain_duration` is the duration(in seconds) that a worker should wait
-        # after getting a termination signal(SIGTERM, SIGQUIT etc).
-        # during this duration, the worker does not consumer anymore tasks from the broker,
-        # the worker will continue executing any tasks that it had already dequeued from the broker.
-        # a simple way of choosing a value to set is:
-        # drain_duration = time_taken_to_run_this_task + 1.00
-        # eg: if your task is making a network call that lasts 30seconds,
-        # thus; drain_duration = 30 + 1.00
+    loglevel: str = "DEBUG"
+    log_metadata: typing.Union[None, dict] = None
+    log_handler: typing.Union[None, logger.BaseLogger] = None
 
-        # the default value is 10.00 seconds.
-        # mainly because that is also the default value of the process supervisor: `supervisord`
-        self.drain_duration = drain_duration
+    def __init__(self,) -> None:
+        self._validate_task_args()
+        self.loglevel = self.loglevel.upper()
 
-        if task_name is not None:
-            self.task_name = task_name
+        if self.task_name is not None:
+            self.task_name = self.task_name
         else:
             self.task_name = self.__class__.__name__
 
-        if log_metadata is not None:
-            self.log_metadata = log_metadata
+        if self.log_metadata is not None:
+            self.log_metadata = self.log_metadata
         else:
             self.log_metadata = {}
         self.log_metadata.update({"task_name": self.task_name, "queue_name": self.queue_name})
 
-        if log_handler is not None:
-            self.logger = log_handler
+        if self.log_handler is not None:
+            self.logger = self.log_handler
         else:
             self.logger = logger.SimpleLogger(
                 "wiji.Task.task_name={0}.{1}".format(
@@ -203,29 +183,18 @@ class Task(abc.ABC):
         self.logger.bind(level=self.loglevel, log_metadata=self.log_metadata)
         self._sanity_check_logger(event="task_sanity_check_logger")
 
-        if the_hook is not None:
-            self.the_hook = the_hook
+        if self.the_hook is not None:
+            self.the_hook = self.the_hook
         else:
             self.the_hook = hook.SimpleHook(log_handler=self.logger)
 
-        if the_ratelimiter is not None:
-            self.the_ratelimiter = the_ratelimiter
+        if self.the_ratelimiter is not None:
+            self.the_ratelimiter = self.the_ratelimiter
         else:
             self.the_ratelimiter = ratelimiter.SimpleRateLimiter(log_handler=self.logger)
 
         self._checked_broker: bool = False
         self._RETRYING: bool = False
-
-        # import pdb
-
-        # pdb.set_trace()
-        # check if exists and raise error
-        if TASK_REGISTRY.get(self.unique_name):
-            raise ValueError("There already exists a task with name {0}".format(self.unique_name))
-        TASK_REGISTRY[self.unique_name] = self
-        print()
-        print()
-        print("TASK_REGISTRY:: ", TASK_REGISTRY)
 
     async def __call__(self, *args, **kwargs):
         return await self.run(*args, **kwargs)
@@ -240,78 +209,95 @@ class Task(abc.ABC):
             }
         )
 
-    def _validate_task_args(
-        self,
-        the_broker: broker.BaseBroker,
-        queue_name: str,
-        task_name: typing.Union[None, str],
-        chain: typing.Union[None, "Task"],
-        the_hook: typing.Union[None, hook.BaseHook],
-        the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter],
-        drain_duration: float,
-        loglevel: str,
-        log_metadata: typing.Union[None, dict],
-        log_handler: typing.Union[None, logger.BaseLogger],
-    ) -> None:
-        if not isinstance(the_broker, broker.BaseBroker):
+    def _validate_task_args(self,) -> None:
+        _task_name = self.__class__.__name__
+        if not hasattr(self, "the_broker"):
+            raise ValueError("{0} should have attribute `the_broker`".format(_task_name))
+        if not isinstance(self.the_broker, broker.BaseBroker):
             raise ValueError(
                 """the_broker should be of type:: `wiji.broker.BaseBroker` You entered: {0}""".format(
-                    type(the_broker)
-                )
-            )
-        if not isinstance(queue_name, str):
-            raise ValueError(
-                """`queue_name` should be of type:: `str` You entered: {0}""".format(
-                    type(queue_name)
+                    type(self.the_broker)
                 )
             )
 
-        if not isinstance(task_name, (type(None), str)):
+        if not hasattr(self, "queue_name"):
+            raise ValueError("{0} should have attribute `queue_name`".format(_task_name))
+        if not isinstance(self.queue_name, str):
+            raise ValueError(
+                """`queue_name` should be of type:: `str` You entered: {0}""".format(
+                    type(self.queue_name)
+                )
+            )
+
+        if not hasattr(self, "task_name"):
+            raise ValueError("{0} should have attribute `task_name`".format(_task_name))
+        if not isinstance(self.task_name, (type(None), str)):
             raise ValueError(
                 """`task_name` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(task_name)
+                    type(self.task_name)
                 )
             )
-        if not isinstance(chain, (type(None), Task)):
+
+        if not hasattr(self, "chain"):
+            raise ValueError("{0} should have attribute `chain`".format(_task_name))
+        if not isinstance(self.chain, (type(None), Task)):
             raise ValueError(
                 """`chain` should be of type:: `None` or `wiji.task.Task` You entered: {0}""".format(
-                    type(chain)
+                    type(self.chain)
                 )
             )
-        if not isinstance(the_hook, (type(None), hook.BaseHook)):
+
+        if not hasattr(self, "the_hook"):
+            raise ValueError("{0} should have attribute `the_hook`".format(_task_name))
+        if not isinstance(self.the_hook, (type(None), hook.BaseHook)):
             raise ValueError(
                 """`the_hook` should be of type:: `None` or `wiji.hook.BaseHook` You entered: {0}""".format(
-                    type(the_hook)
+                    type(self.the_hook)
                 )
             )
-        if not isinstance(the_ratelimiter, (type(None), ratelimiter.BaseRateLimiter)):
+
+        if not hasattr(self, "the_ratelimiter"):
+            raise ValueError("{0} hould have attribute `the_ratelimiter`".format(_task_name))
+        if not isinstance(self.the_ratelimiter, (type(None), ratelimiter.BaseRateLimiter)):
             raise ValueError(
                 """`the_ratelimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
-                    type(the_ratelimiter)
+                    type(self.the_ratelimiter)
                 )
             )
-        if not isinstance(drain_duration, float):
+
+        if not hasattr(self, "drain_duration"):
+            raise ValueError("{0} should have attribute `drain_duration`".format(_task_name))
+        if not isinstance(self.drain_duration, float):
             raise ValueError(
                 """`drain_duration` should be of type:: `float` You entered: {0}""".format(
-                    type(drain_duration)
+                    type(self.drain_duration)
                 )
             )
-        if not isinstance(log_handler, (type(None), logger.BaseLogger)):
+
+        if not hasattr(self, "log_handler"):
+            raise ValueError("{0} should have attribute `log_handler`".format(_task_name))
+        if not isinstance(self.log_handler, (type(None), logger.BaseLogger)):
             raise ValueError(
                 """`log_handler` should be of type:: `None` or `wiji.logger.BaseLogger` You entered: {0}""".format(
-                    type(log_handler)
+                    type(self.log_handler)
                 )
             )
-        if loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+
+        if not hasattr(self, "loglevel"):
+            raise ValueError("{0} should have attribute `loglevel`".format(_task_name))
+        if self.loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
             raise ValueError(
                 """`loglevel` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {0}""".format(
-                    loglevel
+                    self.loglevel
                 )
             )
-        if not isinstance(log_metadata, (type(None), dict)):
+
+        if not hasattr(self, "log_metadata"):
+            raise ValueError("{0} should have attribute `log_metadata`".format(_task_name))
+        if not isinstance(self.log_metadata, (type(None), dict)):
             raise ValueError(
                 """`log_metadata` should be of type:: `None` or `dict` You entered: {0}""".format(
-                    type(log_metadata)
+                    type(self.log_metadata)
                 )
             )
 
@@ -559,9 +545,9 @@ class _watchdogTask(Task):
     This task is always scheduled in the in-memory broker(`wiji.broker.InMemoryBroker`).
     """
 
+    the_broker = broker.InMemoryBroker()
     queue_name: str = "__WatchDogTaskQueue__"
-    # TODO: replace unique_name with uuid concatenated with _watchdogTask
-    unique_name = "_watchdogTask_UniqueName"
+    loglevel = "WARNING"
 
     async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         self._log(
@@ -575,6 +561,4 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask(
-    the_broker=broker.InMemoryBroker(), queue_name=_watchdogTask.queue_name, loglevel="WARNING"
-)
+WatchDogTask = _watchdogTask()

@@ -22,7 +22,7 @@ class Worker:
 
     def __init__(
         self,
-        task_class_unique_name: str,
+        the_task: task.Task,
         worker_id: typing.Union[None, str] = None,
         use_watchdog: bool = False,
         watchdog_duration: float = 0.1,
@@ -30,15 +30,14 @@ class Worker:
         """
         """
         self._validate_worker_args(
-            task_class_unique_name=task_class_unique_name,
+            the_task=the_task,
             worker_id=worker_id,
             use_watchdog=use_watchdog,
             watchdog_duration=watchdog_duration,
         )
 
         self._PID = os.getpid()
-        self.task_class_unique_name = task_class_unique_name
-        self.the_task = task.TASK_REGISTRY[self.task_class_unique_name]
+        self.the_task = the_task
         if worker_id is not None:
             self.worker_id = worker_id
         else:
@@ -65,15 +64,15 @@ class Worker:
 
     def _validate_worker_args(
         self,
-        task_class_unique_name: str,
+        the_task: task.Task,
         worker_id: typing.Union[None, str],
         use_watchdog: bool,
         watchdog_duration: float,
     ) -> None:
-        if not isinstance(task_class_unique_name, str):
+        if not isinstance(the_task, task.Task):
             raise ValueError(
-                """`task_class_unique_name` should be of type:: `str` You entered: {0}""".format(
-                    type(task_class_unique_name)
+                """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
+                    type(the_task)
                 )
             )
         if not isinstance(worker_id, (type(None), str)):

@@ -105,15 +105,28 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
     (iii) continuously produce watchdog tasks.
     """
     watchdog_worker = wiji.Worker(
-        the_task=wiji.task.WatchDogTask,
+        task_class_unique_name=wiji.task.WatchDogTask.unique_name,
         use_watchdog=True,
         watchdog_duration=app_instance.watchdog_duration,
     )
     workers = [watchdog_worker]
     watch_dog_producer = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
-    for task in app_instance.tasks:
-        _worker = wiji.Worker(the_task=task)
+    for task_class in app_instance.task_classes:
+        if not hasattr(task_class, "unique_name"):
+            raise ValueError("task classes should have an attribute called `unique_name`")
+
+        task_class_unique_name = task_class.unique_name
+        if not isinstance(task_class_unique_name, str):
+            raise ValueError(
+                """task class `unique_name` should be of type:: `str` You entered: {0}""".format(
+                    type(task_class_unique_name)
+                )
+            )
+        if not wiji.task.TASK_REGISTRY.get(task_class_unique_name):
+            wiji.task.TASK_REGISTRY[task_class_unique_name] = None
+
+        _worker = wiji.Worker(task_class_unique_name=task_class_unique_name)
         workers.append(_worker)
 
     consumers = []

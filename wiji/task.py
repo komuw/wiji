@@ -114,6 +114,9 @@ class TaskOptions:
         }
 
 
+TASK_REGISTRY = {}
+
+
 class Task(abc.ABC):
     """
     call it as:
@@ -212,6 +215,17 @@ class Task(abc.ABC):
 
         self._checked_broker: bool = False
         self._RETRYING: bool = False
+
+        # import pdb
+
+        # pdb.set_trace()
+        # check if exists and raise error
+        if TASK_REGISTRY.get(self.unique_name):
+            raise ValueError("There already exists a task with name {0}".format(self.unique_name))
+        TASK_REGISTRY[self.unique_name] = self
+        print()
+        print()
+        print("TASK_REGISTRY:: ", TASK_REGISTRY)
 
     async def __call__(self, *args, **kwargs):
         return await self.run(*args, **kwargs)
@@ -535,6 +549,45 @@ class Task(abc.ABC):
         return task_options
 
 
+# def task_decorator(the_broker, queue_name, **kwargs):
+#     def decorator(func_bn_decorated):
+#         import pdb
+
+#         pdb.set_trace()
+#         fn_bn_decorated = (
+#             func_bn_decorated.run if isinstance(func_bn_decorated, Task) else func_bn_decorated,
+#         )
+#         the_task = Task(the_broker=the_broker, queue_name=queue_name, **kwargs)
+#         return the_task
+
+#     return decorator
+
+
+# class TaskWrapper:
+#     def __init__(
+#         self,
+#         huey,
+#         func_bn_decorated,
+#         retries=None,
+#         retry_delay=None,
+#         context=False,
+#         name=None,
+#         task_base=None,
+#         **kwargs,
+#     ):
+#         self.huey = huey
+#         self.func_bn_decorated = func_bn_decorated
+#         self.retries = retries
+#         self.retry_delay = retry_delay
+#         self.context = context
+#         self.name = name
+#         self.kwargs = kwargs
+
+#         # Dynamically create task class and register with Huey instance.
+#         self.task_class = self.create_task(func, context, name, **settings)
+#         self.huey._registry.register(self.task_class)
+
+
 class _watchdogTask(Task):
     """
     This is a task that runs in the MainThread(as every other task).
@@ -546,6 +599,8 @@ class _watchdogTask(Task):
     """
 
     queue_name: str = "__WatchDogTaskQueue__"
+    # TODO: replace unique_name with uuid concatenated with _watchdogTask
+    unique_name = "_watchdogTask_UniqueName"
 
     async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         self._log(

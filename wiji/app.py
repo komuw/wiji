@@ -1,31 +1,27 @@
 import typing
-import inspect
 
 from . import task
 
 
 class App:
-    def __init__(
-        self, task_classes: typing.List["task.Task"], watchdog_duration: float = 0.1
-    ) -> None:
-        self._validate_app_args(task_classes=task_classes, watchdog_duration=watchdog_duration)
+    def __init__(self, tasks: typing.List["task.Task"], watchdog_duration: float = 0.1) -> None:
+        self._validate_app_args(tasks=tasks, watchdog_duration=watchdog_duration)
 
-        self.task_classes = task_classes
+        self.tasks = tasks
         self.watchdog_duration = watchdog_duration
 
-    def _validate_app_args(self, task_classes, watchdog_duration):
-        if not isinstance(task_classes, list):
+    def _validate_app_args(self, tasks, watchdog_duration):
+        if not isinstance(tasks, list):
             raise ValueError(
-                """`task_classes` should be of type:: `list` You entered: {0}""".format(
-                    type(task_classes)
-                )
+                """`tasks` should be of type:: `list` You entered: {0}""".format(type(tasks))
             )
-        for tsk in task_classes:
-            if not inspect.isclass(tsk):
-                raise ValueError("""`task` should be a class and NOT a class instance""")
-            if not issubclass(tsk, task.Task):
-                raise ValueError("""`task` should be a subclass of:: `wiji.task.Task`""")
-
+        for tsk in tasks:
+            if not isinstance(tsk, task.Task):
+                raise ValueError(
+                    """`task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
+                        type(tsk)
+                    )
+                )
         if not isinstance(watchdog_duration, float):
             raise ValueError(
                 """`watchdog_duration` should be of type:: `float` You entered: {0}""".format(

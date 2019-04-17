@@ -7,7 +7,7 @@ most recent version is listed first.
 - add timestamp to log events: https://github.com/komuw/wiji/pull/45
 - remove `wiji.task.WijiRetryError`.   
   we replace it with a `wiji.task.Task._RETRYING` boolean.: https://github.com/komuw/wiji/pull/46
-- rethink wiji conf file: https://github.com/komuw/wiji/pull/47
+- rename wiji conf file: https://github.com/komuw/wiji/pull/47
 
 ## **version:** v0.1.5
 - fix examples broker which was broken by last PR: https://github.com/komuw/wiji/pull/35

@@ -399,7 +399,7 @@ class Task(abc.ABC):
             )
 
     @abc.abstractmethod
-    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
         raise NotImplementedError("`run` method must be implemented.")
 
     async def delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:

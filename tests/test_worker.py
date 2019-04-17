@@ -2,6 +2,7 @@
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
 import os
+import uuid
 import json
 import asyncio
 from unittest import TestCase, mock
@@ -29,7 +30,7 @@ def AsyncMock(*args, **kwargs):
 
 class ExampleAdderTask(wiji.task.Task):
     the_broker = _inMemTestBroker
-    queue_name = "ExampleAdderTaskQueue"
+    queue_name = "{0}-ExampleAdderTaskQueue".format(uuid.uuid4())
 
     async def run(self, a, b):
         res = a + b
@@ -256,7 +257,7 @@ class TestWorker(TestCase):
 
         class DividerTask(wiji.task.Task):
             the_broker = self.BROKER
-            queue_name = "DividerTaskQueue"
+            queue_name = "{0}-DividerTaskQueue".format(uuid.uuid4())
 
             async def run(self, a):
                 res = a / 3
@@ -265,7 +266,7 @@ class TestWorker(TestCase):
 
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
-            queue_name = "AdderTaskQueue"
+            queue_name = "{0}-AdderTaskQueue".format(uuid.uuid4())
             chain = DividerTask
 
             async def run(self, a, b):
@@ -302,7 +303,7 @@ class TestWorker(TestCase):
 
         class DividerTask(wiji.task.Task):
             the_broker = self.BROKER
-            queue_name = "DividerTaskQueue"
+            queue_name = "{0}-DividerTaskQueue".format(uuid.uuid4())
 
             async def run(self, a):
                 res = a / 3
@@ -311,7 +312,7 @@ class TestWorker(TestCase):
 
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
-            queue_name = "AdderTaskQueue"
+            queue_name = "{0}-AdderTaskQueue".format(uuid.uuid4())
 
             async def run(self, a, b):
                 return await self.do_work(a, b)
@@ -346,7 +347,7 @@ class TestWorker(TestCase):
 
         class DividerTask(wiji.task.Task):
             the_broker = self.BROKER
-            queue_name = "DividerTaskQueue"
+            queue_name = "{0}-DividerTaskQueue".format(uuid.uuid4())
 
             async def run(self, a):
                 res = a / 3
@@ -355,7 +356,7 @@ class TestWorker(TestCase):
 
         class AdderTask(wiji.task.Task):
             the_broker = self.BROKER
-            queue_name = "AdderTaskQueue"
+            queue_name = "{0}-AdderTaskQueue".format(uuid.uuid4())
             chain = DividerTask
 
             async def run(self, a, b):
@@ -390,7 +391,7 @@ class TestWorker(TestCase):
             the_broker = self.BROKER
             # we want this task to be processed slowly
             the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
-            queue_name = "TestWorker.test_shutdown"
+            queue_name = "{0}-TestWorker.test_shutdown".format(uuid.uuid4())
             drain_duration = 1.0
 
             async def run(self, a, b):
@@ -436,7 +437,7 @@ class TestWorker(TestCase):
                 the_broker = self.BROKER
                 # we want this task to be processed slowly
                 the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
-                queue_name = "TestWorker.test_shutdown"
+                queue_name = "{0}-TestWorker.test_shutdown".format(uuid.uuid4())
                 drain_duration = 1.0
 
                 async def run(self, a, b):

@@ -26,9 +26,18 @@ def AsyncMock(*args, **kwargs):
     return mock_coro
 
 
-class ExampleAdderTask(wiji.task.Task):
+class ExampleAdderInMemTask(wiji.task.Task):
     the_broker = wiji.broker.InMemoryBroker()
-    queue_name = "{0}-ExampleAdderTaskQueue".format(uuid.uuid4())
+    queue_name = "{0}-ExampleAdderInMemTaskQueue".format(uuid.uuid4())
+
+    async def run(self, a, b):
+        res = a + b
+        return res
+
+
+class ExampleAdderRedisTask(wiji.task.Task):
+    the_broker = ExampleRedisBroker()
+    queue_name = "{0}-ExampleAdderRedisTaskQueue".format(uuid.uuid4())
 
     async def run(self, a, b):
         res = a + b
@@ -46,11 +55,11 @@ class TestWorker(TestCase):
     def setUp(self):
         self.loop = asyncio.get_event_loop()
         self.BROKER = wiji.broker.InMemoryBroker()
-        self.myTask = ExampleAdderTask()
+        self.myTask = ExampleAdderInMemTask()
         # `queue_name` should be unique. one task, one queue.
         # However for tests, we want to re-use the same task in multiple tests instead of creating
         # new tasks per test. So we have to change the `queue_name` per test
-        self.myTask.queue_name = "{0}-ExampleAdderTaskQueue".format(uuid.uuid4())
+        self.myTask.queue_name = "{0}-ExampleAdderInMemTaskQueue".format(uuid.uuid4())
 
     def tearDown(self):
         pass
@@ -489,8 +498,10 @@ class TestWorkerRedisBroker(TestWorker):
     def setUp(self):
         super().setUp()
         self.BROKER = ExampleRedisBroker()
-        self._setup_docker()
+        self.myTask = ExampleAdderRedisTask()
+        self.myTask.queue_name = "{0}-ExampleAdderRedisTaskQueue".format(uuid.uuid4())
 
+        self._setup_docker()
         # ensure each testcase starts off with a fresh/clean broker
         self.BROKER._flushdb()
 

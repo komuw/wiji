@@ -47,6 +47,10 @@ class TestWorker(TestCase):
         self.loop = asyncio.get_event_loop()
         self.BROKER = wiji.broker.InMemoryBroker()
         self.myTask = ExampleAdderTask()
+        # `queue_name` should be unique. one task, one queue.
+        # However for tests, we want to re-use the same task in multiple tests instead of creating
+        # new tasks per test. So we have to change the `queue_name` per test
+        self.myTask.queue_name = "{0}-ExampleAdderTaskQueue".format(uuid.uuid4())
 
     def tearDown(self):
         pass

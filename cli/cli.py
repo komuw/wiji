@@ -1,5 +1,6 @@
 import os
 import sys
+import typing
 import string
 import random
 import asyncio
@@ -112,10 +113,20 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
     workers = [watchdog_worker]
     watch_dog_producer = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
 
-    for task in app_instance.tasks:
+    _queue_names: typing.List[str] = []
+    for task_class in app_instance.task_classes:
+        if task_class.queue_name in _queue_names:
+            # queue names should be unique
+            raise ValueError(
+                "There already exists a task with queue_name: {0}".format(task_class.queue_name)
+            )
+        _queue_names.append(task_class.queue_name)
+
+        task = task_class()
         _worker = wiji.Worker(the_task=task)
         workers.append(_worker)
 
+    del _queue_names
     consumers = []
     for i in workers:
         consumers.append(i.consume_tasks())

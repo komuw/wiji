@@ -71,11 +71,14 @@ class TestTypeChecking(TestCase):
 
     def test_type_check_task_error(self):
         class AdderTask(wiji.task.Task):
+            the_broker = wiji.broker.InMemoryBroker()
+            queue_name = "AdderTaskQueue134"
+
             async def run(self, a, b):
                 res = a + b
                 return res
 
-        myAdderTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        myAdderTask = AdderTask()
 
         def call_delay():
             myAdderTask.synchronous_delay(4, 6, 9, task_options=wiji.task.TaskOptions(eta=4.56))
@@ -87,11 +90,14 @@ class TestTypeChecking(TestCase):
 
     def test_type_check_task_success(self):
         class AdderTask(wiji.task.Task):
+            the_broker = wiji.broker.InMemoryBroker()
+            queue_name = "AdderTaskQueue914"
+
             async def run(self, a, b):
                 res = a + b
                 return res
 
-        myAdderTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        myAdderTask = AdderTask()
 
         def call_delay():
             myAdderTask.synchronous_delay(4, 6, task_options=wiji.task.TaskOptions(eta=4.56))
@@ -137,14 +143,16 @@ class TestTask(TestCase):
 
     def setUp(self):
         self.loop = asyncio.get_event_loop()
-        self.BROKER = wiji.broker.InMemoryBroker()
 
         class AdderTask(wiji.task.Task):
+            the_broker = wiji.broker.InMemoryBroker()
+            queue_name = "AdderTaskQueue5259201"
+
             async def run(self, a, b):
                 res = a + b
                 return res
 
-        self.my_task = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        self.my_task = AdderTask()
 
     def tearDown(self):
         pass

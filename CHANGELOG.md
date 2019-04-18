@@ -8,6 +8,7 @@ most recent version is listed first.
 - remove `wiji.task.WijiRetryError`.   
   we replace it with a `wiji.task.Task._RETRYING` boolean.: https://github.com/komuw/wiji/pull/46
 - rename wiji conf file: https://github.com/komuw/wiji/pull/47
+- `wiji` no longer requires task instances in order to start running : https://github.com/komuw/wiji/pull/49
 
 ## **version:** v0.1.5
 - fix examples broker which was broken by last PR: https://github.com/komuw/wiji/pull/35

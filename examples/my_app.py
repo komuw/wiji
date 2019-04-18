@@ -2,12 +2,22 @@ import wiji
 
 
 class AdderTask(wiji.task.Task):
+    the_broker = wiji.broker.InMemoryBroker()
+    queue_name = "AdderTaskQueue1"
+
     async def run(self, a, b):
         res = a + b
+        print()
+        print("res:: ", res)
+        print()
         return res
 
 
-BROKER = wiji.broker.InMemoryBroker()
-myAdderTask = AdderTask(the_broker=BROKER, queue_name="AdderTaskQueue1")
+# run cli as:
+#   wiji-cli --config examples.my_app.MyAppInstance
+MyAppInstance = wiji.app.App(task_classes=[AdderTask])
 
-MyAppInstance = wiji.app.App(tasks=[myAdderTask])
+
+if __name__ == "__main__":
+    myAdderTask = AdderTask()
+    myAdderTask.synchronous_delay(67, 887)

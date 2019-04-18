@@ -48,16 +48,16 @@ import asyncio
 import wiji
 
 class AdderTask(wiji.task.Task):
+    the_broker = wiji.broker.InMemoryBroker()
+    queue_name = "AdderTaskQueue1"
+
     async def run(self, a, b):
         result = a + b
         print("\nresult: {0}\n".format(result))
         return result
 
-
-broker = wiji.broker.InMemoryBroker()
-myAdderTask = AdderTask(the_broker=broker, queue_name="AdderTaskQueue1")
-
 # queue some tasks
+myAdderTask = AdderTask( )
 myAdderTask.synchronous_delay(a=4, b=37)
 myAdderTask.synchronous_delay(a=67, b=847)
 
@@ -75,14 +75,17 @@ create a `wiji` config file(which is just any python file that has a class insta
 import wiji
 
 class AdderTask(wiji.task.Task):
+    the_broker = wiji.broker.InMemoryBroker()
+    queue_name = "AdderTaskQueue1"
+
     async def run(self, a, b):
         res = a + b
+        print()
+        print("res:: ", res)
+        print()
         return res
 
-BROKER = wiji.broker.InMemoryBroker()
-myAdderTask = AdderTask(the_broker=BROKER, queue_name="AdderTaskQueue")
-
-MyAppInstance = wiji.app.App(tasks=[myAdderTask])
+MyAppInstance = wiji.app.App(task_classes=[AdderTask])
 ```          
 **NB:** the directory where your place that file(in this case; `examples/`) ought to be in your `PYTHONPATH`               
 then run `wiji-cli` pointing it to the dotted path of the `wiji.app.App` instance:     

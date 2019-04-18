@@ -2,6 +2,7 @@
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
 
 import os
+import uuid
 import json
 import asyncio
 from unittest import TestCase, mock
@@ -25,7 +26,19 @@ def AsyncMock(*args, **kwargs):
     return mock_coro
 
 
-class ExampleAdderTask(wiji.task.Task):
+class ExampleAdderInMemTask(wiji.task.Task):
+    the_broker = wiji.broker.InMemoryBroker()
+    queue_name = "{0}-ExampleAdderInMemTaskQueue".format(uuid.uuid4())
+
+    async def run(self, a, b):
+        res = a + b
+        return res
+
+
+class ExampleAdderRedisTask(wiji.task.Task):
+    the_broker = ExampleRedisBroker()
+    queue_name = "{0}-ExampleAdderRedisTaskQueue".format(uuid.uuid4())
+
     async def run(self, a, b):
         res = a + b
         return res
@@ -42,7 +55,11 @@ class TestWorker(TestCase):
     def setUp(self):
         self.loop = asyncio.get_event_loop()
         self.BROKER = wiji.broker.InMemoryBroker()
-        self.myTask = ExampleAdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        self.myTask = ExampleAdderInMemTask()
+        # `queue_name` should be unique. one task, one queue.
+        # However for tests, we want to re-use the same task in multiple tests instead of creating
+        # new tasks per test. So we have to change the `queue_name` per test
+        self.myTask.queue_name = "{0}-ExampleAdderInMemTaskQueue".format(uuid.uuid4())
 
     def tearDown(self):
         pass
@@ -250,21 +267,24 @@ class TestWorker(TestCase):
         """
 
         class DividerTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-DividerTaskQueue".format(uuid.uuid4())
+
             async def run(self, a):
                 res = a / 3
                 print("divider res: ", res)
                 return res
 
-        MYDividerTask = DividerTask(the_broker=self.BROKER, queue_name="DividerTaskChainQueue")
-
         class AdderTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-AdderTaskQueue".format(uuid.uuid4())
+            chain = DividerTask
+
             async def run(self, a, b):
                 res = a + b
                 return res
 
-        MYAdderTask = AdderTask(
-            the_broker=self.BROKER, queue_name="AdderTaskChainQueue", chain=MYDividerTask
-        )
+        MYAdderTask = AdderTask()
 
         kwargs = {"a": 400, "b": 603}
         worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
@@ -293,14 +313,18 @@ class TestWorker(TestCase):
         """
 
         class DividerTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-DividerTaskQueue".format(uuid.uuid4())
+
             async def run(self, a):
                 res = a / 3
                 print("divider res: ", res)
                 return res
 
-        MYDividerTask = DividerTask(the_broker=self.BROKER, queue_name="DividerTaskChainQueue")
-
         class AdderTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-AdderTaskQueue".format(uuid.uuid4())
+
             async def run(self, a, b):
                 return await self.do_work(a, b)
 
@@ -308,9 +332,7 @@ class TestWorker(TestCase):
             async def do_work(a, b):
                 return a + b
 
-        MYAdderTask = AdderTask(
-            the_broker=self.BROKER, queue_name="AdderTaskChainQueue", chain=MYDividerTask
-        )
+        MYAdderTask = AdderTask()
 
         kwargs = {"a": 400, "b": 603}
         worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
@@ -335,22 +357,25 @@ class TestWorker(TestCase):
         """
 
         class DividerTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-DividerTaskQueue".format(uuid.uuid4())
+
             async def run(self, a):
                 res = a / 3
                 print("divider res: ", res)
                 return res
 
-        MYDividerTask = DividerTask(the_broker=self.BROKER, queue_name="DividerTaskChainQueue")
-
         class AdderTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-AdderTaskQueue".format(uuid.uuid4())
+            chain = DividerTask
+
             async def run(self, a, b):
                 res = a + b
                 await self.retry(a=221, b=555, task_options=wiji.task.TaskOptions(max_retries=2))
                 return res
 
-        MYAdderTask = AdderTask(
-            the_broker=self.BROKER, queue_name="AdderTaskChainQueue", chain=MYDividerTask
-        )
+        MYAdderTask = AdderTask()
 
         kwargs = {"a": 400, "b": 603}
         worker = wiji.Worker(the_task=MYAdderTask, worker_id="myWorkerID1")
@@ -374,19 +399,17 @@ class TestWorker(TestCase):
 
     def test_shutdown(self):
         class AdderTask(wiji.task.Task):
+            the_broker = self.BROKER
+            # we want this task to be processed slowly
+            the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
+            queue_name = "{0}-TestWorker.test_shutdown".format(uuid.uuid4())
+            drain_duration = 1.0
+
             async def run(self, a, b):
                 res = a + b
                 return res
 
-        # we want this task to be processed slowly
-        the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
-        queue_name = "TestWorker.test_shutdown"
-        _myTask = AdderTask(
-            the_broker=self.BROKER,
-            queue_name=queue_name,
-            the_ratelimiter=the_ratelimiter,
-            drain_duration=1.0,
-        )
+        _myTask = AdderTask()
         worker = wiji.Worker(the_task=_myTask, worker_id="myWorkerID1")
         self.assertFalse(worker.SUCCESFULLY_SHUT_DOWN)
 
@@ -412,8 +435,8 @@ class TestWorker(TestCase):
 
         # assert that some tasks have been consumed and also
         # that not all were consumed.
-        self.assertTrue(_myTask.the_broker._llen(queue_name) > 10)
-        self.assertTrue(_myTask.the_broker._llen(queue_name) < len(queued))
+        self.assertTrue(_myTask.the_broker._llen(AdderTask.queue_name) > 10)
+        self.assertTrue(_myTask.the_broker._llen(AdderTask.queue_name) < len(queued))
         self.assertTrue(worker.SUCCESFULLY_SHUT_DOWN)
 
     def test_broker_shutdown_called(self):
@@ -422,19 +445,17 @@ class TestWorker(TestCase):
         ) as mock_broker_shutdown:
 
             class AdderTask(wiji.task.Task):
+                the_broker = self.BROKER
+                # we want this task to be processed slowly
+                the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
+                queue_name = "{0}-TestWorker.test_shutdown".format(uuid.uuid4())
+                drain_duration = 1.0
+
                 async def run(self, a, b):
                     res = a + b
                     return res
 
-            # we want this task to be processed slowly
-            the_ratelimiter = wiji.ratelimiter.SimpleRateLimiter(execution_rate=1.0)
-            queue_name = "TestWorker.test_shutdown"
-            _myTask = AdderTask(
-                the_broker=self.BROKER,
-                queue_name=queue_name,
-                the_ratelimiter=the_ratelimiter,
-                drain_duration=1.0,
-            )
+            _myTask = AdderTask()
             worker = wiji.Worker(the_task=_myTask, worker_id="myWorkerID1")
             self.assertFalse(worker.SUCCESFULLY_SHUT_DOWN)
 
@@ -459,7 +480,9 @@ class TestWorker(TestCase):
             loop.run_until_complete(tasks)
 
             self.assertTrue(mock_broker_shutdown.mock.called)
-            self.assertEqual(mock_broker_shutdown.mock.call_args[1]["queue_name"], queue_name)
+            self.assertEqual(
+                mock_broker_shutdown.mock.call_args[1]["queue_name"], AdderTask.queue_name
+            )
 
 
 class TestWorkerRedisBroker(TestWorker):
@@ -475,10 +498,11 @@ class TestWorkerRedisBroker(TestWorker):
     def setUp(self):
         super().setUp()
         self.BROKER = ExampleRedisBroker()
-        self.myTask = ExampleAdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
-        self._setup_docker()
+        self.myTask = ExampleAdderRedisTask()
+        self.myTask.queue_name = "{0}-ExampleAdderRedisTaskQueue".format(uuid.uuid4())
 
-        # ensure each testcase starts off with a fresh DB
+        self._setup_docker()
+        # ensure each testcase starts off with a fresh/clean broker
         self.BROKER._flushdb()
 
     @staticmethod

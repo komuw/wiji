@@ -36,7 +36,7 @@ class ExampleRedisBroker(wiji.broker.BaseBroker):
             password = os.environ.get("REDIS_PASSWORD", None)
         port = int(port)
         self.redis_instance = redis.StrictRedis(
-            host=host, port=port, password=password, db=0, socket_timeout=3.0
+            host=host, port=port, password=password, db=0, socket_timeout=8.0
         )
 
     async def check(self, queue_name: str) -> None:

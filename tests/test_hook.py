@@ -26,14 +26,15 @@ class TestHook(TestCase):
     """
 
     def setUp(self):
-        self.BROKER = wiji.broker.InMemoryBroker()
-
         class AdderTask(wiji.task.Task):
+            the_broker = wiji.broker.InMemoryBroker()
+            queue_name = "AdderTaskQueue241"
+
             async def run(self, a, b):
                 res = a + b
                 return res
 
-        self.myAdderTask = AdderTask(the_broker=self.BROKER, queue_name=self.__class__.__name__)
+        self.myAdderTask = AdderTask()
 
     def tearDown(self):
         pass

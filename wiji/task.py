@@ -243,7 +243,6 @@ class Task(abc.ABC):
                 )
             )
 
-        ##################################
         if not hasattr(self, "chain"):
             raise ValueError("{0} should have attribute `chain`".format(_task_name))
         if self.chain:
@@ -251,7 +250,6 @@ class Task(abc.ABC):
                 raise ValueError("""`chain` should be a class and NOT a class instance""")
             if not issubclass(self.chain, Task):
                 raise ValueError("""`chain` should be a subclass of:: `wiji.task.Task`""")
-        #########################################
 
         if not hasattr(self, "the_hook"):
             raise ValueError("{0} should have attribute `the_hook`".format(_task_name))

@@ -133,7 +133,7 @@ class Task(abc.ABC):
     queue_name: str
     task_name: typing.Union[None, str] = None
 
-    # TODO: we should able to use a class instead of instance as chain
+    # chain lets us link together `Tasks` so that one is called after the other, forming a chain.
     chain: typing.Union[None, typing.Type["Task"]] = None
 
     the_hook: typing.Union[None, hook.BaseHook] = None
@@ -159,7 +159,7 @@ class Task(abc.ABC):
         self._validate_task_args()
         self.loglevel = self.loglevel.upper()
         if self.chain:
-            self.chain: Task = self.chain()
+            self.chain: "Task" = self.chain()
 
         if self.task_name is not None:
             self.task_name = self.task_name

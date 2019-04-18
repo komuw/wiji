@@ -80,7 +80,6 @@ class MultiplierTask(wiji.task.Task):
 class DividerTask(wiji.task.Task):
     the_broker = MY_BROKER
     queue_name = "DividerTaskQueue"
-    # TODO: we should able to use a class instead of instance as chain
     chain = MultiplierTask
 
     async def run(self, a):

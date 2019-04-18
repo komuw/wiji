@@ -6,7 +6,7 @@ from . import task
 
 class App:
     def __init__(
-        self, task_classes: typing.List["task.Task"], watchdog_duration: float = 0.1
+        self, task_classes: typing.List[typing.Type[task.Task]], watchdog_duration: float = 0.1
     ) -> None:
         self._validate_app_args(task_classes=task_classes, watchdog_duration=watchdog_duration)
 

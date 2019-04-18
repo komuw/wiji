@@ -116,21 +116,17 @@ class TaskOptions:
 
 class Task(abc.ABC):
     """
-    call it as:
-        Task()(33,"hello", name="komu")
-
     usage:
-        broker = wiji.broker.InMemoryBroker()
-        task = Task(
-                the_broker=broker,
-                queue_name="PrintQueue",
-            )
-        task.delay(33, "hello", name="komu")
+        class AdderTask(wiji.task.Task):
+            the_broker = wiji.broker.InMemoryBroker()
+            queue_name = "AdderTaskQueue"
 
-    You can also chain things as:
-        task1 = wiji.task.Task()
-        task2 = wiji.task.Task(chain=task1)
-        task3 = wiji.task.Task(chain=task2)
+            async def run(self, a, b):
+                result = a + b
+                return result
+
+        task = AdderTask()
+        await task.delay(33, 14)
     """
 
     the_broker: broker.BaseBroker
@@ -138,7 +134,7 @@ class Task(abc.ABC):
     task_name: typing.Union[None, str] = None
 
     # TODO: we should able to use a class instead of instance as chain
-    chain: typing.Union[None, "Task"] = None
+    chain: typing.Union[None, typing.Type["Task"]] = None
 
     the_hook: typing.Union[None, hook.BaseHook] = None
     the_ratelimiter: typing.Union[None, ratelimiter.BaseRateLimiter] = None
@@ -163,7 +159,7 @@ class Task(abc.ABC):
         self._validate_task_args()
         self.loglevel = self.loglevel.upper()
         if self.chain:
-            self.chain = self.chain()
+            self.chain: Task = self.chain()
 
         if self.task_name is not None:
             self.task_name = self.task_name

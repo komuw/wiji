@@ -96,3 +96,26 @@ class TestCliSigHandling(TestCase):
                 logger=self.logger, _signal=signal.SIGTERM, workers=self.workers
             )
         )
+
+
+class TestCliLoad(TestCase):
+    """
+    run tests as:
+        python -m unittest discover -v -s .
+    run one testcase as:
+        python -m unittest -v tests.test_cli.TestCliLoad.test_something
+    """
+
+    def setUp(self):
+        self.wiji_config = "tests.testdata.cli.my_app.MyAppInstance"
+
+    def tearDown(self):
+        pass
+
+    def test_success(self):
+        app = cli.utils.load.load_class(self.wiji_config)
+        self.assertIsInstance(app, wiji.app.App)
+
+    def test_fail(self):
+        with self.assertRaises(AttributeError):
+            cli.utils.load.load_class("tests.testdata.cli.my_app.NonExistentAppInstance")

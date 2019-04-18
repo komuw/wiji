@@ -1,5 +1,4 @@
 import wiji
-import asyncio
 
 
 class AdderTask(wiji.task.Task):

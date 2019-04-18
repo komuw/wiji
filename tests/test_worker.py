@@ -489,10 +489,9 @@ class TestWorkerRedisBroker(TestWorker):
     def setUp(self):
         super().setUp()
         self.BROKER = ExampleRedisBroker()
-        self.myTask = ExampleAdderTask()
         self._setup_docker()
 
-        # ensure each testcase starts off with a fresh DB
+        # ensure each testcase starts off with a fresh/clean broker
         self.BROKER._flushdb()
 
     @staticmethod

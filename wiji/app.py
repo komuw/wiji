@@ -13,8 +13,9 @@ class App:
         self.task_classes = task_classes
         self.watchdog_duration = watchdog_duration
 
+    @staticmethod
     def _validate_app_args(
-        self, task_classes: typing.List[typing.Type[task.Task]], watchdog_duration: float
+        task_classes: typing.List[typing.Type[task.Task]], watchdog_duration: float
     ):
         if not isinstance(task_classes, list):
             raise ValueError(

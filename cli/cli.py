@@ -126,6 +126,7 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
         _worker = wiji.Worker(the_task=task)
         workers.append(_worker)
 
+    del _queue_names
     consumers = []
     for i in workers:
         consumers.append(i.consume_tasks())

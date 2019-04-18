@@ -11,6 +11,7 @@ import datetime
 from . import task
 from . import protocol
 from . import watchdog
+from . import ratelimiter
 
 
 class Worker:
@@ -43,6 +44,8 @@ class Worker:
         else:
             self.worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
 
+        if typing.TYPE_CHECKING:
+            assert isinstance(self.the_task.log_metadata, dict)
         self.the_task.log_metadata.update({"worker_id": self.worker_id, "process_id": self._PID})
         self.the_task.logger.bind(
             level=self.the_task.loglevel, log_metadata=self.the_task.log_metadata
@@ -53,6 +56,8 @@ class Worker:
 
         self.watchdog = None
         if self.use_watchdog:
+            if typing.TYPE_CHECKING:
+                assert isinstance(self.the_task.task_name, str)
             self.watchdog = watchdog.BlockingWatchdog(
                 watchdog_duration=self.watchdog_duration, task_name=self.the_task.task_name
             )
@@ -130,6 +135,9 @@ class Worker:
         execution_exception: typing.Union[None, Exception],
     ) -> None:
         try:
+            if typing.TYPE_CHECKING:
+                assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
+                assert isinstance(self.the_task.task_name, str)
             await self.the_task.the_ratelimiter.execution_outcome(
                 task_id=task_id,
                 task_name=self.the_task.task_name,
@@ -266,6 +274,11 @@ class Worker:
                 return None
 
             try:
+                if typing.TYPE_CHECKING:
+                    # make mypy happy
+                    # https://github.com/python/mypy/issues/4805
+                    assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
+
                 # rate limit ourselves
                 await self.the_task.the_ratelimiter.limit()
             except Exception as e:

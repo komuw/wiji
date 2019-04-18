@@ -381,6 +381,10 @@ class Task(abc.ABC):
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         try:
+            if typing.TYPE_CHECKING:
+                # make mypy happy: https://github.com/python/mypy/issues/4805
+                assert isinstance(self.task_name, str)
+                assert isinstance(self.the_hook, hook.BaseHook)
             await self.the_hook.notify(
                 task_name=self.task_name,
                 queue_name=self.queue_name,

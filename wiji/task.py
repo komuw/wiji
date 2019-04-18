@@ -158,8 +158,17 @@ class Task(abc.ABC):
     def __init__(self,) -> None:
         self._validate_task_args()
         self.loglevel = self.loglevel.upper()
-        if self.chain:
-            self.chain: "Task" = self.chain()
+
+        # we can have tasks that have no chains
+        self.the_chain: typing.Union[None, "Task"] = None
+        if self.chain is not None:
+            assert inspect.isclass(self.chain), "`chain` should be a class and NOT a class instance"
+            assert issubclass(
+                self.chain, Task
+            ), "`chain` should be a subclass of:: `wiji.task.Task`"
+            assert callable(self.chain), "`chain` should be a callable"
+            # https://github.com/PyCQA/pylint/issues/1493
+            self.the_chain: "Task" = self.chain()  # pylint: disable=E1102
 
         if self.task_name is not None:
             self.task_name = self.task_name
@@ -206,7 +215,7 @@ class Task(abc.ABC):
                 "task_name": self.task_name,
                 "the_broker": self.the_broker,
                 "queue_name": self.queue_name,
-                "chain": self.chain,
+                "chain": self.the_chain,
             }
         )
 

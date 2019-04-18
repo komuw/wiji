@@ -189,9 +189,9 @@ class Worker:
         process_time_start = time.process_time()
         try:
             return_value = await self.the_task.run(*task_args, **task_kwargs)
-            if self.the_task.chain and not self.the_task._RETRYING:
+            if self.the_task.the_chain and not self.the_task._RETRYING:
                 # enqueue the chained task using the return_value
-                await self.the_task.chain.delay(return_value)
+                await self.the_task.the_chain.delay(return_value)
             if self.the_task._RETRYING:
                 # task is been retried
                 self._log(

@@ -12,8 +12,6 @@ import docker
 
 from .utils import ExampleRedisBroker
 
-_inMemTestBroker = wiji.broker.InMemoryBroker()
-
 
 def AsyncMock(*args, **kwargs):
     """
@@ -29,7 +27,7 @@ def AsyncMock(*args, **kwargs):
 
 
 class ExampleAdderTask(wiji.task.Task):
-    the_broker = _inMemTestBroker
+    the_broker = wiji.broker.InMemoryBroker()
     queue_name = "{0}-ExampleAdderTaskQueue".format(uuid.uuid4())
 
     async def run(self, a, b):
@@ -47,7 +45,7 @@ class TestWorker(TestCase):
 
     def setUp(self):
         self.loop = asyncio.get_event_loop()
-        self.BROKER = _inMemTestBroker
+        self.BROKER = wiji.broker.InMemoryBroker()
         self.myTask = ExampleAdderTask()
 
     def tearDown(self):

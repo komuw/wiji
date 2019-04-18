@@ -75,7 +75,8 @@ class TestCliSigHandling(TestCase):
             async def run(self, a, b):
                 return a + b
 
-        self.workers = [wiji.Worker(the_task=AdderTask(), worker_id="myWorkerID1")]
+        _worker = wiji.Worker(the_task=AdderTask(), worker_id="myWorkerID1")
+        self.workers = [_worker]
         self.logger = wiji.logger.SimpleLogger("wiji.TestCliSigHandling")
 
     def tearDown(self):

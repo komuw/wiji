@@ -91,5 +91,5 @@ MyAppInstance = wiji.app.App(task_classes=[AdderTask])
 then run `wiji-cli` pointing it to the dotted path of the `wiji.app.App` instance:     
 
 ```bash
-wiji-cli --config examples.my_app.MyAppInstance
+wiji-cli --app examples.my_app.MyAppInstance
 ```

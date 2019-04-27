@@ -12,7 +12,7 @@ from examples.example_tasks import (
 )
 
 # run cli as:
-#   wiji-cli --config examples.wiji_app.yolo
+#   wiji-cli --app examples.wiji_app.yolo
 yolo = wiji.app.App(
     task_classes=[
         BlockingDiskIOTask,

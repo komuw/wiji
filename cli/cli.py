@@ -23,7 +23,7 @@ def make_parser() -> argparse.ArgumentParser:
         description="""wiji is an async distributed task queue.
                 example usage:
                 wiji-cli \
-                --config dotted.path.to.a.wiji.app.App.class.instance
+                --app dotted.path.to.a.wiji.app.App.class.instance
                 """,
     )
     parser.add_argument(
@@ -33,10 +33,10 @@ def make_parser() -> argparse.ArgumentParser:
         help="The currently installed wiji version.",
     )
     parser.add_argument(
-        "--config",
+        "--app",
         required=True,
-        help="The config file to use. \
-        eg: --config dotted.path.to.a.wiji.app.App.class.instance",
+        help="The dotted path to a python file conatining a `wiji.app.App` instance. \
+        eg: --app dotted.path.to.a.wiji.app.App.class.instance",
     )
     parser.add_argument(
         "--dry-run",
@@ -53,7 +53,7 @@ def make_parser() -> argparse.ArgumentParser:
 def main():
     """
     run as:
-        wiji-cli --config dotted.path.to.a.wiji.app.App.class.instance
+        wiji-cli --app dotted.path.to.a.wiji.app.App.class.instance
     """
     worker_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=17))
     logger = wiji.logger.SimpleLogger("wiji.cli")
@@ -62,7 +62,7 @@ def main():
         parser = make_parser()
         args = parser.parse_args()
 
-        config = args.config
+        app = args.app
         dry_run = args.dry_run
         if dry_run:
             logger.log(
@@ -72,7 +72,7 @@ def main():
                 ),
             )
 
-        app_instance = utils.load.load_class(config)
+        app_instance = utils.load.load_class(app)
         if not isinstance(app_instance, wiji.app.App):
             err = ValueError(
                 """`app_instance` should be of type:: `wiji.app.App` You entered: {0}""".format(

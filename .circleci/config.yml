@@ -93,7 +93,7 @@ jobs:
             sudo apt -y install pandoc
             sudo pip install -e .[dev,test]
             wiji-cli --version
-            wiji-cli --config tests.testdata.cli.my_app.MyAppInstance --dry-run
+            wiji-cli --app tests.testdata.cli.my_app.MyAppInstance --dry-run
 
   check-releases-notes:
     docker:

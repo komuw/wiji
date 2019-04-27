@@ -14,7 +14,7 @@ class AdderTask(wiji.task.Task):
 
 
 # run cli as:
-#   wiji-cli --config examples.my_app.MyAppInstance
+#   wiji-cli --app examples.my_app.MyAppInstance
 MyAppInstance = wiji.app.App(task_classes=[AdderTask])
 
 

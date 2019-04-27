@@ -22,15 +22,15 @@ def AsyncMock(*args, **kwargs):
 
 
 class MockArgumentParser:
-    def __init__(self, wiji_config, dry_run=True):
-        self.wiji_config = wiji_config
+    def __init__(self, wiji_app, dry_run=True):
+        self.wiji_app = wiji_app
         self.dry_run = dry_run
 
     def add_argument(self, *args, **kwargs):
         pass
 
     def parse_args(self, args=None, namespace=None):
-        return argparse.Namespace(config=self.wiji_config, dry_run=self.dry_run, loglevel="DEBUG")
+        return argparse.Namespace(app=self.wiji_app, dry_run=self.dry_run, loglevel="DEBUG")
 
 
 class TestCli(TestCase):
@@ -43,7 +43,7 @@ class TestCli(TestCase):
 
     def setUp(self):
         self.parser = cli.cli.make_parser()
-        self.wiji_config = "tests.testdata.cli.my_app.MyAppInstance"
+        self.wiji_app = "tests.testdata.cli.my_app.MyAppInstance"
 
     def tearDown(self):
         pass
@@ -54,7 +54,7 @@ class TestCli(TestCase):
 
     def test_cli_success(self):
         with mock.patch("argparse.ArgumentParser") as mock_ArgumentParser:
-            mock_ArgumentParser.return_value = MockArgumentParser(wiji_config=self.wiji_config)
+            mock_ArgumentParser.return_value = MockArgumentParser(wiji_app=self.wiji_app)
             cli.cli.main()
 
 
@@ -107,13 +107,13 @@ class TestCliLoad(TestCase):
     """
 
     def setUp(self):
-        self.wiji_config = "tests.testdata.cli.my_app.MyAppInstance"
+        self.wiji_app = "tests.testdata.cli.my_app.MyAppInstance"
 
     def tearDown(self):
         pass
 
     def test_success(self):
-        app = cli.utils.load.load_class(self.wiji_config)
+        app = cli.utils.load.load_class(self.wiji_app)
         self.assertIsInstance(app, wiji.app.App)
 
     def test_fail(self):

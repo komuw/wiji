@@ -69,7 +69,7 @@ asyncio.run(worker.consume_tasks())
 #### 2. As a cli app
 `wiji` also ships with a commandline app called `wiji-cli`.             
                 
-create a `wiji` config file(which is just any python file that has a class instance of `wiji.app.App`), eg;             
+create a `wiji` app file(which is just any python file that has a class instance of `wiji.app.App`), eg;             
 `examples/my_app.py`                 
 ```python
 import wiji

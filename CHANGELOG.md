@@ -2,7 +2,7 @@
 most recent version is listed first.
 
 ## **version:** v0.1.6-beta.4
-- rename CLI option, `--config` to `--app` 
+- rename CLI option, `--config` to `--app` : https://github.com/komuw/wiji/pull/52
 
 ## **version:** v0.1.6-beta.3
 - bugfix, `task.task_options is stale`    

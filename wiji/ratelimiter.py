@@ -20,7 +20,7 @@ class BaseRateLimiter(abc.ABC):
     """
     This is the interface that must be implemented to satisfy wiji's rate limiting.
     User implementations should inherit this class and
-    implement the :func:`limit <BaseRateLimiter.limit>` methods with the type signatures shown.
+    implement the :func:`limit <BaseRateLimiter.limit>` and :func:`notify <BaseRateLimiter.notify>` methods with the type signatures shown.
 
     It may be important to control the rate at which the worker(wiji) consumes/executes tasks.
     wiji lets you do this, by allowing you to specify a custom rate limiter.
@@ -34,20 +34,25 @@ class BaseRateLimiter(abc.ABC):
         raise NotImplementedError("`limit` method must be implemented.")
 
     @abc.abstractmethod
-    async def execution_outcome(
+    async def notify(
         self,
         task_name: str,
         task_id: str,
         queue_name: str,
-        execution_duration: typing.Dict[str, float],
-        execution_exception: typing.Union[None, Exception],
-        return_value: typing.Any,
+        state: "task.TaskState",
+        queuing_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        queuing_exception: typing.Union[None, Exception] = None,
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         """
-        this method is called by the worker once it has finished executing a task.
+        this method is called:
+          - by `wiji.task.Task` once it has finished queuing a task to the broker
+          - by `wiji.worker.worker` once it has finished executing a task.
         implementers may choose to use the metrics provided to dynamically adjust their rate limiting policies.
         """
-        raise NotImplementedError("`execution_outcome` method must be implemented.")
+        raise NotImplementedError("`notify` method must be implemented.")
 
 
 class SimpleRateLimiter(BaseRateLimiter):
@@ -147,32 +152,41 @@ class SimpleRateLimiter(BaseRateLimiter):
             },
         )
 
-    async def execution_outcome(
+    @abc.abstractmethod
+    async def notify(
         self,
         task_name: str,
         task_id: str,
         queue_name: str,
-        execution_duration: typing.Dict[str, float],
-        execution_exception: typing.Union[None, Exception],
-        return_value: typing.Any,
+        state: "task.TaskState",
+        queuing_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        queuing_exception: typing.Union[None, Exception] = None,
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         """
-        SimpleRateLimiter does nothing with the data/metrics it gets about execution outcome.
+        SimpleRateLimiter does nothing with the data/metrics it gets about queuing and execution outcomes.
         However, you can imagine a smarter RateLimiter that uses these metrics to dynamically change
-        its rate-limiting methodologies; eg increase ratelimit if percentage of exceptions goes up.
+        its rate-limiting methodologies, eg:
+          - increase ratelimit if percentage of exceptions goes up. or
+          - increase ratelimit if queuing_duration is very high.
         """
         if queue_name != task._watchdogTask.queue_name:
             self.logger.log(
                 logging.DEBUG,
                 {
-                    "event": "wiji.SimpleRateLimiter.execution_outcome",
+                    "event": "wiji.SimpleRateLimiter.notify",
                     "stage": "end",
-                    "state": "execution_outcome record",
+                    "state": "notify record",
                     "task_name": task_name,
                     "task_id": task_id,
                     "queue_name": queue_name,
+                    "task_state": state,
+                    "queuing_duration": queuing_duration,
+                    "queuing_exception": str(queuing_exception),
                     "execution_duration": execution_duration,
                     "execution_exception": str(execution_exception),
-                    "return_value": str(return_value),
+                    "return_value": return_value,
                 },
             )

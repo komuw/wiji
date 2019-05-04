@@ -430,9 +430,9 @@ class Task(abc.ABC):
         return_value: typing.Union[None, typing.Any] = None,
     ) -> None:
         try:
-            # if typing.TYPE_CHECKING:
-            #     assert isinstance(self.the_ratelimiter, ratelimiter.BaseRateLimiter)
-            #     assert isinstance(self.task_name, str)
+            if typing.TYPE_CHECKING:
+                assert isinstance(self.the_ratelimiter, ratelimiter.BaseRateLimiter)
+                assert isinstance(self.task_name, str)
             await self.the_ratelimiter.notify(
                 task_id=task_id,
                 task_name=self.task_name,

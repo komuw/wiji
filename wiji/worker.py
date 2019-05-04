@@ -127,36 +127,6 @@ class Worker:
         else:
             return (60 * (2 ** current_retries)) + jitter
 
-    async def _notify_ratelimiter(
-        self,
-        task_id: str,
-        return_value: typing.Any,
-        execution_duration: typing.Dict[str, float],
-        execution_exception: typing.Union[None, Exception],
-    ) -> None:
-        try:
-            if typing.TYPE_CHECKING:
-                assert isinstance(self.the_task.the_ratelimiter, ratelimiter.BaseRateLimiter)
-                assert isinstance(self.the_task.task_name, str)
-            await self.the_task.the_ratelimiter.execution_outcome(
-                task_id=task_id,
-                task_name=self.the_task.task_name,
-                queue_name=self.the_task.queue_name,
-                execution_duration=execution_duration,
-                execution_exception=execution_exception,
-                return_value=return_value,
-            )
-        except Exception as e:
-            self._log(
-                logging.ERROR,
-                {
-                    "event": "wiji.Worker.run_task",
-                    "stage": "end",
-                    "state": "the_ratelimiter execution_outcome error",
-                    "error": str(e),
-                },
-            )
-
     async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
             await self.the_task.the_broker.done(queue_name=queue_name, item=item, state=state)
@@ -227,11 +197,12 @@ class Worker:
                 "monotonic": float("{0:.4f}".format(monotonic_end - monotonic_start)),
                 "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
             }
-            await self._notify_ratelimiter(
+            await self.the_task._notify_ratelimiter(
                 task_id=task_options.get("task_id"),
-                return_value=return_value,
+                state=task.TaskState.EXECUTED,
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
+                return_value=return_value,
             )
             await self.the_task._notify_hook(
                 task_id=task_options.get("task_id"),

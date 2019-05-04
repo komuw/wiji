@@ -1,4 +1,5 @@
 import abc
+import time
 import enum
 import uuid
 import string
@@ -418,11 +419,49 @@ class Task(abc.ABC):
                 "Task: {0}. The broker failed check request.".format(self._debug_task_name)
             ) from e
 
+    async def _notify_ratelimiter(
+        self,
+        task_id: str,
+        state: TaskState,
+        queuing_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        queuing_exception: typing.Union[None, Exception] = None,
+        execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        execution_exception: typing.Union[None, Exception] = None,
+        return_value: typing.Union[None, typing.Any] = None,
+    ) -> None:
+        try:
+            if typing.TYPE_CHECKING:
+                assert isinstance(self.the_ratelimiter, ratelimiter.BaseRateLimiter)
+                assert isinstance(self.task_name, str)
+            await self.the_ratelimiter.notify(
+                task_id=task_id,
+                task_name=self.task_name,
+                queue_name=self.queue_name,
+                state=state,
+                queuing_duration=queuing_duration,
+                queuing_exception=queuing_exception,
+                execution_duration=execution_duration,
+                execution_exception=execution_exception,
+                return_value=return_value,
+            )
+        except Exception as e:
+            self._log(
+                logging.ERROR,
+                {
+                    "event": "wiji.Task._notify_ratelimiter",
+                    "stage": "end",
+                    "state": "task ratelimiter error",
+                    "error": str(e),
+                },
+            )
+
     async def _notify_hook(
         self,
         task_id: str,
         state: TaskState,
         hook_metadata: str,
+        queuing_duration: typing.Union[None, typing.Dict[str, float]] = None,
+        queuing_exception: typing.Union[None, Exception] = None,
         execution_duration: typing.Union[None, typing.Dict[str, float]] = None,
         execution_exception: typing.Union[None, Exception] = None,
         return_value: typing.Union[None, typing.Any] = None,
@@ -438,6 +477,8 @@ class Task(abc.ABC):
                 task_id=task_id,
                 state=state,
                 hook_metadata=hook_metadata,
+                queuing_duration=queuing_duration,
+                queuing_exception=queuing_exception,
                 execution_duration=execution_duration,
                 execution_exception=execution_exception,
                 return_value=return_value,
@@ -481,14 +522,14 @@ class Task(abc.ABC):
             state=TaskState.QUEUEING,
             hook_metadata=task_options.hook_metadata,
         )
+
+        queuing_exception = None
+        thread_time_start = time.thread_time()
+        perf_counter_start = time.perf_counter()
+        monotonic_start = time.monotonic()
+        process_time_start = time.process_time()
         try:
             await self.the_broker.enqueue(queue_name=self.queue_name, item=proto.json())
-            # this cannot raise an error since the method handles that error
-            await self._notify_hook(
-                task_id=task_options.task_id,
-                state=TaskState.QUEUED,
-                hook_metadata=task_options.hook_metadata,
-            )
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})
             raise TypeError(
@@ -497,6 +538,7 @@ class Task(abc.ABC):
                 )
             ) from e
         except Exception as e:
+            queuing_exception = e
             self._log(
                 logging.ERROR,
                 {
@@ -509,6 +551,31 @@ class Task(abc.ABC):
             raise TaskDelayError(
                 "Task: {0}. publishing to the broker failed.".format(self._debug_task_name)
             ) from e
+        finally:
+            thread_time_end = time.thread_time()
+            perf_counter_end = time.perf_counter()
+            monotonic_end = time.monotonic()
+            process_time_end = time.process_time()
+            queuing_duration = {
+                "thread_time": float("{0:.4f}".format(thread_time_end - thread_time_start)),
+                "perf_counter": float("{0:.4f}".format(perf_counter_end - perf_counter_start)),
+                "monotonic": float("{0:.4f}".format(monotonic_end - monotonic_start)),
+                "process_time": float("{0:.4f}".format(process_time_end - process_time_start)),
+            }
+            # this cannot raise an error since the method handles that error
+            await self._notify_hook(
+                task_id=task_options.task_id,
+                state=TaskState.QUEUED,
+                hook_metadata=task_options.hook_metadata,
+                queuing_duration=queuing_duration,
+                queuing_exception=queuing_exception,
+            )
+            await self._notify_ratelimiter(
+                task_id=task_options.task_id,
+                state=TaskState.QUEUED,
+                queuing_duration=queuing_duration,
+                queuing_exception=queuing_exception,
+            )
 
     def synchronous_delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         try:

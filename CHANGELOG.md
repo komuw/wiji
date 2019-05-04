@@ -2,6 +2,10 @@
 most recent version is listed first.
 
 
+## **version:** v0.1.7
+hook and ratelimiter should have access to queuing metrics : https://github.com/komuw/wiji/pull/57
+
+
 ## **version:** v0.1.6
 - add better error messages : https://github.com/komuw/wiji/pull/54
 - Stop capturing `SIGINT` signal : https://github.com/komuw/wiji/pull/55

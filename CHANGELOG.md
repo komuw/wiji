@@ -4,6 +4,7 @@ most recent version is listed first.
 
 ## **version:** v0.1.6-beta.5
 - add better error messages : https://github.com/komuw/wiji/pull/54
+- Stop capturing `SIGINT` signal : https://github.com/komuw/wiji/pull/55
 
 ## **version:** v0.1.6-beta.4
 - rename CLI option, `--config` to `--app` : https://github.com/komuw/wiji/pull/52

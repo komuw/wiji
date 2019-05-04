@@ -152,7 +152,6 @@ class SimpleRateLimiter(BaseRateLimiter):
             },
         )
 
-    @abc.abstractmethod
     async def notify(
         self,
         task_name: str,

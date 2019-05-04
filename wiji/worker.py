@@ -76,26 +76,26 @@ class Worker:
     ) -> None:
         if not isinstance(the_task, task.Task):
             raise ValueError(
-                """`the_task` should be of type:: `wiji.task.Task` You entered: {0}""".format(
-                    type(the_task)
+                "`the_task` should be of type:: `wiji.task.Task` You entered: {0}".format(
+                    type(the_task)  # for this `the_task._debug_task_name` may be unavailable
                 )
             )
         if not isinstance(worker_id, (type(None), str)):
             raise ValueError(
-                """`worker_id` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(worker_id)
+                "Task: {0}. `worker_id` should be of type:: `None` or `str` You entered: {1}".format(
+                    the_task._debug_task_name, type(worker_id)
                 )
             )
         if not isinstance(use_watchdog, bool):
             raise ValueError(
-                """`use_watchdog` should be of type:: `bool` You entered: {0}""".format(
-                    type(use_watchdog)
+                "Task: {0}. `use_watchdog` should be of type:: `bool` You entered: {1}".format(
+                    the_task._debug_task_name, type(use_watchdog)
                 )
             )
         if not isinstance(watchdog_duration, float):
             raise ValueError(
-                """`watchdog_duration` should be of type:: `float` You entered: {0}""".format(
-                    type(watchdog_duration)
+                "Task: {0}. `watchdog_duration` should be of type:: `float` You entered: {1}".format(
+                    the_task._debug_task_name, type(watchdog_duration)
                 )
             )
 

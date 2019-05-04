@@ -156,17 +156,26 @@ class Task(abc.ABC):
     log_handler: typing.Union[None, logger.BaseLogger] = None
 
     def __init__(self,) -> None:
+        self._debug_task_name = self.__class__.__name__
         self._validate_task_args()
         self.loglevel = self.loglevel.upper()
 
         # we can have tasks that have no chains
         self.the_chain: typing.Union[None, "Task"] = None
         if self.chain is not None:
-            assert inspect.isclass(self.chain), "`chain` should be a class and NOT a class instance"
+            assert inspect.isclass(
+                self.chain
+            ), "Task: {0}. `chain` should be a class and NOT a class instance".format(
+                self._debug_task_name
+            )
             assert issubclass(
                 self.chain, Task
-            ), "`chain` should be a subclass of:: `wiji.task.Task`"
-            assert callable(self.chain), "`chain` should be a callable"
+            ), "Task: {0}. `chain` should be a subclass of:: `wiji.task.Task`".format(
+                self._debug_task_name
+            )
+            assert callable(self.chain), "Task: {0}. `chain` should be a callable".format(
+                self._debug_task_name
+            )
             # https://github.com/PyCQA/pylint/issues/1493
             self.the_chain: "Task" = self.chain()  # pylint: disable=E1102
 
@@ -220,125 +229,158 @@ class Task(abc.ABC):
         )
 
     def _validate_task_args(self,) -> None:
-        _task_name = self.__class__.__name__
         if not hasattr(self, "the_broker"):
-            raise ValueError("{0} should have attribute `the_broker`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `the_broker`".format(self._debug_task_name)
+            )
         if not isinstance(self.the_broker, broker.BaseBroker):
             raise ValueError(
-                """the_broker should be of type:: `wiji.broker.BaseBroker` You entered: {0}""".format(
-                    type(self.the_broker)
+                "Task: {0}. `the_broker` should be of type:: `wiji.broker.BaseBroker` You entered: {0}".format(
+                    type(self._debug_task_name, self.the_broker)
                 )
             )
 
         if not hasattr(self, "queue_name"):
-            raise ValueError("{0} should have attribute `queue_name`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `queue_name`".format(self._debug_task_name)
+            )
         if not isinstance(self.queue_name, str):
             raise ValueError(
-                """`queue_name` should be of type:: `str` You entered: {0}""".format(
-                    type(self.queue_name)
+                "Task: {0}. `queue_name` should be of type:: `str` You entered: {1}".format(
+                    self._debug_task_name, type(self.queue_name)
                 )
             )
 
         if not hasattr(self, "task_name"):
-            raise ValueError("{0} should have attribute `task_name`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `task_name`".format(self._debug_task_name)
+            )
         if not isinstance(self.task_name, (type(None), str)):
             raise ValueError(
-                """`task_name` should be of type:: `None` or `str` You entered: {0}""".format(
-                    type(self.task_name)
+                "Task: {0}. `task_name` should be of type:: `None` or `str` You entered: {1}".format(
+                    self._debug_task_name, type(self.task_name)
                 )
             )
 
         if not hasattr(self, "chain"):
-            raise ValueError("{0} should have attribute `chain`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `chain`".format(self._debug_task_name)
+            )
         if self.chain:
             if not inspect.isclass(self.chain):
-                raise ValueError("""`chain` should be a class and NOT a class instance""")
+                raise ValueError(
+                    "Task: {0}. `chain` should be a class and NOT a class instance".format(
+                        self._debug_task_name
+                    )
+                )
             if not issubclass(self.chain, Task):
-                raise ValueError("""`chain` should be a subclass of:: `wiji.task.Task`""")
+                raise ValueError(
+                    "Task: {0}. `chain` should be a subclass of:: `wiji.task.Task`".format(
+                        self._debug_task_name
+                    )
+                )
 
         if not hasattr(self, "the_hook"):
-            raise ValueError("{0} should have attribute `the_hook`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `the_hook`".format(self._debug_task_name)
+            )
         if not isinstance(self.the_hook, (type(None), hook.BaseHook)):
             raise ValueError(
-                """`the_hook` should be of type:: `None` or `wiji.hook.BaseHook` You entered: {0}""".format(
-                    type(self.the_hook)
+                "Task: {0}. `the_hook` should be of type:: `None` or `wiji.hook.BaseHook` You entered: {1}".format(
+                    self._debug_task_name, type(self.the_hook)
                 )
             )
 
         if not hasattr(self, "the_ratelimiter"):
-            raise ValueError("{0} hould have attribute `the_ratelimiter`".format(_task_name))
+            raise ValueError(
+                "Task: {0} hould have attribute `the_ratelimiter`".format(self._debug_task_name)
+            )
         if not isinstance(self.the_ratelimiter, (type(None), ratelimiter.BaseRateLimiter)):
             raise ValueError(
-                """`the_ratelimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {0}""".format(
-                    type(self.the_ratelimiter)
+                "Task: {0}. `the_ratelimiter` should be of type:: `None` or `wiji.ratelimiter.BaseRateLimiter` You entered: {1}".format(
+                    self._debug_task_name, type(self.the_ratelimiter)
                 )
             )
 
         if not hasattr(self, "drain_duration"):
-            raise ValueError("{0} should have attribute `drain_duration`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `drain_duration`".format(self._debug_task_name)
+            )
         if not isinstance(self.drain_duration, float):
             raise ValueError(
-                """`drain_duration` should be of type:: `float` You entered: {0}""".format(
-                    type(self.drain_duration)
+                "Task: {0}. `drain_duration` should be of type:: `float` You entered: {1}".format(
+                    self._debug_task_name, type(self.drain_duration)
                 )
             )
 
         if not hasattr(self, "log_handler"):
-            raise ValueError("{0} should have attribute `log_handler`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `log_handler`".format(self._debug_task_name)
+            )
         if not isinstance(self.log_handler, (type(None), logger.BaseLogger)):
             raise ValueError(
-                """`log_handler` should be of type:: `None` or `wiji.logger.BaseLogger` You entered: {0}""".format(
-                    type(self.log_handler)
+                "Task: {0}. `log_handler` should be of type:: `None` or `wiji.logger.BaseLogger` You entered: {1}".format(
+                    self._debug_task_name, type(self.log_handler)
                 )
             )
 
         if not hasattr(self, "loglevel"):
-            raise ValueError("{0} should have attribute `loglevel`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `loglevel`".format(self._debug_task_name)
+            )
         if self.loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
             raise ValueError(
-                """`loglevel` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {0}""".format(
-                    self.loglevel
+                "Task: {0}. `loglevel` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {1}".format(
+                    self._debug_task_name, self.loglevel
                 )
             )
 
         if not hasattr(self, "log_metadata"):
-            raise ValueError("{0} should have attribute `log_metadata`".format(_task_name))
+            raise ValueError(
+                "Task: {0} should have attribute `log_metadata`".format(self._debug_task_name)
+            )
         if not isinstance(self.log_metadata, (type(None), dict)):
             raise ValueError(
-                """`log_metadata` should be of type:: `None` or `dict` You entered: {0}""".format(
-                    type(self.log_metadata)
+                "Task: {0}. `log_metadata` should be of type:: `None` or `dict` You entered: {1}".format(
+                    self._debug_task_name, type(self.log_metadata)
                 )
             )
 
         if not asyncio.iscoroutinefunction(self.run):
             raise ValueError(
-                "The method: `run` of a class derived from: `wiji.task.Task` should be a python coroutine."
-                "\nHint: did you forget to define the method using `async def` syntax?"
+                "Task: {0}. The method `run` of a class derived from `wiji.task.Task` should be a python coroutine.".format(
+                    self._debug_task_name
+                )
             )
         if not inspect.iscoroutinefunction(self.run):
             raise ValueError(
-                "The method: `run` of a class derived from: `wiji.task.Task` should be a python coroutine."
-                "\nHint: did you forget to define the method using `async def` syntax?"
+                "Task: {0}. The method `run` of a class derived from `wiji.task.Task` should be a python coroutine.".format(
+                    self._debug_task_name
+                )
             )
         if not asyncio.iscoroutinefunction(self.delay):
             raise ValueError(
-                "The method: `delay` of a class derived from: `wiji.task.Task` should be a python coroutine."
-                "\nHint: did you forget to define the method using `async def` syntax?"
+                "Task: {0}. The method `delay` of a class derived from `wiji.task.Task` should be a python coroutine.".format(
+                    self._debug_task_name
+                )
             )
         if not inspect.iscoroutinefunction(self.delay):
             raise ValueError(
-                "The method: `delay` of a class derived from: `wiji.task.Task` should be a python coroutine."
-                "\nHint: did you forget to define the method using `async def` syntax?"
+                "Task: {0}. The method `delay` of a class derived from `wiji.task.Task` should be a python coroutine.".format(
+                    self._debug_task_name
+                )
             )
         if not asyncio.iscoroutinefunction(self.retry):
             raise ValueError(
-                "The method: `retry` of a class derived from: `wiji.task.Task` should be a python coroutine."
-                "\nHint: did you forget to define the method using `async def` syntax?"
+                "Task: {0}. The method `retry` of a class derived from `wiji.task.Task` should be a python coroutine.".format(
+                    self._debug_task_name
+                )
             )
         if not inspect.iscoroutinefunction(self.retry):
             raise ValueError(
-                "The method: `retry` of a class derived from: `wiji.task.Task` should be a python coroutine."
-                "\nHint: did you forget to define the method using `async def` syntax?"
+                "Task: {0}. The method `retry` of a class derived from `wiji.task.Task` should be a python coroutine.".format(
+                    self._debug_task_name
+                )
             )
 
     def _sanity_check_logger(self, event: str) -> None:
@@ -373,7 +415,7 @@ class Task(abc.ABC):
             )
             # exit with error
             raise ValueError(
-                "The broker for task: `{0}` failed check request.".format(self.task_name)
+                "Task: {0}. The broker failed check request.".format(self._debug_task_name)
             ) from e
 
     async def _notify_hook(
@@ -413,7 +455,9 @@ class Task(abc.ABC):
 
     @abc.abstractmethod
     async def run(self, *args: typing.Any, **kwargs: typing.Any) -> typing.Any:
-        raise NotImplementedError("`run` method must be implemented.")
+        raise NotImplementedError(
+            "Task: {0}. `run` method must be implemented.".format(self._debug_task_name)
+        )
 
     async def delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """
@@ -448,7 +492,9 @@ class Task(abc.ABC):
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})
             raise TypeError(
-                "All the task arguments passed into `delay` should be JSON serializable."
+                "Task: {0}. All the task arguments passed into `delay` should be JSON serializable.".format(
+                    self._debug_task_name
+                )
             ) from e
         except Exception as e:
             self._log(
@@ -460,7 +506,9 @@ class Task(abc.ABC):
                     "error": str(e),
                 },
             )
-            raise TaskDelayError("publishing to the broker failed.") from e
+            raise TaskDelayError(
+                "Task: {0}. publishing to the broker failed.".format(self._debug_task_name)
+            ) from e
 
     def synchronous_delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         try:
@@ -489,8 +537,8 @@ class Task(abc.ABC):
         if self.current_retries >= self.max_retries:
             self._RETRYING = False
             raise WijiMaxRetriesExceededError(
-                "The task:`{task_name}` has reached its max_retries count of: {max_retries}".format(
-                    task_name=self.task_name, max_retries=self.max_retries
+                "Task: {0}. The task has reached its max_retries count of: {1}".format(
+                    self._debug_task_name, self.max_retries
                 )
             )
 
@@ -503,8 +551,9 @@ class Task(abc.ABC):
         for a in args:
             if isinstance(a, TaskOptions):
                 raise ValueError(
-                    """You cannot use a value of type `wiji.task.TaskOptions` as a normal argument.
-                    \nHint: instead, pass it in as a kwarg(named argument)"""
+                    "Task: {0}. You cannot use a value of type `wiji.task.TaskOptions` as a normal argument.".format(
+                        self._debug_task_name
+                    )
                 )
 
     @staticmethod

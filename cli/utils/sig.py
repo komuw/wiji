@@ -13,7 +13,7 @@ async def _signal_handling(logger: wiji.logger.BaseLogger, workers: list) -> Non
         loop = asyncio.get_event_loop()
 
     try:
-        for _signal in [signal.SIGHUP, signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
+        for _signal in [signal.SIGHUP, signal.SIGQUIT, signal.SIGTERM]:
             loop.add_signal_handler(
                 _signal,
                 functools.partial(

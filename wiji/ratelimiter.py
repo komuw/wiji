@@ -177,11 +177,10 @@ class SimpleRateLimiter(BaseRateLimiter):
                 {
                     "event": "wiji.SimpleRateLimiter.notify",
                     "stage": "end",
-                    "state": "notify record",
+                    "state": state,
                     "task_name": task_name,
                     "task_id": task_id,
                     "queue_name": queue_name,
-                    "task_state": state,
                     "queuing_duration": queuing_duration,
                     "queuing_exception": str(queuing_exception),
                     "execution_duration": execution_duration,

@@ -13,8 +13,11 @@ from examples.redis_broker import ExampleRedisBroker
 MY_BROKER = ExampleRedisBroker()
 
 
-class BlockingDiskIOTask(wiji.task.Task):
+class BaseTask(wiji.task.Task):
     the_broker = MY_BROKER
+
+
+class BlockingDiskIOTask(BaseTask):
     queue_name = "BlockingDiskIOTaskQueue"
 
     async def run(self, *args, **kwargs):
@@ -23,8 +26,7 @@ class BlockingDiskIOTask(wiji.task.Task):
         subprocess.run(["dd", "if=/dev/zero", "of=/dev/null", "bs=500000", "count=1000000"])
 
 
-class BlockinHttpTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class BlockinHttpTask(BaseTask):
     queue_name = "BlockinHttpTaskQueue"
 
     async def run(self, *args, **kwargs):
@@ -35,8 +37,7 @@ class BlockinHttpTask(wiji.task.Task):
         print("resp: ", resp)
 
 
-class AsyncHttpTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class AsyncHttpTask(BaseTask):
     queue_name = "AsyncHttpTaskQueue"
 
     async def run(self, *args, **kwargs):
@@ -48,8 +49,7 @@ class AsyncHttpTask(wiji.task.Task):
                 print(res_text[:50])
 
 
-class PrintTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class PrintTask(BaseTask):
     queue_name = "PrintTaskQueue"
 
     async def run(self, *args, **kwargs):
@@ -64,8 +64,7 @@ class PrintTask(wiji.task.Task):
         # await asyncio.sleep(0.4)
 
 
-class MultiplierTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class MultiplierTask(BaseTask):
     queue_name = "MultiplierTaskQueue"
 
     async def run(self, bbb, a=5.5):
@@ -77,8 +76,7 @@ class MultiplierTask(wiji.task.Task):
         return res
 
 
-class DividerTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class DividerTask(BaseTask):
     queue_name = "DividerTaskQueue"
     chain = MultiplierTask
 
@@ -91,8 +89,7 @@ class DividerTask(wiji.task.Task):
         return res
 
 
-class AdderTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class AdderTask(BaseTask):
     queue_name = "AdderTaskQueue"
     chain = DividerTask
 
@@ -108,8 +105,7 @@ class AdderTask(wiji.task.Task):
         return res
 
 
-class ExceptionTask(wiji.task.Task):
-    the_broker = MY_BROKER
+class ExceptionTask(BaseTask):
     queue_name = "ExceptionTaskQueue"
 
     async def run(self):

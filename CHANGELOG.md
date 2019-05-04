@@ -2,6 +2,18 @@
 most recent version is listed first.
 
 
+## **version:** v0.1.6
+- add better error messages : https://github.com/komuw/wiji/pull/54
+- Stop capturing `SIGINT` signal : https://github.com/komuw/wiji/pull/55
+- rename CLI option, `--config` to `--app` : https://github.com/komuw/wiji/pull/52
+- bugfix, `task.task_options is stale`    
+  We had a case where `broker.done` would get called with `task_id`==`''`(empty string) : https://github.com/komuw/wiji/pull/39
+- add timestamp to log events: https://github.com/komuw/wiji/pull/45
+- remove `wiji.task.WijiRetryError`.   
+  we replace it with a `wiji.task.Task._RETRYING` boolean.: https://github.com/komuw/wiji/pull/46
+- rename wiji conf file: https://github.com/komuw/wiji/pull/47
+- `wiji` no longer requires task instances in order to start running : https://github.com/komuw/wiji/pull/49
+
 ## **version:** v0.1.6-beta.5
 - add better error messages : https://github.com/komuw/wiji/pull/54
 - Stop capturing `SIGINT` signal : https://github.com/komuw/wiji/pull/55

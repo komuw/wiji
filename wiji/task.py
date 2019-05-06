@@ -30,7 +30,7 @@ class WijiMaxRetriesExceededError(Exception):
     pass
 
 
-class TaskDelayError(Exception):
+class TaskQueueingError(Exception):
     """
     raised if `wiji` is unable to publish to the broker for any reason.
     """
@@ -548,7 +548,7 @@ class Task(abc.ABC):
                     "error": str(e),
                 },
             )
-            raise TaskDelayError(
+            raise TaskQueueingError(
                 "Task: {0}. publishing to the broker failed.".format(self._debug_task_name)
             ) from e
         finally:
@@ -690,4 +690,4 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask()
+WatchDogTask: _watchdogTask = _watchdogTask()

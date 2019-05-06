@@ -690,4 +690,4 @@ class _watchdogTask(Task):
         await asyncio.sleep(0.1 / 1.5)
 
 
-WatchDogTask = _watchdogTask()
+WatchDogTask: _watchdogTask = _watchdogTask()

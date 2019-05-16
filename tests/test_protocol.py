@@ -1,5 +1,6 @@
 # do not to pollute the global namespace.
 # see: https://python-packaging.readthedocs.io/en/latest/testing.html
+import json
 import datetime
 from unittest import TestCase
 
@@ -38,3 +39,19 @@ class TestProtocol(TestCase):
 
         iso_fmt_str = wiji.protocol.Protocol._eta_to_isoformat(3.41)
         self.assertIsInstance(iso_fmt_str, str)
+
+    def test_eta_conversions(self):
+        """
+        test eta when calling `Task.delay` and `Worker.consume_tasks`
+        """
+        task_options = wiji.task.TaskOptions()
+        proto = wiji.protocol.Protocol(version=1, task_options=task_options)
+        _dequeued_item = proto.json()
+        dequeued_item = json.loads(_dequeued_item)
+        _task_options = dequeued_item["task_options"]
+        task_eta = _task_options["eta"]
+        self.assertEqual(task_eta, task_options.eta)
+        self.assertEqual(
+            wiji.protocol.Protocol._from_isoformat(task_eta),
+            wiji.protocol.Protocol._from_isoformat(task_options.eta),
+        )

@@ -515,7 +515,6 @@ class Task(abc.ABC):
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        proto = protocol.Protocol(version=1, task_options=task_options)
         await self._notify_hook(
             task_id=task_options.task_id,
             state=TaskState.QUEUEING,
@@ -528,6 +527,7 @@ class Task(abc.ABC):
         monotonic_start = time.monotonic()
         process_time_start = time.process_time()
         try:
+            proto = protocol.Protocol(version=1, task_options=task_options)
             await self.the_broker.enqueue(queue_name=self.queue_name, item=proto.json())
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})

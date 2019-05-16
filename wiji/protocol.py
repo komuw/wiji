@@ -90,7 +90,7 @@ class Protocol:
         usage:
             dt = Protocol._from_isoformat(eta="2020-04-01T18:41:54.195638+00:00")
         """
-        dt = datetime.datetime.strptime(eta, "%Y-%m-%dT%H:%M:%S.%f%z")
+        dt = datetime.datetime.fromisoformat(eta)
         return dt
 
     def json(self) -> str:

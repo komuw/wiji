@@ -62,11 +62,10 @@ class TaskOptions:
         self._validate_task_options_args(
             eta=eta, max_retries=max_retries, hook_metadata=hook_metadata
         )
-        self.eta = eta
-        if self.eta < 0.00:
-            self.eta = 0.00
+        if eta < 0.00:
+            eta = 0.00
+        self.eta = protocol.Protocol._eta_to_isoformat(eta=eta)
         self.task_id = ""
-
         self.current_retries: int = 0
         self.max_retries = max_retries
         if self.max_retries < 0:

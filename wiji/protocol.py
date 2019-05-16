@@ -7,16 +7,9 @@ if typing.TYPE_CHECKING:
 
 
 class Protocol:
-    def __init__(self, version: int, task_options: "task.TaskOptions"):
+    def __init__(self, version: int, task_options: "task.TaskOptions") -> None:
         self._validate_protocol_args(version=version, task_options=task_options)
         self.version = version
-
-        if isinstance(task_options.eta, float):
-            eta = self._eta_to_isoformat(eta=task_options.eta)
-        else:
-            eta = task_options.eta
-
-        task_options.eta = eta
         self.task_options = task_options
 
     def _validate_protocol_args(self, version: int, task_options: "task.TaskOptions"):
@@ -34,22 +27,22 @@ class Protocol:
                 )
             )
 
-        if not isinstance(task_options.eta, (str, float)):
+        if not isinstance(task_options.eta, str):
             raise ValueError(
-                """`eta` should be of type:: `str` or `float` You entered: {0}""".format(
+                """`task.TaskOptions.eta` should be of type:: `str` You entered: {0}""".format(
                     type(task_options.eta)
                 )
             )
-        if isinstance(task_options.eta, str):
-            try:
-                # type-check that string eta is ISO 8601-formatted
-                self._from_isoformat(task_options.eta)
-            except Exception as e:
-                raise ValueError(
-                    """`task.TaskOptions.eta` in string format should be a python ISO 8601-formatted string. You entered: {0}""".format(
-                        task_options.eta
-                    )
-                ) from e
+        try:
+            # type-check that string eta is ISO 8601-formatted
+            self._from_isoformat(task_options.eta)
+        except Exception as e:
+            raise ValueError(
+                """`task.TaskOptions.eta` in string format should be a python ISO 8601-formatted string. You entered: {0}""".format(
+                    task_options.eta
+                )
+            ) from e
+
         if not isinstance(task_options.current_retries, int):
             raise ValueError(
                 """`task.TaskOptions.current_retries` should be of type:: `int` You entered: {0}""".format(
@@ -82,7 +75,7 @@ class Protocol:
             )
 
     @staticmethod
-    def _eta_to_isoformat(eta):
+    def _eta_to_isoformat(eta) -> str:
         """
         converts eta in float seconds to python's ISO 8601-formatted datetime.
         """
@@ -91,7 +84,7 @@ class Protocol:
         return eta
 
     @staticmethod
-    def _from_isoformat(eta):
+    def _from_isoformat(eta) -> datetime.datetime:
         """
         converts ISO 8601-formatted datetime to python datetime
         usage:
@@ -100,5 +93,5 @@ class Protocol:
         dt = datetime.datetime.strptime(eta, "%Y-%m-%dT%H:%M:%S.%f%z")
         return dt
 
-    def json(self):
+    def json(self) -> str:
         return json.dumps({"version": self.version, "task_options": self.task_options.dictsy()})

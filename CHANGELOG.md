@@ -2,6 +2,9 @@
 most recent version is listed first.
 
 
+## **version:** v0.1.9
+- change default `Task` loglevel to `INFO` from `DEBUG`: 
+
 ## **version:** v0.1.8
 - rename `TaskDelayError` to `TaskQueueingError`: https://github.com/komuw/wiji/pull/58
 

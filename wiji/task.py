@@ -62,11 +62,10 @@ class TaskOptions:
         self._validate_task_options_args(
             eta=eta, max_retries=max_retries, hook_metadata=hook_metadata
         )
-        self.eta = eta
-        if self.eta < 0.00:
-            self.eta = 0.00
+        if eta < 0.00:
+            eta = 0.00
+        self.eta = protocol.Protocol._eta_to_isoformat(eta=eta)
         self.task_id = ""
-
         self.current_retries: int = 0
         self.max_retries = max_retries
         if self.max_retries < 0:
@@ -516,7 +515,6 @@ class Task(abc.ABC):
         if not self._checked_broker:
             await self._broker_check(from_worker=False)
 
-        proto = protocol.Protocol(version=1, task_options=task_options)
         await self._notify_hook(
             task_id=task_options.task_id,
             state=TaskState.QUEUEING,
@@ -529,6 +527,7 @@ class Task(abc.ABC):
         monotonic_start = time.monotonic()
         process_time_start = time.process_time()
         try:
+            proto = protocol.Protocol(version=1, task_options=task_options)
             await self.the_broker.enqueue(queue_name=self.queue_name, item=proto.json())
         except TypeError as e:
             self._log(logging.ERROR, {"event": "wiji.Task.delay", "stage": "end", "error": str(e)})

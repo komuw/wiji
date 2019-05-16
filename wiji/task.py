@@ -152,7 +152,7 @@ class Task(abc.ABC):
     # mainly because that is also the default value of the process supervisor: `supervisord`
     drain_duration: float = 10.0
 
-    loglevel: str = "DEBUG"
+    loglevel: str = "INFO"
     log_metadata: typing.Union[None, dict] = None
     log_handler: typing.Union[None, logger.BaseLogger] = None
 

@@ -290,5 +290,5 @@ class TestTask(TestCase):
         self._run(self.my_task.delay(2521, 12))
         with mock.patch("wiji.broker.InMemoryBroker.check", new=AsyncMock()) as mock_check:
             for _ in range(0, 5):
-                res = self._run(self.my_task.delay(31, 2))
+                self._run(self.my_task.delay(31, 2))
             self.assertFalse(mock_check.mock.called)

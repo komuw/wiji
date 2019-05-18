@@ -104,13 +104,18 @@ Lets say you have `wiji` tasks in your project and you want to write integration
 import wiji
 import MyRedisBroker # a custom broker using redis
 
+DATABASE = {}
 
 class AdderTask(wiji.task.Task):
     the_broker = MyRedisBroker()
     queue_name = "AdderTask"
 
     async def run(self, a, b):
+        """
+        adds two numbers and stores the resut in a database
+        """
         result = a + b
+        DATABASE["result"] = result
         return result
 
 class ExampleView:
@@ -119,7 +124,7 @@ class ExampleView:
         b = request["b"]
         AdderTask().synchronous_delay(a=a, b=b)
 ```
-In the example above we have a view with one `post` method. When that method is called it queues a task that adds two numbers.    
+In the example above we have a view with one `post` method. When that method is called it queues a task that adds two numbers and then stores the result of that addition in a database.    
 That task uses a broker(`MyRedisBroker`) that is backed by redis.    
 One way to write your tests would be;    
 ```python
@@ -141,6 +146,16 @@ from my_tasks import ExampleView, AdderTask
 from unittest import TestCase, mock
 
 class TestExampleView(TestCase):
+
+    @staticmethod
+    def _run(coro):
+        """
+        helper function that runs any coroutine in an event loop.
+        see:: https://blog.miguelgrinberg.com/post/unit-testing-asyncio-code
+        """
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
+
     def test_view(self):
         with mock.patch.object(
             # ie, substitute the redis broker with an in-memory one during test runs
@@ -149,4 +164,22 @@ class TestExampleView(TestCase):
             view = ExampleView()
             view.post(request={"a": 45, "b": 46})
             # do your asserts here
+    
+    def test_whole_flow(self):
+        with mock.patch.object(
+            AdderTask, "the_broker", wiji.broker.InMemoryBroker()
+        ) as mock_broker:
+            # 1. assert that the database is initially empty
+            self.assertDictEqual(DATABASE, {})
+
+            # 2. when `post` is called it will queue a task
+            view = ExampleView()
+            view.post(request={"a": 45, "b": 46})
+            
+            # 3. we need to run workers
+            worker = wiji.Worker(the_task=AdderTask())
+            self._run(worker.consume_tasks(TESTING=True))
+            
+            # 4. assert that database has been updated succesfully.
+            self.assertDictEqual(DATABASE, {"result": 91})
 ```

@@ -1,6 +1,9 @@
 ## `wiji` changelog:
 most recent version is listed first.
 
+ 
+## **version:** v0.2.0
+- added tests for `Task._broker_check`: https://github.com/komuw/wiji/pull/67
 
 ## **version:** v0.1.9
 - change default `Task` loglevel to `INFO` from `DEBUG`: https://github.com/komuw/wiji/pull/62

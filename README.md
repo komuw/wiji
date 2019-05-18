@@ -22,7 +22,8 @@ It is a bit like [Celery](https://github.com/celery/celery)
 [Installation](#installation)         
 [Usage](#usage)                  
   + [As a library](#1-as-a-library)            
-  + [As cli app](#2-as-a-cli-app)            
+  + [As cli app](#2-as-a-cli-app)    
+  + [Writing tests](#writing-tests)             
 
 [Features](#features)               
   + [async everywhere](#1-async-everywhere)            
@@ -92,4 +93,100 @@ then run `wiji-cli` pointing it to the dotted path of the `wiji.app.App` instanc
 
 ```bash
 wiji-cli --app examples.my_app.MyAppInstance
+```
+
+#### Writing tests
+Lets say you have `wiji` tasks in your project and you want to write integration or unit tests for them and their use.     
+```python
+
+# my_tasks.py
+
+import wiji
+import MyRedisBroker # a custom broker using redis
+
+DATABASE = {}
+
+class AdderTask(wiji.task.Task):
+    the_broker = MyRedisBroker()
+    queue_name = "AdderTask"
+
+    async def run(self, a, b):
+        """
+        adds two numbers and stores the resut in a database
+        """
+        result = a + b
+        DATABASE["result"] = result
+        return result
+
+class ExampleView:
+    def post(self, request):
+        a = request["a"]
+        b = request["b"]
+        AdderTask().synchronous_delay(a=a, b=b)
+```
+In the example above we have a view with one `post` method. When that method is called it queues a task that adds two numbers and then stores the result of that addition in a database.    
+That task uses a broker(`MyRedisBroker`) that is backed by redis.    
+One way to write your tests would be;    
+```python
+
+# test_tasks.py
+
+from my_tasks import ExampleView
+from unittest import TestCase
+
+class TestExampleView(TestCase):
+    def test_view(self):
+        view = ExampleView()
+        view.post(request={"a": 45, "b": 46})
+        # do your asserts here
+```
+The problem with the above approach is that this will require you to have an instance of redis running for that test to run succesfully.   
+This may not be what you want. Ideally you do not want your tests be dependent on external services.    
+`wiji` ships with an in-memory broker that you can use in your tests.   
+So the test above can be re-written in this manner;
+```python
+
+# test_tasks.py
+
+import asyncio
+from my_tasks import ExampleView, AdderTask, DATABASE
+from unittest import TestCase, mock
+
+class TestExampleView(TestCase):
+
+    @staticmethod
+    def _run(coro):
+        """
+        helper function that runs any coroutine in an event loop.
+        see:: https://blog.miguelgrinberg.com/post/unit-testing-asyncio-code
+        """
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(coro)
+
+    def test_view(self):
+        with mock.patch.object(
+            # ie, substitute the redis broker with an in-memory one during test runs
+            AdderTask, "the_broker", wiji.broker.InMemoryBroker()
+        ) as mock_broker:
+            view = ExampleView()
+            view.post(request={"a": 45, "b": 46})
+            # do your asserts here
+    
+    def test_whole_flow(self):
+        with mock.patch.object(
+            AdderTask, "the_broker", wiji.broker.InMemoryBroker()
+        ) as mock_broker:
+            # 1. assert that the database is initially empty
+            self.assertDictEqual(DATABASE, {})
+
+            # 2. when `post` is called it will queue a task
+            view = ExampleView()
+            view.post(request={"a": 45, "b": 46})
+            
+            # 3. we need to run workers
+            worker = wiji.Worker(the_task=AdderTask())
+            self._run(worker.consume_tasks(TESTING=True))
+            
+            # 4. assert that database has been updated succesfully.
+            self.assertDictEqual(DATABASE, {"result": 91})
 ```

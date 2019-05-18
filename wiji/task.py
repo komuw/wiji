@@ -214,6 +214,7 @@ class Task(abc.ABC):
 
         self._checked_broker: bool = False
         self._RETRYING: bool = False
+        self._LOOP: typing.Union[None, asyncio.events.AbstractEventLoop] = None
 
     async def __call__(self, *args, **kwargs):
         return await self.run(*args, **kwargs)
@@ -382,6 +383,21 @@ class Task(abc.ABC):
                     self._debug_task_name
                 )
             )
+
+    def _get_loop(self) -> asyncio.events.AbstractEventLoop:
+        if self._LOOP:
+            return self._LOOP
+
+        try:
+            loop: asyncio.events.AbstractEventLoop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.get_event_loop()
+        except Exception as e:
+            raise e
+
+        # cache event loop
+        self._LOOP = loop
+        return loop
 
     def _sanity_check_logger(self, event: str) -> None:
         """
@@ -578,12 +594,7 @@ class Task(abc.ABC):
             )
 
     def synchronous_delay(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = asyncio.get_event_loop()
-
-        loop.run_until_complete(self.delay(*args, **kwargs))
+        self._get_loop().run_until_complete(self.delay(*args, **kwargs))
 
     async def retry(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """

@@ -513,6 +513,7 @@ class Task(abc.ABC):
         self._validate_delay_args(*args, **kwargs)
         self._type_check(self.run, *args, **kwargs)
         if not self._checked_broker:
+            # needed so that broker can setup queue_name etc
             await self._broker_check(from_worker=False)
 
         await self._notify_hook(

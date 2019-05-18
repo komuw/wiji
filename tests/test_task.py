@@ -279,3 +279,16 @@ class TestTask(TestCase):
             str(raised_exception.exception),
         )
         self.assertEqual(self.my_task._RETRYING, False)
+
+    def test_broker_check_called(self):
+        with mock.patch("wiji.broker.InMemoryBroker.check", new=AsyncMock()) as mock_check:
+            self._run(self.my_task.delay(31, 2))
+            self.assertTrue(mock_check.mock.called)
+            self.assertEqual(mock_check.mock.call_args[1]["queue_name"], self.my_task.queue_name)
+
+    def test_broker_check_called_once(self):
+        self._run(self.my_task.delay(2521, 12))
+        with mock.patch("wiji.broker.InMemoryBroker.check", new=AsyncMock()) as mock_check:
+            for _ in range(0, 5):
+                res = self._run(self.my_task.delay(31, 2))
+            self.assertFalse(mock_check.mock.called)

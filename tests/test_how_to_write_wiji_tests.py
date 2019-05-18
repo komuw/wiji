@@ -32,7 +32,6 @@ class ExampleView:
 class TestExampleView(TestCase):
     """
     TestCase to showcase how users of `wiji` can write tests for their code that is using wiji
-   
 
     run tests as:
         python -m unittest discover -v -s .

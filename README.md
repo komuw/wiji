@@ -142,7 +142,8 @@ This may not be what you want. Ideally you do not want your tests be dependent o
 `wiji` ships with an in-memory broker that you can use in your tests.   
 So the test above can be re-written in this manner;
 ```python
-from my_tasks import ExampleView, AdderTask
+import asyncio
+from my_tasks import ExampleView, AdderTask, DATABASE
 from unittest import TestCase, mock
 
 class TestExampleView(TestCase):

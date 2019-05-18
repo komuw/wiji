@@ -391,7 +391,7 @@ class Task(abc.ABC):
         try:
             loop: asyncio.events.AbstractEventLoop = asyncio.get_running_loop()
         except RuntimeError:
-            loop: asyncio.events.AbstractEventLoop = asyncio.get_event_loop()
+            loop = asyncio.get_event_loop()
         except Exception as e:
             raise e
 

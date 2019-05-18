@@ -22,7 +22,8 @@ It is a bit like [Celery](https://github.com/celery/celery)
 [Installation](#installation)         
 [Usage](#usage)                  
   + [As a library](#1-as-a-library)            
-  + [As cli app](#2-as-a-cli-app)            
+  + [As cli app](#2-as-a-cli-app)    
+  + [Writing tests](#writing-tests)             
 
 [Features](#features)               
   + [async everywhere](#1-async-everywhere)            
@@ -92,4 +93,60 @@ then run `wiji-cli` pointing it to the dotted path of the `wiji.app.App` instanc
 
 ```bash
 wiji-cli --app examples.my_app.MyAppInstance
+```
+
+#### Writing tests
+Lets say you have `wiji` tasks in your project and you want to write integration or unit tests for them and their use.     
+```python
+
+# my_tasks.py
+
+import wiji
+import MyRedisBroker # a custom broker using redis
+
+
+class AdderTask(wiji.task.Task):
+    the_broker = MyRedisBroker()
+    queue_name = "AdderTask"
+
+    async def run(self, a, b):
+        result = a + b
+        return result
+
+class ExampleView:
+    def post(self, request):
+        a = request["a"]
+        b = request["b"]
+        AdderTask().synchronous_delay(a=a, b=b)
+```
+In the example above we have a view with one `post` method. When that method is called it queues a task that adds two numbers.    
+That task uses a broker(`MyRedisBroker`) that is backed by redis.    
+One way to write your tests would be;    
+```python
+from my_tasks import ExampleView
+from unittest import TestCase
+
+class TestExampleView(TestCase):
+    def test_view(self):
+        view = ExampleView()
+        view.post(request={"a": 45, "b": 46})
+        # do your asserts here
+```
+The problem with the above approach is that this will require you to have an instance of redis running for that test to run succesfully.   
+This may not be what you want. Ideally you do not want your tests be dependent on external services.    
+`wiji` ships with an in-memory broker that you can use in your tests.   
+So the test above can be re-written in this manner;
+```python
+from my_tasks import ExampleView, AdderTask
+from unittest import TestCase, mock
+
+class TestExampleView(TestCase):
+    def test_view(self):
+        with mock.patch.object(
+            # ie, substitute the redis broker with an in-memory one during test runs
+            AdderTask, "the_broker", wiji.broker.InMemoryBroker()
+        ) as mock_broker:
+            view = ExampleView()
+            view.post(request={"a": 45, "b": 46})
+            # do your asserts here
 ```

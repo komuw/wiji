@@ -128,6 +128,9 @@ In the example above we have a view with one `post` method. When that method is 
 That task uses a broker(`MyRedisBroker`) that is backed by redis.    
 One way to write your tests would be;    
 ```python
+
+# test_tasks.py
+
 from my_tasks import ExampleView
 from unittest import TestCase
 
@@ -142,6 +145,9 @@ This may not be what you want. Ideally you do not want your tests be dependent o
 `wiji` ships with an in-memory broker that you can use in your tests.   
 So the test above can be re-written in this manner;
 ```python
+
+# test_tasks.py
+
 import asyncio
 from my_tasks import ExampleView, AdderTask, DATABASE
 from unittest import TestCase, mock

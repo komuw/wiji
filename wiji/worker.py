@@ -438,7 +438,9 @@ def display_top(snapshot, key_type="lineno", limit=10):
             # see https://pymotw.com/3/fnmatch/
             #
             tracemalloc.Filter(False, filename_pattern="*tracemalloc.py"),
+            tracemalloc.Filter(False, filename_pattern="*linecache.py"),
             tracemalloc.Filter(False, filename_pattern="*stringprep.py"),
+            tracemalloc.Filter(False, filename_pattern="*threading.py"),
         )
     )
     top_stats = snapshot.statistics(key_type)

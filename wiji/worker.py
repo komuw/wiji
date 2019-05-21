@@ -420,7 +420,7 @@ class Worker:
         self.SUCCESFULLY_SHUT_DOWN = True
 
 
-def display_top(snapshot, key_type="lineno", limit=10):
+def display_top(snapshot, key_type="lineno", limit=15):
     """
     displays the top N offenders by memory allocation.
     """

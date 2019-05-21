@@ -431,6 +431,7 @@ def display_top(snapshot, key_type="lineno", limit=10):
             tracemalloc.Filter(
                 False, filename_pattern="<frozen importlib._bootstrap>"
             ),  # <Frame filename='<frozen importlib._bootstrap_external>' lineno=525>,
+            tracemalloc.Filter(False, filename_pattern="<frozen importlib._bootstrap_external>"),
             tracemalloc.Filter(False, filename_pattern="<unknown>"),
             tracemalloc.Filter(False, filename_pattern="*json/encoder*"),
             # import fnmatch

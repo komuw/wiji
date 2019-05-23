@@ -685,9 +685,10 @@ class _watchdogTask(Task):
     This task is always scheduled in the in-memory broker(`wiji.broker.InMemoryBroker`).
     """
 
-    the_broker = broker.InMemoryBroker()
+    the_broker: broker.InMemoryBroker = broker.InMemoryBroker()
     queue_name: str = "__WatchDogTaskQueue__"
-    loglevel = "WARNING"
+    loglevel: str = "WARNING"
+    drain_duration: float = 1.0
 
     async def run(self) -> None:
         self._log(

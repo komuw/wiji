@@ -163,5 +163,5 @@ class InMemoryBroker(BaseBroker):
         see: https://github.com/komuw/wiji/issues/71
         """
         _llen = self._llen(queue_name=queue_name)
-        if _llen > 5000:
+        if _llen > 2000:
             self.store[queue_name] = []

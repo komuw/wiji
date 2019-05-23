@@ -704,7 +704,7 @@ class _watchdogTask(Task):
                 "items_in_broker": self.the_broker._llen(self.queue_name),
             },
         )
-        await asyncio.sleep(0.00000000001)
+        await asyncio.sleep(self.drain_duration / 20)
 
 
 WatchDogTask: _watchdogTask = _watchdogTask()

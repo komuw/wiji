@@ -12,4 +12,4 @@ async def produce_tasks_continously(task: wiji.task.Task, watchdog_duration: flo
     """
     while True:
         await task.delay()
-        await asyncio.sleep(watchdog_duration / 8)
+        await asyncio.sleep(watchdog_duration / 20.00)

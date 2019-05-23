@@ -104,7 +104,7 @@ class InMemoryBroker(BaseBroker):
     async def check(self, queue_name: str) -> None:
         if queue_name not in self.store:
             self.store[queue_name] = []
-        await asyncio.sleep(1 / 117)
+        await asyncio.sleep(0.00000000001)
 
     async def enqueue(self, queue_name: str, item: str) -> None:
         if self.store.get(queue_name):
@@ -121,7 +121,7 @@ class InMemoryBroker(BaseBroker):
                     return await asyncio.sleep(delay=-1, result=self.store[queue_name].pop(0))
                 except IndexError:
                     # queue is empty
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(0.25)
             else:
                 raise ValueError("queue with name: {0} does not exist.".format(queue_name))
 

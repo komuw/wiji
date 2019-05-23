@@ -109,6 +109,8 @@ class InMemoryBroker(BaseBroker):
     async def enqueue(self, queue_name: str, item: str) -> None:
         if self.store.get(queue_name):
             self.store[queue_name].append(item)
+            # NB: without this awaits, only tasks scheduled in the InMemoryBroker(like `WatchDogTask`)
+            # would get priority since they wouldn't be co-operative in their scheduling
             await asyncio.sleep(delay=-1)
         else:
             self.store[queue_name] = [item]

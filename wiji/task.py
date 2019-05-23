@@ -689,7 +689,7 @@ class _watchdogTask(Task):
     queue_name: str = "__WatchDogTaskQueue__"
     loglevel = "WARNING"
 
-    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    async def run(self) -> None:
         self._log(
             logging.DEBUG,
             {
@@ -698,7 +698,7 @@ class _watchdogTask(Task):
                 "task_name": self.task_name,
             },
         )
-        await asyncio.sleep(0.1 / 1.5)
+        await asyncio.sleep(0.00000000001)
 
 
 WatchDogTask: _watchdogTask = _watchdogTask()

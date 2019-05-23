@@ -116,6 +116,8 @@ class InMemoryBroker(BaseBroker):
             self.store[queue_name] = [item]
             await asyncio.sleep(delay=-1)
 
+        await self._guard_leak(queue_name=queue_name)
+
     async def dequeue(self, queue_name: str) -> str:
         while True:
             if queue_name in self.store:
@@ -139,9 +141,27 @@ class InMemoryBroker(BaseBroker):
     async def shutdown(self, queue_name: str, duration: float) -> None:
         return await asyncio.sleep(delay=-1, result=None)
 
-    def _llen(self, queue_name: str):
+    def _llen(self, queue_name: str) -> int:
         """
         find the length/size/number of queued items in the given queue.
         Only used in tests.
         """
         return len(self.store[queue_name])
+
+    async def _guard_leak(self, queue_name: str) -> None:
+        """
+        This func guards against the possibility of the `InMemoryBroker` leaking memory.
+        Since this broker uses a dict as its backing storage, if the number of items appended
+        to that dict keeps on rising over time without reducing; a memory leak may occur.
+
+        So this func makes sure that the number of items in `self.store` for a given `queue_name`
+        never goes above X items. If it does, this func will clear that queue back to empty.
+        Since this broker is only used for demo purposes and by `wiji.task.WatchDogTask`
+        it's okay to empty queues in an ad hoc manner.
+
+        This functionality was added to fix an actual memory leak.
+        see: https://github.com/komuw/wiji/issues/71
+        """
+        _llen = self._llen(queue_name=queue_name)
+        if _llen > 5000:
+            self.store[queue_name] = []

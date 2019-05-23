@@ -504,7 +504,6 @@ class TestWorker(TestCase):
         _myTask.synchronous_delay(a=9001, b=6)
         self.assertEqual(_myTask.the_broker._llen(AdderTask.queue_name), 1)
         self._run(worker.consume_tasks(TESTING=True))
-        # there does not appear to be a leak
         self.assertEqual(_myTask.the_broker._llen(AdderTask.queue_name), 0)
 
 

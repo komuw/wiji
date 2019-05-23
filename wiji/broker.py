@@ -100,6 +100,8 @@ class InMemoryBroker(BaseBroker):
         """
         """
         self.store: dict = {}
+        # max tasks we can store per queue_name.
+        self.max_tasks: int = 2000
 
     async def check(self, queue_name: str) -> None:
         if queue_name not in self.store:
@@ -163,5 +165,5 @@ class InMemoryBroker(BaseBroker):
         see: https://github.com/komuw/wiji/issues/71
         """
         _llen = self._llen(queue_name=queue_name)
-        if _llen > 2000:
+        if _llen > self.max_tasks:
             self.store[queue_name] = []

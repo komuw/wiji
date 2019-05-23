@@ -14,10 +14,6 @@ from . import watchdog
 from . import ratelimiter
 
 
-import linecache
-import tracemalloc
-
-
 class Worker:
     """
     The only time this worker coroutine should ever raise an Exception is either:
@@ -235,8 +231,6 @@ class Worker:
             self.watchdog.start()
 
         dequeue_retry_count = 0
-
-        tracemalloc.start(25)
         while True:
             self._log(logging.INFO, {"event": "wiji.Worker.consume_tasks", "stage": "start"})
             if self.SHOULD_SHUT_DOWN:
@@ -249,21 +243,6 @@ class Worker:
                     },
                 )
                 return None
-
-            try:
-                if random.randint(0, 100) == 1:  # 1% of the time
-                    snapshot = tracemalloc.take_snapshot()
-                    display_top(snapshot)
-            except Exception as e:
-                self._log(
-                    logging.ERROR,
-                    {
-                        "event": "wiji.Worker.consume_tasks",
-                        "stage": "end",
-                        "state": "tracemalloc error",
-                        "error": str(e),
-                    },
-                )
 
             try:
                 if typing.TYPE_CHECKING:
@@ -365,7 +344,6 @@ class Worker:
                 logging.INFO,
                 {"event": "wiji.Worker.consume_tasks", "stage": "end", "task_id": task_id},
             )
-
             if TESTING:
                 # offer escape hatch for tests to come out of endless loop
                 task_kwargs.pop("task_options", None)
@@ -418,72 +396,3 @@ class Worker:
         # this way, we do not prevent any other workers in the same loop from also shutting down cleanly.
         await asyncio.sleep(wait_duration)
         self.SUCCESFULLY_SHUT_DOWN = True
-
-
-def display_top(snapshot, key_type="lineno", limit=15):
-    """
-    displays the top N offenders by memory allocation.
-    """
-    snapshot = snapshot.filter_traces(
-        (
-            # exclude traces of this modules
-            # TODO: add filters to remove all python stdlib
-            tracemalloc.Filter(
-                False, filename_pattern="<frozen importlib._bootstrap>"
-            ),  # <Frame filename='<frozen importlib._bootstrap_external>' lineno=525>,
-            tracemalloc.Filter(False, filename_pattern="<frozen importlib._bootstrap_external>"),
-            tracemalloc.Filter(False, filename_pattern="<unknown>"),
-            tracemalloc.Filter(False, filename_pattern="*json/encoder*"),
-            # import fnmatch
-            # fnmatch.fnmatch('/usr/local/Cellar/python/3.7.0/Frameworks/Python.framework/Versions/3.7/lib/python3.7/json/encoder.py', '*json/encoder*')
-            # see https://pymotw.com/3/fnmatch/
-            #
-            tracemalloc.Filter(False, filename_pattern="*tracemalloc.py"),
-            tracemalloc.Filter(False, filename_pattern="*linecache.py"),
-            tracemalloc.Filter(False, filename_pattern="*stringprep.py"),
-            tracemalloc.Filter(False, filename_pattern="*threading.py"),
-        )
-    )
-    top_stats = snapshot.statistics(key_type)
-    total = sum(stat.size for stat in top_stats)
-    total_allocated_size = total / 1024
-
-    print("Top {limit} lines".format(limit=limit))
-    print(
-        "total_allocated_size: {total_allocated_size:.1f}KiB".format(
-            total_allocated_size=total_allocated_size
-        )
-    )
-
-    for index, stat in enumerate(top_stats[:limit], 1):
-        frame = stat.traceback[0]
-        # replace "/path/to/module/file.py" with "module/file.py"
-        # filename = os.sep.join(frame.filename.split(os.sep)[-2:])
-        filename = frame.filename
-        lineno = frame.lineno
-        stat_size = stat.size / 1024
-        stat_count = stat.count
-        offending_line = linecache.getline(filename, lineno).strip()
-
-        print(
-            "index:#{index}: file:{filename}:{lineno} stat_size:{stat_size:.1f}KiB stat_count:{stat_count}".format(
-                index=index,
-                filename=filename,
-                lineno=lineno,
-                stat_size=stat_size,
-                stat_count=stat_count,
-            )
-        )
-        if offending_line:
-            print("\t offending_line: {offending_line}".format(offending_line=offending_line))
-
-    # other offenders outside top X offenders
-    other = top_stats[limit:]
-    if other:
-        size = sum(stat.size for stat in other)
-        combined_stat_size = size / 1024
-        print(
-            "num_other_offenders:{num_other_offenders} combined_stat_size:{combined_stat_size:.1f}KiB".format(
-                num_other_offenders=len(other), combined_stat_size=combined_stat_size
-            )
-        )

@@ -696,6 +696,11 @@ class _watchdogTask(Task):
                 "event": "wiji.WatchDogTask.run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
+                # the number of items in broker should not rise over time
+                # since `InMemoryBroker` uses a dict as its backing store
+                # storing ever increasing items in it can be a memory leak.
+                # see: https://github.com/komuw/wiji/issues/71
+                "items_in_broker": self.the_broker._llen(self.queue_name),
             },
         )
         await asyncio.sleep(0.00000000001)

@@ -111,7 +111,11 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
         watchdog_duration=app_instance.watchdog_duration,
     )
     workers = [watchdog_worker]
-    watch_dog_producer = [utils._producer.produce_tasks_continously(task=wiji.task.WatchDogTask)]
+    watch_dog_producer = [
+        utils._producer.produce_tasks_continously(
+            task=wiji.task.WatchDogTask, watchdog_duration=app_instance.watchdog_duration
+        )
+    ]
 
     _queue_names: typing.List[str] = []
     for task_class in app_instance.task_classes:

@@ -685,20 +685,26 @@ class _watchdogTask(Task):
     This task is always scheduled in the in-memory broker(`wiji.broker.InMemoryBroker`).
     """
 
-    the_broker = broker.InMemoryBroker()
+    the_broker: broker.InMemoryBroker = broker.InMemoryBroker()
     queue_name: str = "__WatchDogTaskQueue__"
-    loglevel = "WARNING"
+    loglevel: str = "WARNING"
+    drain_duration: float = 1.0
 
-    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    async def run(self, *args, **kwargs) -> None:
         self._log(
             logging.DEBUG,
             {
                 "event": "wiji.WatchDogTask.run",
                 "state": "watchdog_run",
                 "task_name": self.task_name,
+                # the number of items in broker should not rise over time
+                # since `InMemoryBroker` uses a dict as its backing store
+                # storing ever increasing items in it can be a memory leak.
+                # see: https://github.com/komuw/wiji/issues/71
+                "items_in_broker": self.the_broker._llen(self.queue_name),
             },
         )
-        await asyncio.sleep(0.1 / 1.5)
+        await asyncio.sleep(self.drain_duration / 20)
 
 
 WatchDogTask: _watchdogTask = _watchdogTask()

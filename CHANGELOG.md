@@ -1,7 +1,10 @@
 ## `wiji` changelog:
 most recent version is listed first.
 
- 
+
+## **version:** v0.3.0
+- bugfix: `wiji.broker.InMemoryBroker` was leaking memory: https://github.com/komuw/wiji/pull/74
+
 ## **version:** v0.2.0
 - added tests for `Task._broker_check`: https://github.com/komuw/wiji/pull/67
 - cache asyncio eventloop in `Task.synchronous_delay`: https://github.com/komuw/wiji/pull/68

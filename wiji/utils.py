@@ -13,7 +13,7 @@ def display_top_allocators(snapshot, key_type="lineno", limit=15):
         # then run your long running code that you suspect to have a leak
         snapshot = tracemalloc.take_snapshot()
         wiji.utils.display_top_allocators(snapshot)
-    
+
     see: https://github.com/komuw/wiji/issues/71
     for an actual usage of this function to debug a memory leak in real life.
     """

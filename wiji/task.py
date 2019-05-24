@@ -193,12 +193,9 @@ class Task(abc.ABC):
         if self.log_handler is not None:
             self.logger = self.log_handler
         else:
-            self.logger = logger.SimpleLogger(
-                "wiji.Task.task_name={0}.{1}".format(
-                    self.task_name,
-                    "".join(random.choices(string.ascii_lowercase + string.digits, k=5)),
-                )
-            )
+            # loggers need to be unique per task otherwise there will be race-conditions
+            # since `queue_name` is unique, this works out okay.
+            self.logger = logger.SimpleLogger("wiji.task.{0}".format(self.queue_name))
         self.logger.bind(level=self.loglevel, log_metadata=self.log_metadata)
         self._sanity_check_logger(event="task_sanity_check_logger")
 

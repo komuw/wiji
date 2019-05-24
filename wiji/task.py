@@ -690,7 +690,7 @@ class _watchdogTask(Task):
     loglevel: str = "WARNING"
     drain_duration: float = 1.0
 
-    async def run(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+    async def run(self, *args, **kwargs) -> None:
         self._log(
             logging.DEBUG,
             {

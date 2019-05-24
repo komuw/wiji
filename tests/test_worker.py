@@ -484,6 +484,28 @@ class TestWorker(TestCase):
                 mock_broker_shutdown.mock.call_args[1]["queue_name"], AdderTask.queue_name
             )
 
+    def test_memory_leak(self):
+        """
+        This guards against a regression.
+        wiji.broker.InMemoryBroker had a memory leak: https://github.com/komuw/wiji/issues/71
+        """
+
+        class AdderTask(wiji.task.Task):
+            the_broker = self.BROKER
+            queue_name = "{0}-TestWorker.test_cool".format(uuid.uuid4())
+
+            async def run(self, a, b):
+                res = a + b
+                return res
+
+        _myTask = AdderTask()
+        worker = wiji.Worker(the_task=_myTask, worker_id="myWorkerID1")
+
+        _myTask.synchronous_delay(a=9001, b=6)
+        self.assertEqual(_myTask.the_broker._llen(AdderTask.queue_name), 1)
+        self._run(worker.consume_tasks(TESTING=True))
+        self.assertEqual(_myTask.the_broker._llen(AdderTask.queue_name), 0)
+
 
 class TestWorkerRedisBroker(TestWorker):
     """

@@ -329,9 +329,9 @@ class Task(abc.ABC):
             raise ValueError(
                 "Task: {0} should have attribute `loglevel`".format(self._debug_task_name)
             )
-        if self.loglevel.upper() not in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+        if self.loglevel.upper() not in ["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
             raise ValueError(
-                "Task: {0}. `loglevel` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR' or 'CRITICAL'. You entered: {1}".format(
+                "Task: {0}. `loglevel` should be one of; 'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'. You entered: {1}".format(
                     self._debug_task_name, self.loglevel
                 )
             )

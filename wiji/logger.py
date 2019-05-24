@@ -90,7 +90,7 @@ class SimpleLogger(BaseLogger):
             return _level
         except KeyError as e:
             raise ValueError(
-                "`level` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL', or 'CRITICAL'"
+                "`level` should be one of; 'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'"
             ) from e
 
 

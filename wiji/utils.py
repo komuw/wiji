@@ -2,7 +2,7 @@ import linecache
 import tracemalloc
 
 
-def display_top(snapshot, key_type="lineno", limit=15):
+def display_top_allocators(snapshot, key_type="lineno", limit=15):
     """
     displays the top N offenders by memory allocation.
 
@@ -12,7 +12,7 @@ def display_top(snapshot, key_type="lineno", limit=15):
         tracemalloc.start(25)
         # then run your long running code that you suspect to have a leak
         snapshot = tracemalloc.take_snapshot()
-        wiji.utils.display_top(snapshot)
+        wiji.utils.display_top_allocators(snapshot)
     """
     snapshot = snapshot.filter_traces(
         (

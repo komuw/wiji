@@ -25,7 +25,7 @@ def display_top(snapshot, key_type="lineno", limit=15):
             tracemalloc.Filter(False, filename_pattern="<unknown>"),
             tracemalloc.Filter(False, filename_pattern="*json/encoder*"),
             # import fnmatch
-            # fnmatch.fnmatch('/usr/local/Cellar/python/3.7.0/Frameworks/Python.framework/Versions/3.7/lib/python3.7/json/encoder.py', '*json/encoder*')
+            # fnmatch.fnmatch('/lib/python3.7/json/encoder.py', '*json/encoder*')
             # see https://pymotw.com/3/fnmatch/
             #
             tracemalloc.Filter(False, filename_pattern="*tracemalloc.py"),

@@ -36,7 +36,7 @@ class BaseLogger(abc.ABC):
 class SimpleLogger(BaseLogger):
     """
     This is an implementation of BaseLogger.
-    It implements a structured logger that renders logs in a json/dict like manner.
+    It implements a structured logger that renders logs as a dict.
 
     example usage:
 
@@ -90,7 +90,7 @@ class SimpleLogger(BaseLogger):
             return _level
         except KeyError as e:
             raise ValueError(
-                "`level` should be one of; 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'FATAL', or 'CRITICAL'"
+                "`level` should be one of; 'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'"
             ) from e
 
 

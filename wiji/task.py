@@ -610,7 +610,7 @@ class Task(abc.ABC):
         if self.current_retries >= self.max_retries:
             self._RETRYING = False
             raise WijiMaxRetriesExceededError(
-                "Task: {0}. The task has reached its max_retries count of: {1}".format(
+                "Task: {0}. has reached its max_retries count of: {1}".format(
                     self._debug_task_name, self.max_retries
                 )
             )

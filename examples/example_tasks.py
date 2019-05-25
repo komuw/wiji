@@ -5,7 +5,7 @@ import subprocess
 import wiji
 import aiohttp
 import requests
-
+import threading
 
 from examples.redis_broker import ExampleRedisBroker
 
@@ -98,6 +98,8 @@ class AdderTask(BaseTask):
         print()
         print("RUNNING adder_task:")
         print("adder: ", res)
+        print()
+        print(threading.enumerate())
         print()
         # await asyncio.sleep(2)
         if res in [10, 90]:

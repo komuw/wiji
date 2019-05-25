@@ -99,6 +99,18 @@ def main():
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
 
 
+from multiprocessing import Process
+from threading import Thread
+
+
+def start_loop(coro):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.create_task(coro)
+    loop.run_forever()
+
+
 async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App) -> None:
     """
     (i)   set signal handlers.
@@ -135,8 +147,19 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
     for i in workers:
         consumers.append(i.consume_tasks())
 
+        # for csm in consumers:
+        # import pdb
+
+        # pdb.set_trace()
+        t = Process(
+            target=start_loop,
+            args=(i.consume_tasks(),),
+            name="Process-<wiji_cli-{0}>".format(i.the_task.queue_name),
+        )
+        t.start()
+
     gather_tasks = asyncio.gather(
-        *consumers, *watch_dog_producer, utils.sig._signal_handling(logger=logger, workers=workers)
+        *watch_dog_producer, utils.sig._signal_handling(logger=logger, workers=workers)
     )
     await gather_tasks
 

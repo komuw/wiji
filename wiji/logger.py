@@ -36,7 +36,7 @@ class BaseLogger(abc.ABC):
 class SimpleLogger(BaseLogger):
     """
     This is an implementation of BaseLogger.
-    It implements a structured logger that renders logs in a json/dict like manner.
+    It implements a structured logger that renders logs as a dict.
 
     example usage:
 

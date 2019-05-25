@@ -99,6 +99,7 @@ def main():
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
 
 
+from multiprocessing import Process
 from threading import Thread
 
 
@@ -150,10 +151,10 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
         # import pdb
 
         # pdb.set_trace()
-        t = Thread(
+        t = Process(
             target=start_loop,
             args=(i.consume_tasks(),),
-            name="Thread-<wiji_cli-{0}>".format(i.the_task.queue_name),
+            name="Process-<wiji_cli-{0}>".format(i.the_task.queue_name),
         )
         t.start()
 

@@ -553,6 +553,14 @@ class TestWorkerRedisBroker(TestWorker):
         )
 
 
+def start_loop(loop, coro):
+    # loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.create_task(coro)
+    loop.run_forever()
+
+
 class TestWorkerBenchmark(TestCase):
     """
     run tests as:
@@ -572,10 +580,37 @@ class TestWorkerBenchmark(TestCase):
 
     @staticmethod
     def _run(*coros):
-        loop = asyncio.get_event_loop()
-        async_tasks = asyncio.gather(*coros, loop=loop)
+        from threading import Thread
 
-        return loop.run_until_complete(async_tasks)
+        # import pdb;pdb.set_trace()
+
+        l1 = asyncio.new_event_loop()
+        t1 = Thread(target=start_loop, args=(l1, coros[0]))
+        t1.start()
+
+        l2 = asyncio.new_event_loop()
+        t2 = Thread(target=start_loop, args=(l2, coros[1]))
+        t2.start()
+
+        l3 = asyncio.new_event_loop()
+        t3 = Thread(target=start_loop, args=(l3, coros[2]))
+        t3.start()
+
+        t1.join()
+        t2.join()
+        t3.join()
+
+        ##################################
+
+        ##################################
+
+        # loop = asyncio.get_event_loop()
+        # # async_tasks = asyncio.gather(*coros, loop=loop)
+        # loop.create_task(coros[0])
+
+        # return loop.run_forever()
+
+        # return loop.run_until_complete(async_tasks)
 
     def test_one_task(self):
         """
@@ -646,12 +681,12 @@ class TestWorkerBenchmark(TestCase):
 
         t1 = TaskOne()
         w1 = wiji.Worker(the_task=t1)
-        for i in range(0, 10_000):
+        for i in range(0, 5000):
             t1.synchronous_delay(a=21, b=i)
 
         t2 = TaskTwo()
         w2 = wiji.Worker(the_task=t2)
-        for i in range(0, 10_000):
+        for i in range(0, 3000):
             t2.synchronous_delay(a=21, b=i)
 
         self._run(w1.consume_tasks(), w2.consume_tasks())

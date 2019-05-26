@@ -6,6 +6,7 @@ import random
 import asyncio
 import logging
 import argparse
+import multiprocessing
 
 import wiji
 from cli import utils
@@ -99,10 +100,6 @@ def main():
         logger.log(logging.INFO, {"event": "wiji.cli.main", "stage": "end"})
 
 
-from multiprocessing import Process
-from threading import Thread
-
-
 def start_loop(coro):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -143,25 +140,14 @@ async def async_main(logger: wiji.logger.BaseLogger, app_instance: wiji.app.App)
         workers.append(_worker)
 
     del _queue_names
-    consumers = []
     for i in workers:
-        consumers.append(i.consume_tasks())
-
-        # for csm in consumers:
-        # import pdb
-
-        # pdb.set_trace()
-        t = Process(
+        p = multiprocessing.Process(
             target=start_loop,
             args=(i.consume_tasks(),),
             name="Process-<wiji_cli-{0}>".format(i.the_task.queue_name),
         )
-        t.start()
-
-    gather_tasks = asyncio.gather(
-        *watch_dog_producer, utils.sig._signal_handling(logger=logger, workers=workers)
-    )
-    await gather_tasks
+        # 0.1094 tasks/sec
+        p.start()
 
 
 if __name__ == "__main__":

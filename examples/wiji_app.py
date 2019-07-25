@@ -9,6 +9,7 @@ from examples.example_tasks import (
     DividerTask,
     MultiplierTask,
     ExceptionTask,
+    example_func_based_task,
 )
 
 # run cli as:
@@ -23,5 +24,6 @@ yolo = wiji.app.App(
         DividerTask,
         MultiplierTask,
         ExceptionTask,
+        example_func_based_task,
     ]
 )

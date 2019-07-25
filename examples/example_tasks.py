@@ -116,6 +116,13 @@ class ExceptionTask(BaseTask):
         raise ValueError("\n Houston We got 99 problems. \n")
 
 
+@wiji.task.task_decor(the_broker=MY_BROKER, queue_name="example_func_based_task")
+async def example_func_based_task():
+    print()
+    print("`example_func_based_task` called.")
+    print()
+
+
 # 1. publish intial tasks
 adder = AdderTask()
 adder.synchronous_delay(3, 7, task_options=wiji.task.TaskOptions(eta=4.56))
@@ -143,6 +150,7 @@ if __name__ == "__main__":
                 url="https://httpbin.org/delay/11",
                 task_options=wiji.task.TaskOptions(eta=2.33),
             ),
+            task_producer(task_class=example_func_based_task),
         )
         await gather_tasks
 

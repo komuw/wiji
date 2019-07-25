@@ -26,11 +26,15 @@ class App:
         for tsk in task_classes:
             if not inspect.isclass(tsk):
                 raise ValueError(
-                    """each element of `task_classes` should be a class and NOT a class instance"""
+                    """each element of `task_classes` should be a class and NOT a class instance. You entered: {0}""".format(
+                        tsk
+                    )
                 )
             if not issubclass(tsk, task.Task):
                 raise ValueError(
-                    """each element of `task_classes` should be a subclass of:: `wiji.task.Task`"""
+                    """each element of `task_classes` should be a subclass of:: `wiji.task.Task`. You entered: {0}""".format(
+                        tsk
+                    )
                 )
 
         if not isinstance(watchdog_duration, float):

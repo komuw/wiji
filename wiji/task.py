@@ -6,6 +6,7 @@ import typing
 import asyncio
 import logging
 import inspect
+import functools
 
 from . import hook
 from . import logger
@@ -668,6 +669,53 @@ class Task(abc.ABC):
             self.current_retries = task_options.current_retries
 
         return task_options
+
+
+def task_decor(the_broker: broker.BaseBroker, queue_name: str, bind: bool = False, **options):
+    """
+    decorator function that creates a `wiji.task.Task` instance from a function.
+
+    Parameters:
+        the_broker: The broker to be used by the task
+        queue_name: The name of the queue where that task will be saved in the_broker
+        bind: Whether to provide access to `self` (of the task type instance).
+        options: all the other attributes that can be passed to a `wiji.task.Task`
+
+    Usage:
+        @task_decor(the_broker=InMemoryBroker(), queue_name="q1")
+        async def hello():
+            print("hello world.")
+
+        await hello.delay()
+    """
+
+    def tsk_class(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            nonlocal options
+            task_attrs = options
+            run = func if bind else staticmethod(func)
+            task_attrs.update(
+                {
+                    "run": run,
+                    "the_broker": the_broker,
+                    "queue_name": queue_name,
+                    "name": func.__name__,
+                    "__module__": func.__module__,
+                    "__doc__": func.__doc__,
+                }
+            )
+
+            tsk = type(
+                "{task_class_name}".format(task_class_name=func.__name__), (Task,), task_attrs
+            )
+            assert inspect.isclass(tsk), "tsk should be a class and NOT a class instance"
+            assert issubclass(tsk, Task), "ccc should be a subclass of:: `wiji.task.Task`"
+            return tsk()
+
+        return wrapper(func)
+
+    return tsk_class
 
 
 class _watchdogTask(Task):

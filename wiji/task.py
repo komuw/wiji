@@ -671,7 +671,9 @@ class Task(abc.ABC):
         return task_options
 
 
-def task_decor(the_broker: broker.BaseBroker, queue_name: str, bind: bool = False, **options):
+def task_decor(
+    the_broker: broker.BaseBroker, queue_name: str, bind: bool = False, **options
+) -> typing.Callable[..., Task]:
     """
     decorator function that creates a `wiji.task.Task` instance from a function.
 
@@ -681,12 +683,15 @@ def task_decor(the_broker: broker.BaseBroker, queue_name: str, bind: bool = Fals
         bind: Whether to provide access to `self` (of the task type instance).
         options: all the other attributes that can be passed to a `wiji.task.Task`
 
+    Returns:
+        function decorator that can decorate another function that will return a `wiji.task.Task` class
+
     Usage:
         @task_decor(the_broker=InMemoryBroker(), queue_name="q1")
         async def hello():
             print("hello world.")
 
-        await hello.delay()
+        await hello().delay()
     """
 
     def tsk_class(func):
@@ -700,18 +705,16 @@ def task_decor(the_broker: broker.BaseBroker, queue_name: str, bind: bool = Fals
                     "run": run,
                     "the_broker": the_broker,
                     "queue_name": queue_name,
-                    "name": func.__name__,
+                    "__name__": func.__name__,
                     "__module__": func.__module__,
                     "__doc__": func.__doc__,
                 }
             )
 
-            tsk = type(
-                "{task_class_name}".format(task_class_name=func.__name__), (Task,), task_attrs
-            )
+            tsk = type("{class_name}".format(class_name=func.__name__), (Task,), task_attrs)
             assert inspect.isclass(tsk), "tsk should be a class and NOT a class instance"
             assert issubclass(tsk, Task), "ccc should be a subclass of:: `wiji.task.Task`"
-            return tsk()
+            return tsk
 
         return wrapper(func)
 

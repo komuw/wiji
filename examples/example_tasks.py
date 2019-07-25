@@ -150,6 +150,7 @@ if __name__ == "__main__":
                 url="https://httpbin.org/delay/11",
                 task_options=wiji.task.TaskOptions(eta=2.33),
             ),
+            task_producer(task_class=example_func_based_task),
         )
         await gather_tasks
 

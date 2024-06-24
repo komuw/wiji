@@ -538,7 +538,9 @@ class TestWorkerRedisBroker(TestWorker):
             container.stop()
 
         name = os.environ.get(
-            "WIJI_TEST_REDIS_CONTAINER_NAME", "wiji_test_redis_container-" + str(uuid.uuid4())
+            "WIJI_TEST_REDIS_CONTAINER_NAME",
+            # todo: This will create a new container per test. Instead we should re-use.
+            "wiji_test_redis_container-" + str(uuid.uuid4()),
         )
         docker_client.containers.run(
             "redis:3.0-alpine",

@@ -2,6 +2,9 @@
 most recent version is listed first.
 
 
+## **version:** v0.3.1
+- Update to latest python versions: https://github.com/komuw/wiji/pull/86
+
 ## **version:** v0.3.0
 - bugfix: `wiji.broker.InMemoryBroker` was leaking memory: https://github.com/komuw/wiji/pull/74
 - accept `logging.NOTSET` as a loglevel: https://github.com/komuw/wiji/pull/75

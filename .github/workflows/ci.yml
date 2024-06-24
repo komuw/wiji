@@ -74,7 +74,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: tests and benchmarks
+      - name: run_tests
         run: |
           ulimit -a
           env
@@ -116,7 +116,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: tests and benchmarks
+      - name: run_analysis
         run: |
           ulimit -a
           env
@@ -137,7 +137,7 @@ jobs:
           PYTHONASYNCIODEBUG: '1'
 
   run_wiji:
-    name: run_analysis
+    name: run_wiji
     timeout-minutes: 8
     strategy:
       matrix:
@@ -153,7 +153,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: tests and benchmarks
+      - name: run_wiji
         run: |
           ulimit -a
           env

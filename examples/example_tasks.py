@@ -33,7 +33,7 @@ class BlockinHttpTask(BaseTask):
         print()
         print("RUNNING BLOCKING_http_task:")
         url = kwargs["url"]
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=1)
         print("resp: ", resp)
 
 

@@ -28,8 +28,7 @@ class Worker:
         use_watchdog: bool = False,
         watchdog_duration: float = 0.1,
     ) -> None:
-        """
-        """
+        """ """
         self._validate_worker_args(
             the_task=the_task,
             worker_id=worker_id,
@@ -125,7 +124,7 @@ class Worker:
         elif current_retries >= 6:
             return (16 * 60) + jitter  # 16 minutes + jitter
         else:
-            return (60 * (2 ** current_retries)) + jitter
+            return (60 * (2**current_retries)) + jitter
 
     async def _notify_broker(self, item: str, queue_name: str, state: task.TaskState) -> None:
         try:
@@ -374,8 +373,10 @@ class Worker:
             # thus the broker shutdown can still continue on its own if it can.
             await asyncio.wait(
                 {
-                    self.the_task.the_broker.shutdown(
-                        queue_name=self.the_task.queue_name, duration=wait_duration
+                    asyncio.create_task(
+                        self.the_task.the_broker.shutdown(
+                            queue_name=self.the_task.queue_name, duration=wait_duration
+                        )
                     )
                 },
                 timeout=wait_duration,

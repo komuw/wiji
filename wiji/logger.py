@@ -5,8 +5,7 @@ import logging
 
 
 class BaseLogger(abc.ABC):
-    """
-    """
+    """ """
 
     @abc.abstractmethod
     def bind(self, level: typing.Union[str, int], log_metadata: dict) -> None:

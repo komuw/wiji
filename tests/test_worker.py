@@ -106,7 +106,7 @@ class TestWorker(TestCase):
         self.assertEqual(res, 30)
 
         res = wiji.Worker._retry_after(5)
-        self.assertTrue(res > 60 * (2 ** 5))
+        self.assertTrue(res > 60 * (2**5))
 
         for i in [6, 7, 34]:
             res = wiji.Worker._retry_after(i)
@@ -428,9 +428,7 @@ class TestWorker(TestCase):
             await worker.shutdown()
 
         loop = asyncio.get_event_loop()
-        tasks = asyncio.gather(
-            worker.consume_tasks(TESTING=False), call_worker_shutdown(), loop=loop
-        )
+        tasks = asyncio.gather(worker.consume_tasks(TESTING=False), call_worker_shutdown())
         loop.run_until_complete(tasks)
 
         # assert that some tasks have been consumed and also
@@ -475,7 +473,8 @@ class TestWorker(TestCase):
 
             loop = asyncio.get_event_loop()
             tasks = asyncio.gather(
-                worker.consume_tasks(TESTING=False), call_worker_shutdown(), loop=loop
+                worker.consume_tasks(TESTING=False),
+                call_worker_shutdown(),
             )
             loop.run_until_complete(tasks)
 

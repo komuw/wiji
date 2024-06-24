@@ -97,8 +97,7 @@ class InMemoryBroker(BaseBroker):
     """
 
     def __init__(self) -> None:
-        """
-        """
+        """ """
         self.store: dict = {}
         # max tasks we can store per queue_name.
         self.max_tasks: int = 2000

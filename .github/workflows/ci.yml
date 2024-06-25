@@ -65,6 +65,17 @@ jobs:
         python-version: ["3.11", "3.12"]
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
+
+    services:
+      redis:
+        image: redis:3.0-alpine
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -98,6 +109,11 @@ jobs:
         env:
           WIJI_DEBUG: '1'
           PYTHONASYNCIODEBUG: '1'
+          IN_DOCKER: 'YES'
+          WIJI_TEST_REDIS_CONTAINER_NAME: 'wiji_test_redis_container'
+          REDIS_HOST: 'redis'
+          REDIS_PORT: '6379'
+
 
   run_analysis:
     name: run_analysis

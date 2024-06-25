@@ -64,7 +64,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
         platform: [ubuntu-22.04]
-        redis-version: ["redis:7.2-alpine"]
+        redis-version: ["7.2-alpine"]
     runs-on: ${{ matrix.platform }}
 
     steps:

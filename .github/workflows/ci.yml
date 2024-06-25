@@ -64,17 +64,8 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
         platform: [ubuntu-22.04]
+        redis-version: ["redis:7.2-alpine"]
     runs-on: ${{ matrix.platform }}
-
-    services:
-      redis:
-        image: redis:7.2-alpine
-        # Set health checks to wait until redis has started
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Check out code
@@ -84,6 +75,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Start redis
+        uses: supercharge/redis-github-action@1.8.0
+        with:
+          redis-version: ${{ matrix.redis-version }}
 
       - name: run_tests
         run: |

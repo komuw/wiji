@@ -101,7 +101,7 @@ html_theme_options = {
     "description": "wiji is an async blah blash.",
     "github_banner": False,
     "travis_button": False,  # see: https://github.com/bitprophet/alabaster/pull/147
-    "badge_branch": "master",
+    "badge_branch": "main",
     "codecov_button": True,
     "show_related": True,
     "github_user": "komuw",

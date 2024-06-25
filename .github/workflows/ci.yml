@@ -7,7 +7,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
 
 jobs:
 
@@ -19,17 +19,17 @@ jobs:
         platform: [ubuntu-22.04]
     runs-on: ${{ matrix.platform }}
     steps:
-      # checkout master branch and the current branch so that we are able to do diff operations.
-      - name: checkout master branch too.
+      # checkout main branch and the current branch so that we are able to do diff operations.
+      - name: checkout main branch too.
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: main
       - name: Check out code
         uses: actions/checkout@v4
 
       # https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions
       - name: check if changes have release notes
-        if: ${{ github.ref != 'refs/heads/master' }}
+        if: ${{ github.ref != 'refs/heads/main' }}
         env:
           GIT_BRANCH: ${{ github.ref }}
           GITHUB_HEAD_REF: ${{ github.head_ref }}
@@ -40,14 +40,14 @@ jobs:
           printf "GITHUB_BASE_REF: $GITHUB_BASE_REF \n"
           printf "list git branches: \n"
           git branch --list --all
-          if [[ "$GIT_BRANCH" == "refs/heads/master" ]]
+          if [[ "$GIT_BRANCH" == "refs/heads/main" ]]
           then
               printf "\n $GIT_BRANCH branch, ignoring check for relese notes \n"
           elif [[  "$GIT_BRANCH" == *"refs/tags/"* ]]
           then
               printf "\n $GIT_BRANCH branch, ignoring check for relese notes \n"
           else
-              ChangedFiles=`git diff --name-only remotes/origin/master`
+              ChangedFiles=`git diff --name-only remotes/origin/main`
               echo $ChangedFiles
               case "$ChangedFiles" in
                 *CHANGELOG.*)

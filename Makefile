@@ -17,7 +17,7 @@ uploadprod:
 	@python setup.py bdist_wheel
 	@twine upload dist/*
 	@printf "\n creating git tag: $(VERSION_STRING) \n"
-	@printf "\n with commit message, see Changelong: https://github.com/komuw/wiji/blob/master/CHANGELOG.md \n" && git tag -a "$(VERSION_STRING)" -m "see Changelong: https://github.com/komuw/wiji/blob/master/CHANGELOG.md"
+	@printf "\n with commit message, see Changelong: https://github.com/komuw/wiji/blob/main/CHANGELOG.md \n" && git tag -a "$(VERSION_STRING)" -m "see Changelong: https://github.com/komuw/wiji/blob/main/CHANGELOG.md"
 	@printf "\n git push the tag::\n" && git push --all -u --follow-tags
 	@pip install -U wiji
 

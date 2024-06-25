@@ -9,8 +9,7 @@ if typing.TYPE_CHECKING:
 
 
 class BaseHook(abc.ABC):
-    """
-    """
+    """ """
 
     @abc.abstractmethod
     async def notify(

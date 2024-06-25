@@ -153,7 +153,9 @@ class Task(abc.ABC):
     log_metadata: typing.Union[None, dict] = None
     log_handler: typing.Union[None, logger.BaseLogger] = None
 
-    def __init__(self,) -> None:
+    def __init__(
+        self,
+    ) -> None:
         self._debug_task_name = self.__class__.__name__
         self._validate_task_args()
         self.loglevel = self.loglevel.upper()
@@ -224,7 +226,9 @@ class Task(abc.ABC):
             }
         )
 
-    def _validate_task_args(self,) -> None:
+    def _validate_task_args(
+        self,
+    ) -> None:
         if not hasattr(self, "the_broker"):
             raise ValueError(
                 "Task: {0} should have attribute `the_broker`".format(self._debug_task_name)

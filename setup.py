@@ -96,8 +96,8 @@ setup(
             "bandit",
             "mypy",
             "codecov",
-            "redis==2.10.6",
-            "docker==3.7.1",
+            "redis==5.0.6",
+            "docker==7.1.0",
         ],
     },
     # If there are data files included in your packages that need to be

@@ -106,7 +106,7 @@ class TestWorker(TestCase):
         self.assertEqual(res, 30)
 
         res = wiji.Worker._retry_after(5)
-        self.assertTrue(res > 60 * (2 ** 5))
+        self.assertTrue(res > 60 * (2**5))
 
         for i in [6, 7, 34]:
             res = wiji.Worker._retry_after(i)
@@ -428,9 +428,7 @@ class TestWorker(TestCase):
             await worker.shutdown()
 
         loop = asyncio.get_event_loop()
-        tasks = asyncio.gather(
-            worker.consume_tasks(TESTING=False), call_worker_shutdown(), loop=loop
-        )
+        tasks = asyncio.gather(worker.consume_tasks(TESTING=False), call_worker_shutdown())
         loop.run_until_complete(tasks)
 
         # assert that some tasks have been consumed and also
@@ -475,7 +473,8 @@ class TestWorker(TestCase):
 
             loop = asyncio.get_event_loop()
             tasks = asyncio.gather(
-                worker.consume_tasks(TESTING=False), call_worker_shutdown(), loop=loop
+                worker.consume_tasks(TESTING=False),
+                call_worker_shutdown(),
             )
             loop.run_until_complete(tasks)
 
@@ -533,14 +532,21 @@ class TestWorkerRedisBroker(TestWorker):
             # will utilise an already existing redis docker container
             return
 
+        name = os.environ.get("WIJI_TEST_REDIS_CONTAINER_NAME", "wiji_test_redis_container")
+        already_exists = False
         docker_client = docker.from_env()
         running_containers = docker_client.containers.list()
         for container in running_containers:
+            if container.name == name:
+                already_exists = True
+                continue
             container.stop()
 
-        name = os.environ.get("WIJI_TEST_REDIS_CONTAINER_NAME", "wiji_test_redis_container")
+        if already_exists:
+            return
+
         docker_client.containers.run(
-            "redis:3.0-alpine",
+            "redis:7.2-alpine",
             name=name,
             detach=True,
             auto_remove=True,

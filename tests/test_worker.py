@@ -546,7 +546,7 @@ class TestWorkerRedisBroker(TestWorker):
             return
 
         docker_client.containers.run(
-            "redis:3.0-alpine",
+            "redis:7.2-alpine",
             name=name,
             detach=True,
             auto_remove=True,
